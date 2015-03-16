@@ -43,7 +43,7 @@ func (o *Lin) Init(prms fun.Prms) (err error) {
 			return chk.Err("lin: parameter named %q is incorrect\n", p.N)
 		}
 	}
-	if o.λ < 1e-15 {
+	if o.λ < 1e-13 {
 		o.λ = 0
 		o.pcres = math.MaxFloat64
 	} else {

@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-all: GenVtu ConvertGofemMat MatTable
-.PHONY: GenVtu ConvertGofemMat
+all: GenVtu ConvertGofemMat MatTable PlotLrm
+.PHONY: GenVtu ConvertGofemMat MatTable PlotLrm
 
 ConvertGofemMat: ConvertGofemMat.go
 	go build -o /tmp/gofem/ConvertGofemMat ConvertGofemMat.go && mv /tmp/gofem/ConvertGofemMat $(GOPATH)/bin/
@@ -13,3 +13,6 @@ GenVtu: GenVtu.go
 
 MatTable: MatTable.go
 	go build -o /tmp/gofem/MatTable MatTable.go && mv /tmp/gofem/MatTable $(GOPATH)/bin/
+
+PlotLrm: PlotLrm.go
+	go build -o /tmp/gofem/PlotLrm PlotLrm.go && mv /tmp/gofem/PlotLrm $(GOPATH)/bin/
