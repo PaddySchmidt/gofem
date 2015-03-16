@@ -24,6 +24,7 @@ type PltEntity struct {
 // SplotDat stores all data for one subplot
 type SplotDat struct {
 	Title  string       // title of subplot
+	Topts  string       // title options
 	Xscale float64      // x-axis scale
 	Yscale float64      // y-axis scale
 	Xlbl   string       // x-axis label (formatted; e.g. "$t$")
@@ -75,6 +76,9 @@ func Draw(dirout, fname string, show bool) {
 	for i := 0; i < nr; i++ {
 		for j := 0; j < nc; j++ {
 			plt.Subplot(nr, nc, k+1)
+			if Splots[k].Title != "" {
+				plt.Title(Splots[k].Title, Splots[k].Topts)
+			}
 			data := Splots[k].Data
 			for _, d := range data {
 				if d.Style.L == "" {
