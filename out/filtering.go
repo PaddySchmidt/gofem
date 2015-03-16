@@ -30,13 +30,13 @@ type P [][]int
 //  Example: with 2 points in 3D: {{0,0,0}, {1,1,1}}
 type Along [][]float64
 
-// AlongX implements LineLocator
+// AlongX implements LineLocator with []float64{y_cte} or []float64{y_cte, z_cte}
 type AlongX []float64
 
-// AlongY implements LineLocator
+// AlongY implements LineLocator with []float64{x_cte} or []float64{x_cte, z_cte}
 type AlongY []float64
 
-// AlongZ implements LineLocator
+// AlongZ implements LineLocator with []float64{x_cte, y_cte}
 type AlongZ []float64
 
 // Locate finds points
@@ -138,7 +138,7 @@ func (o P) Locate() (res Points) {
 	return
 }
 
-// Along finds points
+// Locate finds points
 func (o Along) Locate() (res Points) {
 
 	// check if there are two points
@@ -167,6 +167,30 @@ func (o Along) Locate() (res Points) {
 	}
 	sort.Sort(res)
 	return
+}
+
+// Locate finds points
+func (o AlongX) Locate() (res Points) {
+	y_cte, z_cte := o[0], 0.0
+	if len(o) > 1 {
+		z_cte = o[1]
+	}
+	return Along{{0, y_cte, z_cte}, {1, y_cte, z_cte}}.Locate()
+}
+
+// Locate finds points
+func (o AlongY) Locate() (res Points) {
+	x_cte, z_cte := o[0], 0.0
+	if len(o) > 1 {
+		z_cte = o[1]
+	}
+	return Along{{x_cte, 0, z_cte}, {x_cte, 1, z_cte}}.Locate()
+}
+
+// Locate finds points
+func (o AlongZ) Locate() (res Points) {
+	x_cte, y_cte := o[0], o[1]
+	return Along{{x_cte, y_cte, 0}, {x_cte, y_cte, 1}}.Locate()
 }
 
 // AllIps returns all cell/ip indices

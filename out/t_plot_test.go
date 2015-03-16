@@ -36,7 +36,8 @@ func Test_plot01(tst *testing.T) {
 	// define entities
 	Define("A", N{1})
 	Define("B", At{0, 1})
-	Define("left", Along{{0, 0}, {0, 10}})
+	//Define("left", Along{{0, 0}, {0, 10}})
+	Define("left", AlongY{0}) // 0 => x_cte
 
 	// load results
 	LoadResults(nil)
