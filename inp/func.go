@@ -7,18 +7,20 @@ package inp
 import (
 	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/io"
+	"github.com/cpmech/gosl/plt"
 	"github.com/cpmech/gosl/utl"
 )
 
 // PlotFdata holds information to plot functions
 type PlotFdata struct {
-	Ti    float64  `json:"ti"`    // initial time
-	Tf    float64  `json:"tf"`    // final time
-	Np    int      `json:"np"`    // number of points
-	Skip  []string `json:"skip"`  // skip functions
-	WithG bool     `json:"withg"` // with dF/dt
-	WithH bool     `json:"withh"` // with d²F/dt²
-	Eps   bool     `json:"eps"`   // save eps instead of png
+	Ti      float64  `json:"ti"`      // initial time
+	Tf      float64  `json:"tf"`      // final time
+	Np      int      `json:"np"`      // number of points
+	Skip    []string `json:"skip"`    // skip functions
+	WithG   bool     `json:"withg"`   // with dF/dt
+	WithH   bool     `json:"withh"`   // with d²F/dt²
+	Eps     bool     `json:"eps"`     // save eps instead of png
+	WithTxt bool     `json:"withtxt"` // show text corresponding to initial and final points
 }
 
 // FuncData holds function definition
@@ -55,14 +57,25 @@ func (o FuncsData) PlotAll(pd *PlotFdata, dirout, fnkey string) {
 	if pd.Eps {
 		ext = "eps"
 	}
-	for _, f := range o {
+	fn := io.Sf("functions-%s.%s", fnkey, ext)
+	plt.Reset()
+	for k, f := range o {
 		if utl.StrIndexSmall(pd.Skip, f.Name) >= 0 {
 			continue
 		}
-		fn := io.Sf("fcn-%s-%s.%s", fnkey, f.Name, ext)
+		save := (k == len(o)-1)
+		args := io.Sf("label='%s', clip_on=0", f.Name)
 		ff := o.Get(f.Name)
 		if ff != nil {
-			fun.PlotT(ff, dirout, fn, pd.Ti, pd.Tf, nil, pd.Np, "", pd.WithG, pd.WithH, true, false, nil)
+			if pd.WithTxt {
+				x := pd.Ti
+				y := ff.F(x, nil)
+				plt.Text(x, y, io.Sf("%g", y), "fontsize=8")
+				x = pd.Tf
+				y = ff.F(x, nil)
+				plt.Text(x, y, io.Sf("%g", y), "fontsize=8, ha='right'")
+			}
+			fun.PlotT(ff, dirout, fn, pd.Ti, pd.Tf, nil, pd.Np, args, pd.WithG, pd.WithH, save, false, nil)
 		}
 	}
 }
