@@ -72,5 +72,5 @@ func main() {
 	}
 
 	// show
-	out.Draw("", "", true)
+	out.Draw("", "", true, nil)
 }

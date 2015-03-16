@@ -51,5 +51,5 @@ func main() {
 	//out.Plt(X, ST, "bottom", plt.FmtS{"b.-"}, -1)
 
 	// show
-	out.Draw("", "", true)
+	out.Draw("", "", true, nil)
 }

@@ -63,5 +63,5 @@ func main() {
 	out.Csplot.Ylbl = "$n_f$"
 
 	// show
-	out.Draw("", "", true)
+	out.Draw("", "", true, nil)
 }

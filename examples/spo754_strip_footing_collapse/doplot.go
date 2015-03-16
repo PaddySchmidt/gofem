@@ -42,5 +42,5 @@ func main() {
 	// plot
 	out.Splot("Plot")
 	out.Plot("uy", "t", "A", plt.Fmt{C: "r", M: "o"}, -1)
-	out.Draw("", "", show)
+	out.Draw("", "", show, nil)
 }

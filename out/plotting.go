@@ -39,6 +39,7 @@ func Splot(splotTitle string) {
 	Csplot = s
 }
 
+// SplotConfig configures units and scales of axes
 func SplotConfig(xunit, yunit string, xscale, yscale float64) {
 	if Csplot != nil {
 		var xlabel, ylabel string
@@ -53,6 +54,12 @@ func SplotConfig(xunit, yunit string, xscale, yscale float64) {
 	}
 }
 
+// Plot plots data
+//  xHandle -- can be a string, e.g. "t" or a slice, e.g. pc = []float64{0, 1, 2}
+//  yHandle -- can be a string, e.g. "pl" or a slice, e.g. sl = []float64{0, 1, 2}
+//  alias   -- alias such as "centre"
+//  fm      -- formatting codes; e.g. plt.Fmt{C:"blue", L:"label"}
+//  idxI    -- index of time; use -1 for all times
 func Plot(xHandle, yHandle interface{}, alias string, fm plt.Fmt, idxI int) {
 	var e PltEntity
 	e.Alias = alias
@@ -69,13 +76,25 @@ func Plot(xHandle, yHandle interface{}, alias string, fm plt.Fmt, idxI int) {
 	SplotConfig("", "", 1, 1)
 }
 
-func Draw(dirout, fname string, show bool) {
+// ExtraPlt defines a callback function for extra plt commands
+//  Note: i and j are indices as in Subplot
+type ExtraPlt func(i, j, nplots int)
+
+// Draw draws or save figure with plot
+//  dirout -- directory to save figure
+//  fname  -- file name; e.g. myplot.eps or myplot.png. Use "" to skip saving
+//  show   -- shows figure
+//  extra  -- is called just after Subplot command and before any plotting
+func Draw(dirout, fname string, show bool, extra ExtraPlt) {
 	nplots := len(Splots)
 	nr, nc := utl.BestSquare(nplots)
 	var k int
 	for i := 0; i < nr; i++ {
 		for j := 0; j < nc; j++ {
 			plt.Subplot(nr, nc, k+1)
+			if extra != nil {
+				extra(i+1, j+1, nplots)
+			}
 			if Splots[k].Title != "" {
 				plt.Title(Splots[k].Title, Splots[k].Topts)
 			}
@@ -96,37 +115,6 @@ func Draw(dirout, fname string, show bool) {
 	if show {
 		plt.Show()
 	}
-}
-
-func Contour(key string, idxI int) {
-	if idxI < 0 {
-		idxI = len(I) - 1
-	}
-	l := io.Sf(`import json
-from gosl import *
-f = open('%s', 'r')
-M = json.load(f)
-f.close()
-ndim   = len(M['verts'][0]['c'])
-nverts = len(M['verts'])
-coords = zeros((nverts, ndim))
-xmin   = array(M['verts'][0]['c'])
-xmax   = array(M['verts'][0]['c'])
-for v in M['verts']:
-	for j in range(ndim):
-		coords[v['id'], j] = v['c'][j]
-		if v['c'][j] < xmin[j]: xmin[j] = v['c'][j]
-		if v['c'][j] > xmax[j]: xmax[j] = v['c'][j]
-npx = 21
-npy = 21
-xgrd  = linspace(xmin[0], xmax[0], npx)
-ygrd  = linspace(xmin[1], xmax[1], npy)
-gvals = {}
-`, Dom.Msh.FnamePath)
-	//Z = [N[i][%s][%d] for i in range(nverts)]
-	//gvals[key] = griddata((coords[:,0], coords[:,1]), Z, (xgrd[None,:], ygrd[:,None]), method='cubic', fill_value=fill_value)
-	//`, Dom.Msh.FnamePath, I[idxI])
-	io.Pf("%v\n", l)
 }
 
 // auxiliary /////////////////////////////////////////////////////////////////////////////////////////
