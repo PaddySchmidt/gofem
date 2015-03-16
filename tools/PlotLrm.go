@@ -7,11 +7,16 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
+	"path"
 
 	"github.com/cpmech/gofem/inp"
 	"github.com/cpmech/gofem/mreten"
 	"github.com/cpmech/gosl/io"
+	"github.com/cpmech/gosl/plt"
+	"github.com/cpmech/gosl/utl"
 )
 
 func main() {
@@ -74,11 +79,50 @@ func main() {
 	}
 	mdl.Init(mat.Prms)
 
-	// plot model
-	err := mreten.Plot(mdl, 0, 1, pcmax, npts, "'b-'", "", matname)
+	// plot drying path
+	d_Pc := utl.LinSpace(0, pcmax, npts)
+	d_Sl := make([]float64, npts)
+	d_Sl[0] = 1
+	var err error
+	for i := 1; i < npts; i++ {
+		d_Sl[i], err = mreten.Update(mdl, d_Pc[i-1], d_Sl[i-1], d_Pc[i]-d_Pc[i-1])
+		if err != nil {
+			io.PfRed("drying: cannot updated model\n%v\n", err)
+			return
+		}
+	}
+	plt.Plot(d_Pc, d_Sl, io.Sf("'b-', label='%s (dry)', clip_on=0", matname))
+
+	// plot wetting path
+	w_Pc := utl.LinSpace(pcmax, 0, npts)
+	w_Sl := make([]float64, npts)
+	w_Sl[0] = d_Sl[npts-1]
+	for i := 1; i < npts; i++ {
+		w_Sl[i], err = mreten.Update(mdl, w_Pc[i-1], w_Sl[i-1], w_Pc[i]-w_Pc[i-1])
+		if err != nil {
+			io.PfRed("wetting: cannot updated model\n%v\n", err)
+			return
+		}
+	}
+	plt.Plot(w_Pc, w_Sl, io.Sf("'c-', label='%s (wet)', clip_on=0", matname))
+
+	// save results
+	type Results struct{ Pc, Sl []float64 }
+	res := Results{append(d_Pc, w_Pc...), append(d_Sl, w_Sl...)}
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	err = enc.Encode(&res)
 	if err != nil {
-		io.PfRed("plot failed:\n%v\n", err)
+		io.PfRed("cannot encode results\n")
 		return
 	}
-	mreten.PlotEnd(true)
+	fn := path.Join(sim.Data.DirOut, matname+".dat")
+	io.WriteFile(fn, &buf)
+	io.Pf("file <[1;34m%s[0m> written\n", fn)
+
+	// show figure
+	plt.AxisYrange(0, 1)
+	plt.Cross()
+	plt.Gll("$p_c$", "$s_{\\ell}$", "")
+	plt.Show()
 }
