@@ -252,8 +252,8 @@ func Test_up01a(tst *testing.T) {
 				tst.Errorf("[1;31mσxy is not equal to zero: %g != 0[0m\n", σe[3])
 				return
 			}
-			chk.AnaNum(tst, io.Sf("sx(z=%11.8f)", z), 0.000376, σe[0], she, chk.Verbose)
-			chk.AnaNum(tst, io.Sf("sy(z=%11.8f)", z), 0.00151, σe[1], sve, chk.Verbose)
+			chk.AnaNum(tst, io.Sf("sx(z=%11.8f)", z), 0.0003792, σe[0], she, chk.Verbose)
+			chk.AnaNum(tst, io.Sf("sy(z=%11.8f)", z), 0.001517, σe[1], sve, chk.Verbose)
 		}
 	}
 	return

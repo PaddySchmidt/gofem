@@ -301,6 +301,8 @@ func (o ElemUP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 			}
 		}
 
+		//io.Pforan("ρwl = %v\n", o.P.ρwl)
+
 		// p: add negative of residual term to fb; see Eqs. (38a) and (45a) of [1]
 		for m := 0; m < p_nverts; m++ {
 			r = o.P.Pmap[m]
@@ -610,10 +612,42 @@ func (o ElemUP) Ipoints() (coords [][]float64) {
 
 // SetIniIvs sets initial ivs for given values in sol and ivs map
 func (o *ElemUP) SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) {
-	if !o.U.SetIniIvs(sol, ivs) {
+
+	// set p-element first => will need pl @ ips
+	if !o.P.SetIniIvs(sol, nil) {
 		return
 	}
-	return o.P.SetIniIvs(sol, ivs)
+
+	// initial stresses given
+	if _, ok := ivs["svT"]; ok {
+
+		// total vertical stresses and K0
+		nip := len(o.U.IpsElem)
+		svT := ivs["svT"]
+		K0s := ivs["K0"]
+		chk.IntAssert(len(svT), nip)
+		chk.IntAssert(len(K0s), 1)
+		K0 := K0s[0]
+
+		// compute effective stresses
+		sx := make([]float64, nip)
+		sy := make([]float64, nip)
+		sz := make([]float64, nip)
+		sl := 1.0
+		for i, _ := range o.U.IpsElem {
+			p := o.P.States[i].Pl * sl
+			svE := svT[i] + p
+			shE := K0 * svE
+			sx[i], sy[i], sz[i] = shE, svE, shE
+			if Global.Ndim == 3 {
+				sx[i], sy[i], sz[i] = shE, shE, svE
+			}
+		}
+		ivs = map[string][]float64{"sx": sx, "sy": sy, "sz": sz}
+	}
+
+	// set u-element
+	return o.U.SetIniIvs(sol, ivs)
 }
 
 // BackupIvs create copy of internal variables

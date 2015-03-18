@@ -5,6 +5,8 @@
 package fem
 
 import (
+	"math"
+
 	"github.com/cpmech/gofem/inp"
 	"github.com/cpmech/gofem/mporous"
 	"github.com/cpmech/gofem/shp"
@@ -473,12 +475,11 @@ func (o ElemP) Ipoints() (coords [][]float64) {
 }
 
 // SetIniIvs sets initial ivs for given values in sol and ivs map
-func (o *ElemP) SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) {
-
-	// extract slices from ivs map (may be nil)
-	ρLvals := ivs["ρL"]
-	ρGvals := ivs["ρG"]
-	pgVals := ivs["pg"]
+//  Note: ivs is ignored, because:
+//   pl is computed by interpolating sol.Y
+//   ρL is either ρL0 or computed from ∇pl and gravity in order to enforce initial ρwl == 0
+//   pg and ρG are zero
+func (o *ElemP) SetIniIvs(sol *Solution, ignored map[string][]float64) (ok bool) {
 
 	// allocate slices of states
 	nip := len(o.IpsElem)
@@ -486,41 +487,25 @@ func (o *ElemP) SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) {
 	o.StatesBkp = make([]*mporous.State, nip)
 
 	// for each integration point
+	ndim := Global.Ndim
+	ρG := 0.0
+	pg := 0.0
 	var err error
-	var ρL, ρG, pl, pg float64
 	for idx, _ := range o.IpsElem {
 
-		// interpolation functions and gradients
-		if LogErr(o.Shp.CalcAtIp(o.X, o.IpsElem[idx], false), "SetIniIvs") {
+		// interpolation functions, gradients and variables @ ip
+		if !o.ipvars(idx, sol) {
 			return
 		}
 
-		// get densities @ ip
-		if len(ρLvals) > 0 {
-			ρL = ρLvals[idx]
-		} else {
-			ρL = o.Mdl.RhoL0
-		}
-		if len(ρGvals) > 0 {
-			ρG = ρGvals[idx]
-		} else {
-			ρG = o.Mdl.RhoG0
-		}
-
-		// compute pl @ ip by means of interpolating from nodes
-		pl = 0
-		for m := 0; m < o.Shp.Nverts; m++ {
-			r := o.Pmap[m]
-			pl += o.Shp.S[m] * sol.Y[r]
-		}
-
-		// pg
-		if len(pgVals) > 0 {
-			pg = pgVals[idx]
+		// compute density from hydrostatic condition => enforce initial ρwl = 0
+		ρL := o.Mdl.RhoL0
+		if math.Abs(o.g[ndim-1]) > 0 {
+			ρL = o.gpl[ndim-1] / o.g[ndim-1]
 		}
 
 		// state initialisation
-		o.States[idx], err = o.Mdl.NewState(ρL, ρG, pl, pg, 0)
+		o.States[idx], err = o.Mdl.NewState(ρL, ρG, o.pl, pg, 0)
 		if LogErr(err, "SetIniIvs") {
 			return
 		}
@@ -540,7 +525,7 @@ func (o *ElemP) SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) {
 				}
 				switch nbc.Key {
 				case "seep":
-					_, pl, _ = o.fipvars(iface, sol)
+					_, pl, _ := o.fipvars(iface, sol)
 					o.Plmax[idx][jdx] = pl
 				}
 			}

@@ -239,27 +239,16 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
 				// build slices
 				coords := ele.Ipoints()
 				nip := len(coords)
-				pl := make([]float64, nip)
-				ρL := make([]float64, nip)
-				sx := make([]float64, nip)
-				sy := make([]float64, nip)
-				sz := make([]float64, nip)
+				svT := make([]float64, nip) // total vertical stresses
 				for i := 0; i < nip; i++ {
 					z := coords[i][ndim-1]
 					s, err := lay.Calc(z)
 					if LogErr(err, io.Sf("cannot compute state @ ip z = %g", z)) {
 						return
 					}
-					pl[i], ρL[i] = s.pl, s.ρL
-					p := s.pl * sl
-					σVe := -s.σV + p
-					σHe := lay.K0 * σVe
-					sx[i], sy[i], sz[i] = σHe, σVe, σHe
-					if ndim == 3 {
-						sx[i], sy[i], sz[i] = σHe, σHe, σVe
-					}
+					svT[i] = -s.σV
 				}
-				ivs := map[string][]float64{"pl": pl, "ρL": ρL, "sx": sx, "sy": sy, "sz": sz}
+				ivs := map[string][]float64{"svT": svT, "K0": []float64{lay.K0}}
 
 				// set element's states
 				if LogErrCond(!ele.SetIniIvs(o.Sol, ivs), "geost: element's internal values setting failed") {
