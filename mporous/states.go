@@ -13,20 +13,21 @@ package mporous
 //       Computer Methods in Applied Mechanics and Engineering, 285 791-816
 //       http://dx.doi.org/10.1016/j.cma.2014.12.009
 type State struct {
-	Pl    float64 // pl: liquid pressure
-	Pg    float64 // pg: gas pressure
-	Divus float64 // div(us): divergence of solids displacement
-	Sl    float64 // sl: liquid saturation
-	Ns0   float64 // ns0: initial partial fraction of solids
-	RhoL  float64 // ρL: real (intrinsic) density of liquid
-	RhoG  float64 // ρG: real (intrinsic) density of gas
-	Dpc   float64 // Δpc: step increment of capillary pressure
-	Wet   bool    // wetting flag
+	Pl    float64   // pl: liquid pressure
+	Pg    float64   // pg: gas pressure
+	Divus float64   // div(us): divergence of solids displacement
+	Sl    float64   // sl: liquid saturation
+	Ns0   float64   // ns0: initial partial fraction of solids
+	RhoL  float64   // ρL: real (intrinsic) density of liquid
+	RhoG  float64   // ρG: real (intrinsic) density of gas
+	Dpc   float64   // Δpc: step increment of capillary pressure
+	Wet   bool      // wetting flag
+	Rwl   []float64 // Rwl = ρl・wl = ρL・nl・wl = ρL・filterVelocity (\bar{wl} = nl・wl = ρl・wl / ρL)
 }
 
 // GetCopy returns a copy of State
 func (o State) GetCopy() *State {
-	return &State{
+	s := &State{
 		o.Pl,
 		o.Pg,
 		o.Divus,
@@ -36,7 +37,10 @@ func (o State) GetCopy() *State {
 		o.RhoG,
 		o.Dpc,
 		o.Wet,
+		make([]float64, len(o.Rwl)),
 	}
+	copy(s.Rwl, o.Rwl)
+	return s
 }
 
 // Set sets this State with another State
@@ -50,6 +54,7 @@ func (o *State) Set(another *State) {
 	o.RhoG = another.RhoG
 	o.Dpc = another.Dpc
 	o.Wet = another.Wet
+	copy(o.Rwl, another.Rwl)
 }
 
 // Lvars calculates variables for liquid-only simulations

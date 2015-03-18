@@ -46,8 +46,9 @@ func Test_derivs01(tst *testing.T) {
 	}
 
 	// porous model
+	ndim := 2
 	mdl := GetModel(simfnk, matname, getnew)
-	err = mdl.Init(mdl.GetPrms(example), cnd, lrm)
+	err = mdl.Init(ndim, mdl.GetPrms(example), cnd, lrm)
 	if err != nil {
 		tst.Errorf("mporous.Init failed: %v\n", err)
 		return

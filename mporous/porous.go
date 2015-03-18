@@ -35,6 +35,7 @@ import (
 type Model struct {
 
 	// constants
+	Ndim    int     // space dimension
 	NmaxIt  int     // max number iterations in Update
 	Itol    float64 // iterations tolerance in Update
 	PcZero  float64 // minimum value allowed for pc
@@ -70,7 +71,7 @@ type Model struct {
 }
 
 // Init initialises this structure
-func (o *Model) Init(prms fun.Prms, cnd mconduct.Model, lrm mreten.Model) (err error) {
+func (o *Model) Init(ndim int, prms fun.Prms, cnd mconduct.Model, lrm mreten.Model) (err error) {
 
 	// conductivity and retention models
 	if cnd == nil || lrm == nil {
@@ -83,6 +84,7 @@ func (o *Model) Init(prms fun.Prms, cnd mconduct.Model, lrm mreten.Model) (err e
 	}
 
 	// constants
+	o.Ndim = ndim
 	o.NmaxIt = 20
 	o.Itol = 1e-9
 	o.PcZero = 1e-10
@@ -192,6 +194,7 @@ func (o Model) InitState(s *State, ρL, ρG, pl, pg, divus float64) (err error) 
 	s.RhoG = ρG
 	s.Dpc = 0
 	s.Wet = false
+	s.Rwl = make([]float64, o.Ndim)
 	pc := pg - pl
 	if pc > 0 {
 		s.Sl, err = mreten.Update(o.Lrm, 0, 1, pc)

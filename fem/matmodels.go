@@ -51,7 +51,7 @@ func GetAndInitPorousModel(matname string) *mporous.Model {
 	if LogErr(lrm.Init(lrmmat.Prms), "cannot initialise liquid retention model") {
 		return nil
 	}
-	if LogErr(mdl.Init(pormat.Prms, cnd, lrm), "cannot initialise porous model") {
+	if LogErr(mdl.Init(Global.Ndim, pormat.Prms, cnd, lrm), "cannot initialise porous model") {
 		return nil
 	}
 
