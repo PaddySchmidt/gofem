@@ -76,7 +76,6 @@ type ElemP struct {
 	g   []float64   // [ndim] gravity vector
 	pl  float64     // pl: liquid pressure
 	gpl []float64   // [ndim] ∇pl: gradient of liquid pressure
-	ρwl []float64   // [ndim] ρl*wl: weighted liquid relative velocity
 	tmp []float64   // [ndim] temporary (auxiliary) vector
 	Kpp [][]float64 // [np][np] Kpp := dRpl/dpl consistent tangent matrix
 	Kpf [][]float64 // [np][nf] Kpf := dRpl/dfl consistent tangent matrix
@@ -158,7 +157,6 @@ func init() {
 		ndim := Global.Ndim
 		o.g = make([]float64, ndim)
 		o.gpl = make([]float64, ndim)
-		o.ρwl = make([]float64, ndim)
 		o.tmp = make([]float64, ndim)
 		o.Kpp = la.MatAlloc(o.Np, o.Np)
 
@@ -284,7 +282,7 @@ func (o ElemP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 	β1 := Global.DynCoefs.β1
 	ndim := Global.Ndim
 	nverts := o.Shp.Nverts
-	var coef, plt, klr, RhoL, ρl, Cpl float64
+	var coef, plt, ρl, Cpl float64
 	var err error
 	for idx, ip := range o.IpsElem {
 
@@ -298,36 +296,23 @@ func (o ElemP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 
 		// tpm variables
 		plt = β1*o.pl - o.ψl[idx]
-		klr = o.Mdl.Cnd.Klr(o.States[idx].Sl)
-		RhoL = o.States[idx].RhoL
 		ρl, Cpl, err = o.States[idx].Lvars(o.Mdl)
 		if LogErr(err, "calc of tpm variables failed") {
 			return
 		}
 
-		// compute ρwl. see Eq. (6) of [1]
-		for i := 0; i < ndim; i++ {
-			o.ρwl[i] = 0
-			for j := 0; j < ndim; j++ {
-				o.ρwl[i] += klr * o.Mdl.Klsat[i][j] * (RhoL*o.g[j] - o.gpl[j])
-			}
-		}
-
-		// debug
-		//io.Pforan("ρwl = %v\n", o.ρwl[1])
-
 		// add negative of residual term to fb. see Eqs. (12) and (17) of [1]
+		ρwl := o.States[idx].Rwl
 		for m := 0; m < nverts; m++ {
 			r := o.Pmap[m]
 			fb[r] -= coef * S[m] * Cpl * plt
 			for i := 0; i < ndim; i++ {
-				fb[r] += coef * G[m][i] * o.ρwl[i] // += coef * div(ρl*wl)
+				fb[r] += coef * G[m][i] * ρwl[i] // += coef * div(ρl*wl)
 			}
 			if o.DoExtrap { // Eq. (19)
 				o.ρl_ex[m] += o.Emat[m][idx] * ρl
 			}
 		}
-		//io.Pf(">>> %3d : pc=%13.10f sl=%13.10f\n", o.Id(), o.States[idx].Pg-o.States[idx].Pl, o.States[idx].Sl)
 	}
 
 	// contribution from natural boundary conditions
@@ -439,26 +424,29 @@ func (o ElemP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) {
 func (o *ElemP) Update(sol *Solution) (ok bool) {
 
 	// for each integration point
-	var Δpl float64
+	ndim := Global.Ndim
+	var Δpl, klr, ρL float64
 	for idx, _ := range o.IpsElem {
 
-		// interpolation functions and gradients
-		if LogErr(o.Shp.CalcAtIp(o.X, o.IpsElem[idx], false), "Update") {
+		// interpolation functions, gradients and variables @ ip
+		if !o.ipvars(idx, sol) {
 			return
-		}
-
-		// compute Δpl @ ip by means of interpolating from nodes
-		Δpl = 0
-		for m := 0; m < o.Shp.Nverts; m++ {
-			r := o.Pmap[m]
-			Δpl += o.Shp.S[m] * sol.ΔY[r]
 		}
 
 		// update state
 		if LogErr(o.Mdl.Update(o.States[idx], Δpl, 0, 0), "update failed") {
 			return
 		}
-		//io.Pf("%3d : Δpl=%13.7f pc=%13.7f sl=%13.7f RhoL=%13.7f Wet=%v\n", o.Id(), Δpl, o.States[idx].Pg-o.States[idx].Pl, o.States[idx].Sl, o.States[idx].RhoL, o.States[idx].Wet)
+
+		// update ρwl. see Eq. (6) of [1]
+		klr = o.Mdl.Cnd.Klr(o.States[idx].Sl) // with updated Sl
+		ρL = o.States[idx].RhoL               // updated ρL
+		for i := 0; i < ndim; i++ {
+			o.States[idx].Rwl[i] = 0
+			for j := 0; j < ndim; j++ {
+				o.States[idx].Rwl[i] += klr * o.Mdl.Klsat[i][j] * (ρL*o.g[j] - o.gpl[j])
+			}
+		}
 	}
 	return true
 }
@@ -593,10 +581,7 @@ func (o *ElemP) ipvars(idx int, sol *Solution) (ok bool) {
 
 	// gravity
 	ndim := Global.Ndim
-	o.g[ndim-1] = 0
-	if o.Gfcn != nil {
-		o.g[ndim-1] = -o.Gfcn.F(sol.T, nil)
-	}
+	o.compute_gvec(sol.T)
 
 	// clear pl and its gradient @ ip
 	o.pl = 0
@@ -675,12 +660,6 @@ func (o ElemP) add_natbcs_to_rhs(fb []float64, sol *Solution) (ok bool) {
 				rmp = o.ramp(fl + o.κ*g)
 				rx = ρl * rmp // Eq. (30)
 				rf = fl - rmp // Eq. (26)
-
-				// debug
-				//io.Pfyel("pl=%g plmax=%g g=%g\n", pl, plmax, g)
-				//io.Pfyel("pl=%g plmax=%g g=%g rmp=%g rx=%g rf=%g\n", pl, plmax, g, rmp, rx, rf)
-				//panic("stop")
-
 				for i, m := range o.Shp.FaceLocalV[iface] {
 					μ := o.Vid2seepId[m]
 					fb[o.Pmap[m]] -= coef * Sf[i] * rx
@@ -782,4 +761,12 @@ func (o *ElemP) rampD1(x float64) float64 {
 		return fun.Heav(x)
 	}
 	return fun.SrampD1(x, o.βrmp)
+}
+
+// compute_gvec computes gravity vector @ time t
+func (o ElemP) compute_gvec(t float64) {
+	o.g[Global.Ndim-1] = 0
+	if o.Gfcn != nil {
+		o.g[Global.Ndim-1] = -o.Gfcn.F(t, nil)
+	}
 }

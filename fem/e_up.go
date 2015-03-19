@@ -5,14 +5,11 @@
 package fem
 
 import (
-	"math"
-
 	"github.com/cpmech/gofem/inp"
 	"github.com/cpmech/gofem/shp"
 
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
-	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/la"
 	"github.com/cpmech/gosl/tsr"
 )
@@ -257,7 +254,7 @@ func (o ElemUP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 	ndim := Global.Ndim
 	u_nverts := o.U.Shp.Nverts
 	p_nverts := o.P.Shp.Nverts
-	var coef, plt, klr, ρl, ρ, p, Cpl, Cvs, divus, divvs float64
+	var coef, plt, ρl, ρ, p, Cpl, Cvs, divus, divvs float64
 	var err error
 	var r int
 	for idx, ip := range o.U.IpsElem {
@@ -279,36 +276,18 @@ func (o ElemUP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 
 		// tpm variables
 		plt = dc.β1*o.P.pl - o.P.ψl[idx] // Eq. (35c) [1]
-		klr = o.P.Mdl.Cnd.Klr(o.P.States[idx].Sl)
 		ρl, ρ, p, Cpl, Cvs, err = o.P.States[idx].LSvars(o.P.Mdl)
 		if LogErr(err, "calc of tpm variables failed") {
 			return
 		}
 
-		// debug
-		if false {
-			if math.Abs(plt) < 1e-14 {
-				plt = 0
-			}
-			io.Pf("pl=%13.10f plt=%13.10f klr=%13.10f ρl=%13.10f sl=%13.10f ρ=%13.10f Cpl=%13.10f Cvs=%13.10f\n", o.P.pl, plt, klr, ρl, o.P.States[idx].Sl, ρ, Cpl, Cvs)
-		}
-
-		// compute ρwl. see Eq (34b) and (35) of [1]
-		for i := 0; i < ndim; i++ {
-			o.P.ρwl[i] = 0
-			for j := 0; j < ndim; j++ {
-				o.P.ρwl[i] += klr * o.P.Mdl.Klsat[i][j] * o.hl[j]
-			}
-		}
-
-		//io.Pforan("ρwl = %v\n", o.P.ρwl)
-
 		// p: add negative of residual term to fb; see Eqs. (38a) and (45a) of [1]
+		ρwl := o.P.States[idx].Rwl
 		for m := 0; m < p_nverts; m++ {
 			r = o.P.Pmap[m]
 			fb[r] -= coef * Sb[m] * (Cpl*plt + Cvs*divvs)
 			for i := 0; i < ndim; i++ {
-				fb[r] += coef * Gb[m][i] * o.P.ρwl[i] // += coef * div(ρl*wl)
+				fb[r] += coef * Gb[m][i] * ρwl[i] // += coef * div(ρl*wl)
 			}
 			if o.P.DoExtrap { // Eq. (19) of [2]
 				o.P.ρl_ex[m] += o.P.Emat[m][idx] * ρl
@@ -327,19 +306,6 @@ func (o ElemUP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 			}
 		}
 	}
-
-	/*
-		fp := make([]float64, len(o.P.Pmap))
-		fu := make([]float64, len(o.U.Umap))
-		for i, I := range o.P.Pmap {
-			fp[i] = fb[I]
-		}
-		for i, I := range o.U.Umap {
-			fu[i] = fb[I]
-		}
-		io.Pforan("fp = %v\n", la.VecLargest(fp, 1))
-		io.Pfyel("fu = %v\n", la.VecLargest(fu, 1))
-	*/
 
 	// external forces
 	if len(o.U.NatBcs) > 0 {
@@ -414,13 +380,6 @@ func (o ElemUP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) {
 		ρl, ρ, Cpl, Cvs, dρdpl, dpdpl, dCpldpl, dCvsdpl, dklrdpl, dCpldusM, dρldusM, dρdusM, err = o.P.States[idx].LSderivs(o.P.Mdl)
 		if LogErr(err, "calc of tpm derivatives failed") {
 			return
-		}
-
-		// debug
-		if false {
-			io.Pf("coef=%23.10f Gb=%v Klsat=%v dklrdpl = %23.10f\n", coef, Gb, o.P.Mdl.Klsat, dklrdpl)
-			io.Pf("Sb=%v hl=%v klr=%v Cl=%v bs=%v\n", Sb, o.hl, klr, Cl, o.bs)
-			io.Pf("dCpldpl=%v plt=%v dCvsdpl=%v divvs=%v β1=%v Cpl=%v\n", dCpldpl, plt, dCvsdpl, divvs, dc.β1, Cpl)
 		}
 
 		// Kpu, Kup and Kpp
@@ -507,15 +466,6 @@ func (o ElemUP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) {
 		}
 	}
 
-	// debug
-	//if true {
-	if false {
-		if o.Id() == 69 {
-			o.debug_print_K()
-			panic("stop")
-		}
-	}
-
 	// add K to sparse matrix Kb
 	//    _             _
 	//   |  Kuu Kup  0   |
@@ -553,38 +503,44 @@ func (o *ElemUP) Update(sol *Solution) (ok bool) {
 
 	// auxiliary
 	ndim := Global.Ndim
+	dc := Global.DynCoefs
 
 	// for each integration point
-	var Δpl, divusNew float64
-	var r int
+	var Δpl, divus, klr, ρL float64
 	for idx, ip := range o.U.IpsElem {
 
 		// interpolation functions and gradients
-		if LogErr(o.P.Shp.CalcAtIp(o.P.X, ip, false), "Update") {
+		if LogErr(o.P.Shp.CalcAtIp(o.P.X, ip, true), "Update") {
 			return
 		}
 		if LogErr(o.U.Shp.CalcAtIp(o.U.X, ip, true), "Update") {
 			return
 		}
 
-		// compute Δpl @ ip
-		Δpl = 0
-		for m := 0; m < o.P.Shp.Nverts; m++ {
-			r = o.P.Pmap[m]
-			Δpl += o.P.Shp.S[m] * sol.ΔY[r]
+		// clear gpl and recover u-variables @ ip => new us and new divus
+		divus = 0
+		for i := 0; i < ndim; i++ {
+			o.P.gpl[i] = 0 // clear gpl here
+			o.U.us[i] = 0
+			for m := 0; m < o.U.Shp.Nverts; m++ {
+				r := o.U.Umap[i+m*ndim]
+				o.U.us[i] += o.U.Shp.S[m] * sol.Y[r]
+				divus += o.U.Shp.G[m][i] * sol.Y[r]
+			}
 		}
 
-		// compute divus @ ip
-		divusNew = 0
-		for m := 0; m < o.U.Shp.Nverts; m++ {
+		// compute Δpl and new ∇pl @ ip by means of interpolating from nodes
+		Δpl = 0
+		for m := 0; m < o.P.Shp.Nverts; m++ {
+			r := o.P.Pmap[m]
+			Δpl += o.P.Shp.S[m] * sol.ΔY[r]
 			for i := 0; i < ndim; i++ {
-				r := o.U.Umap[i+m*ndim]
-				divusNew += o.U.Shp.G[m][i] * sol.Y[r]
+				o.P.gpl[i] += o.P.Shp.G[m][i] * sol.Y[r]
 			}
 		}
 
 		// p: update internal state
-		if LogErr(o.P.Mdl.Update(o.P.States[idx], Δpl, 0, divusNew), "p: update failed") {
+		if LogErr(o.P.Mdl.Update(o.P.States[idx], Δpl, 0, divus), "p: update failed") {
 			return
 		}
 
@@ -593,8 +549,23 @@ func (o *ElemUP) Update(sol *Solution) (ok bool) {
 			return
 		}
 
-		// debug
-		//io.Pf("%3d : Δpl=%13.10f pcNew=%13.10f sl=%13.10f RhoL=%13.10f Wet=%v\n", o.Id(), Δpl, o.P.States[idx].Pg-o.P.States[idx].Pl, o.P.States[idx].Sl, o.P.States[idx].RhoL, o.P.States[idx].Wet)
+		// update bs and hl. see Eqs (A.1) of [1]
+		o.P.compute_gvec(sol.T)
+		klr = o.P.Mdl.Cnd.Klr(o.P.States[idx].Sl) // with updated Sl
+		ρL = o.P.States[idx].RhoL                 // updated ρL
+		for i := 0; i < ndim; i++ {
+			o.bs[i] = dc.α1*o.U.us[i] - o.U.ζs[idx][i] - o.P.g[i]
+			o.hl[i] = -ρL*o.bs[i] - o.P.gpl[i]
+		}
+
+		// update ρwl. see Eq (34b) and (35) of [1]
+		ρwl := o.P.States[idx].Rwl
+		for i := 0; i < ndim; i++ {
+			ρwl[i] = 0
+			for j := 0; j < ndim; j++ {
+				ρwl[i] += klr * o.P.Mdl.Klsat[i][j] * o.hl[j]
+			}
+		}
 	}
 	return true
 }
@@ -739,16 +710,11 @@ func (o *ElemUP) ipvars(idx int, sol *Solution) (ok bool) {
 		return
 	}
 
-	// auxiliary
+	// auxiliary and gravity
 	ndim := Global.Ndim
 	dc := Global.DynCoefs
 	ρL := o.P.States[idx].RhoL
-
-	// gravity
-	o.P.g[ndim-1] = 0
-	if o.P.Gfcn != nil {
-		o.P.g[ndim-1] = -o.P.Gfcn.F(sol.T, nil)
-	}
+	o.P.compute_gvec(sol.T)
 
 	// clear gpl and recover u-variables @ ip
 	for i := 0; i < ndim; i++ {
