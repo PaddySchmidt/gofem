@@ -485,8 +485,6 @@ func (o *ElemP) SetIniIvs(sol *Solution, ignored map[string][]float64) (ok bool)
 	o.StatesBkp = make([]*mporous.State, nip)
 
 	// for each integration point
-	var err error
-	var ρL, ρG, pl, pg float64
 	for idx, _ := range o.IpsElem {
 
 		// interpolation functions and gradients
