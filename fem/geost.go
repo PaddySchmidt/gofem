@@ -188,7 +188,6 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
 
 	// sort layers from top to bottom
 	sort.Sort(L)
-	//io.Pfyel("layers = %v\n", L)
 
 	// set previous/top states in layers and compute Sol.Y
 	var err error
@@ -215,7 +214,6 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
 		}
 
 		// start layer
-		//io.PfYel("top = %v\n", top)
 		lay.Start(top)
 
 		// set nodes
@@ -228,7 +226,6 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
 			dof := nod.GetDof("pl")
 			if dof != nil {
 				o.Sol.Y[dof.Eq] = s.pl
-				//io.Pforan("z=%v pl=%v\n", z, s.pl)
 			}
 		}
 

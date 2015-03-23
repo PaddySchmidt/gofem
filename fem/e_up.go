@@ -538,10 +538,52 @@ func (o ElemUP) Ipoints() (coords [][]float64) {
 
 // SetIniIvs sets initial ivs for given values in sol and ivs map
 func (o *ElemUP) SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) {
-	if !o.U.SetIniIvs(sol, ivs) {
+
+	// set p-element first
+	if !o.P.SetIniIvs(sol, nil) {
 		return
 	}
-	return o.P.SetIniIvs(sol, ivs)
+
+	// initial stresses given
+	if _, okk := ivs["svT"]; okk {
+
+		// total vertical stresses and K0
+		nip := len(o.U.IpsElem)
+		svT := ivs["svT"]
+		K0s := ivs["K0"]
+		chk.IntAssert(len(svT), nip)
+		chk.IntAssert(len(K0s), 1)
+		K0 := K0s[0]
+
+		// for each integration point
+		sx := make([]float64, nip)
+		sy := make([]float64, nip)
+		sz := make([]float64, nip)
+		for i, ip := range o.U.IpsElem {
+
+			// compute pl @ ip
+			if LogErr(o.P.Shp.CalcAtIp(o.P.X, ip, false), "SetIniIvs") {
+				return
+			}
+			pl := 0.0
+			for m := 0; m < o.P.Shp.Nverts; m++ {
+				pl += o.P.Shp.S[m] * sol.Y[o.P.Pmap[m]]
+			}
+
+			// compute effective stresses
+			p := pl * o.P.States[i].A_sl
+			svE := svT[i] + p
+			shE := K0 * svE
+			sx[i], sy[i], sz[i] = shE, svE, shE
+			if Global.Ndim == 3 {
+				sx[i], sy[i], sz[i] = shE, shE, svE
+			}
+		}
+		ivs = map[string][]float64{"sx": sx, "sy": sy, "sz": sz}
+	}
+
+	// set u-element
+	return o.U.SetIniIvs(sol, ivs)
 }
 
 // BackupIvs create copy of internal variables

@@ -485,10 +485,10 @@ func (o *ElemP) SetIniIvs(sol *Solution, ignored map[string][]float64) (ok bool)
 	o.StatesBkp = make([]*mporous.State, nip)
 
 	// for each integration point
-	for idx, _ := range o.IpsElem {
+	for idx, ip := range o.IpsElem {
 
 		// interpolation functions and gradients
-		if LogErr(o.Shp.CalcAtIp(o.X, o.IpsElem[idx], true), "SetIniIvs") {
+		if LogErr(o.Shp.CalcAtIp(o.X, ip, true), "SetIniIvs") {
 			return
 		}
 		S := o.Shp.S
