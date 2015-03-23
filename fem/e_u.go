@@ -390,15 +390,31 @@ func (o *ElemU) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) {
 func (o *ElemU) Update(sol *Solution) (ok bool) {
 
 	// for each integration point
-	for idx, _ := range o.IpsElem {
+	ndim := Global.Ndim
+	nverts := o.Shp.Nverts
+	for idx, ip := range o.IpsElem {
 
-		// interpolation functions, gradients and variables @ ip
-		if !o.ipvars(idx, sol) {
+		// interpolation functions and gradients
+		if LogErr(o.Shp.CalcAtIp(o.X, ip, true), "Update") {
 			return
 		}
+		S := o.Shp.S
+		G := o.Shp.G
 
-		// update internal state
-		if !o.ipupdate(idx, o.Shp.S, o.Shp.G, sol) {
+		// compute strains
+		if o.UseB {
+			radius := 1.0
+			if Global.Sim.Data.Axisym {
+				radius = o.Shp.AxisymGetRadius(o.X)
+			}
+			IpBmatrix(o.B, ndim, nverts, G, Global.Sim.Data.Axisym, radius, S)
+			IpStrainsAndIncB(o.ε, o.Δε, 2*ndim, o.Nu, o.B, sol.Y, sol.ΔY, o.Umap)
+		} else {
+			IpStrainsAndInc(o.ε, o.Δε, nverts, ndim, sol.Y, sol.ΔY, o.Umap, G)
+		}
+
+		// call model update => update stresses
+		if LogErr(o.MdlSmall.Update(o.States[idx], o.ε, o.Δε), "Update") {
 			return
 		}
 	}
@@ -498,30 +514,6 @@ func (o ElemU) OutIpsData() (data []*OutIpData) {
 }
 
 // auxiliary ////////////////////////////////////////////////////////////////////////////////////////
-
-// ipudpate updates internal state
-func (o *ElemU) ipupdate(idx int, S []float64, G [][]float64, sol *Solution) (ok bool) {
-
-	// compute strains
-	ndim := Global.Ndim
-	nverts := o.Shp.Nverts
-	if o.UseB {
-		radius := 1.0
-		if Global.Sim.Data.Axisym {
-			radius = o.Shp.AxisymGetRadius(o.X)
-		}
-		IpBmatrix(o.B, ndim, nverts, G, Global.Sim.Data.Axisym, radius, S)
-		IpStrainsAndIncB(o.ε, o.Δε, 2*ndim, o.Nu, o.B, sol.Y, sol.ΔY, o.Umap)
-	} else {
-		IpStrainsAndInc(o.ε, o.Δε, nverts, ndim, sol.Y, sol.ΔY, o.Umap, G)
-	}
-
-	// call model update => update stresses
-	if LogErr(o.MdlSmall.Update(o.States[idx], o.ε, o.Δε), "ipupdate") {
-		return
-	}
-	return true
-}
 
 // ipvars computes current values @ integration points. idx == index of integration point
 func (o *ElemU) ipvars(idx int, sol *Solution) (ok bool) {

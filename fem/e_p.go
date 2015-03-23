@@ -72,15 +72,16 @@ type ElemP struct {
 	ψl []float64 // [nip] ψl* = β1.p + β2.dpdt
 
 	// scratchpad. computed @ each ip
-	g   []float64   // [ndim] gravity vector
-	pl  float64     // pl: liquid pressure
-	gpl []float64   // [ndim] ∇pl: gradient of liquid pressure
-	ρwl []float64   // [ndim] ρl*wl: weighted liquid relative velocity
-	tmp []float64   // [ndim] temporary (auxiliary) vector
-	Kpp [][]float64 // [np][np] Kpp := dRpl/dpl consistent tangent matrix
-	Kpf [][]float64 // [np][nf] Kpf := dRpl/dfl consistent tangent matrix
-	Kfp [][]float64 // [nf][np] Kfp := dRfl/dpl consistent tangent matrix
-	Kff [][]float64 // [nf][nf] Kff := dRfl/dfl consistent tangent matrix
+	g   []float64       // [ndim] gravity vector
+	pl  float64         // pl: liquid pressure
+	gpl []float64       // [ndim] ∇pl: gradient of liquid pressure
+	ρwl []float64       // [ndim] ρl*wl: weighted liquid relative velocity
+	tmp []float64       // [ndim] temporary (auxiliary) vector
+	Kpp [][]float64     // [np][np] Kpp := dRpl/dpl consistent tangent matrix
+	Kpf [][]float64     // [np][nf] Kpf := dRpl/dfl consistent tangent matrix
+	Kfp [][]float64     // [nf][np] Kfp := dRfl/dpl consistent tangent matrix
+	Kff [][]float64     // [nf][nf] Kff := dRfl/dfl consistent tangent matrix
+	res *mporous.LsVars // variable to hold results from CalcLs
 }
 
 // initialisation ///////////////////////////////////////////////////////////////////////////////////
@@ -157,6 +158,7 @@ func init() {
 		o.ρwl = make([]float64, ndim)
 		o.tmp = make([]float64, ndim)
 		o.Kpp = la.MatAlloc(o.Np, o.Np)
+		o.res = new(mporous.LsVars)
 
 		// vertices on seepage faces
 		var seepverts []int
@@ -281,7 +283,6 @@ func (o ElemP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 	ndim := Global.Ndim
 	nverts := o.Shp.Nverts
 	var coef, plt, klr, ρL, ρl, Cpl float64
-	var err error
 	for idx, ip := range o.IpsElem {
 
 		// interpolation functions, gradients and variables @ ip
@@ -294,12 +295,13 @@ func (o ElemP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 
 		// tpm variables
 		plt = β1*o.pl - o.ψl[idx]
-		klr = o.Mdl.Cnd.Klr(o.States[idx].Sl)
-		ρL = o.States[idx].RhoL
-		ρl, Cpl, err = o.States[idx].Lvars(o.Mdl)
-		if LogErr(err, "calc of tpm variables failed") {
+		klr = o.Mdl.Cnd.Klr(o.States[idx].A_sl)
+		ρL = o.States[idx].A_ρL
+		if LogErr(o.Mdl.CalcLs(o.res, o.States[idx], o.pl, 0, false), "AddToRhs") {
 			return
 		}
+		ρl = o.res.A_ρl
+		Cpl = o.res.Cpl
 
 		// compute ρwl. see Eq. (6) of [1]
 		for i := 0; i < ndim; i++ {
@@ -348,8 +350,7 @@ func (o ElemP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) {
 	// for each integration point
 	Cl := o.Mdl.Cl
 	β1 := Global.DynCoefs.β1
-	var coef, plt, klr, RhoL, ρl, Cpl, dCpldpl, dklrdpl float64
-	var err error
+	var coef, plt, klr, ρL, ρl, Cpl, dCpldpl, dklrdpl float64
 	for idx, ip := range o.IpsElem {
 
 		// interpolation functions, gradients and variables @ ip
@@ -362,17 +363,20 @@ func (o ElemP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) {
 
 		// tpm variables
 		plt = β1*o.pl - o.ψl[idx]
-		klr = o.Mdl.Cnd.Klr(o.States[idx].Sl)
-		RhoL = o.States[idx].RhoL
-		ρl, Cpl, dCpldpl, dklrdpl, err = o.States[idx].Lderivs(o.Mdl)
-		if LogErr(err, "calc of tpm derivatives failed") {
+		klr = o.Mdl.Cnd.Klr(o.States[idx].A_sl)
+		ρL = o.States[idx].A_ρL
+		if LogErr(o.Mdl.CalcLs(o.res, o.States[idx], o.pl, 0, true), "AddToKb") {
 			return
 		}
+		ρl = o.res.A_ρl
+		Cpl = o.res.Cpl
+		dCpldpl = o.res.DCpldpl
+		dklrdpl = o.res.Dklrdpl
 
 		// Kpp := dRpl/dpl. see Eqs. (18), (A.2) and (A.3) of [1]
 		for n := 0; n < nverts; n++ {
 			for j := 0; j < ndim; j++ {
-				o.tmp[j] = S[n]*dklrdpl*(RhoL*o.g[j]-o.gpl[j]) + klr*(S[n]*Cl*o.g[j]-G[n][j])
+				o.tmp[j] = S[n]*dklrdpl*(ρL*o.g[j]-o.gpl[j]) + klr*(S[n]*Cl*o.g[j]-G[n][j])
 			}
 			for m := 0; m < nverts; m++ {
 				o.Kpp[m][n] += coef * S[m] * S[n] * (dCpldpl*plt + β1*Cpl)
@@ -431,23 +435,24 @@ func (o ElemP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) {
 func (o *ElemP) Update(sol *Solution) (ok bool) {
 
 	// for each integration point
-	var Δpl float64
-	for idx, _ := range o.IpsElem {
+	var pl, Δpl float64
+	for idx, ip := range o.IpsElem {
 
 		// interpolation functions and gradients
-		if LogErr(o.Shp.CalcAtIp(o.X, o.IpsElem[idx], false), "Update") {
+		if LogErr(o.Shp.CalcAtIp(o.X, ip, false), "Update") {
 			return
 		}
 
-		// compute Δpl @ ip by means of interpolating from nodes
-		Δpl = 0
+		// compute pl and Δpl @ ip by means of interpolating from nodes
+		pl, Δpl = 0, 0
 		for m := 0; m < o.Shp.Nverts; m++ {
 			r := o.Pmap[m]
+			pl += o.Shp.S[m] * sol.Y[r]
 			Δpl += o.Shp.S[m] * sol.ΔY[r]
 		}
 
 		// update state
-		if LogErr(o.Mdl.Update(o.States[idx], Δpl, 0, 0), "update failed") {
+		if LogErr(o.Mdl.Update(o.States[idx], Δpl, 0, pl, 0), "Update") {
 			return
 		}
 	}
@@ -510,7 +515,7 @@ func (o *ElemP) SetIniIvs(sol *Solution, ignored map[string][]float64) (ok bool)
 		}
 
 		// state initialisation
-		o.States[idx], err = o.Mdl.NewState(ρL, ρG, pl, pg, 0)
+		o.States[idx], err = o.Mdl.NewState(ρL, ρG, pl, pg)
 		if LogErr(err, "SetIniIvs") {
 			return
 		}
@@ -584,7 +589,7 @@ func (o ElemP) OutIpsData() (data []*OutIpData) {
 	for idx, ip := range o.IpsElem {
 		s := o.States[idx]
 		x := o.Shp.IpRealCoords(o.X, ip)
-		v := map[string]*float64{"pl": &s.Pl, "pg": &s.Pg, "sl": &s.Sl, "divus": &s.Divus, "ns0": &s.Ns0}
+		v := map[string]*float64{"sl": &s.A_sl}
 		data = append(data, &OutIpData{o.Id(), x, v})
 	}
 	return
@@ -600,7 +605,7 @@ func (o *ElemP) ipvars(idx int, sol *Solution) (ok bool) {
 		return
 	}
 
-	// gravity
+	// auxiliary
 	ndim := Global.Ndim
 	o.compute_gvec(sol.T)
 

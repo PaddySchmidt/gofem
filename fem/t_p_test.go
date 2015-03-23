@@ -142,10 +142,9 @@ func Test_p01a(tst *testing.T) {
 		for idx, ip := range e.IpsElem {
 			s := e.States[idx]
 			z := e.Shp.IpRealCoords(e.X, ip)[1]
-			plC, ρlC, _ := Global.HydroSt.Calc(z)
-			chk.Scalar(tst, io.Sf("sl(@ %18g)= %18g", z, s.Sl), 1e-17, s.Sl, 1)
-			chk.Scalar(tst, io.Sf("pl(@ %18g)= %18g", z, s.Pl), 1e-10, s.Pl, plC)
-			chk.Scalar(tst, io.Sf("ρL(@ %18g)= %18g", z, s.RhoL), 1e-13, s.RhoL, ρlC)
+			_, ρLC, _ := Global.HydroSt.Calc(z)
+			chk.Scalar(tst, io.Sf("sl(@ %18g)= %18g", z, s.A_sl), 1e-17, s.A_sl, 1)
+			chk.Scalar(tst, io.Sf("ρL(@ %18g)= %18g", z, s.A_ρL), 1e-13, s.A_ρL, ρLC)
 		}
 	}
 }
@@ -172,7 +171,7 @@ func Test_p01b(tst *testing.T) {
 
 func Test_p02_(tst *testing.T) {
 
-	verbose()
+	//verbose()
 	chk.PrintTitle("p02_")
 
 	// run simulation
