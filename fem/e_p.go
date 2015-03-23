@@ -5,6 +5,8 @@
 package fem
 
 import (
+	"math"
+
 	"github.com/cpmech/gofem/inp"
 	"github.com/cpmech/gofem/mporous"
 	"github.com/cpmech/gofem/shp"
@@ -473,50 +475,47 @@ func (o ElemP) Ipoints() (coords [][]float64) {
 }
 
 // SetIniIvs sets initial ivs for given values in sol and ivs map
-func (o *ElemP) SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) {
+func (o *ElemP) SetIniIvs(sol *Solution, ignored map[string][]float64) (ok bool) {
 
-	// extract slices from ivs map (may be nil)
-	ρLvals := ivs["ρL"]
-	ρGvals := ivs["ρG"]
-	pgVals := ivs["pg"]
+	// auxiliary
+	nip := len(o.IpsElem)
+	ndim := Global.Ndim
+	nverts := o.Shp.Nverts
+	var ρL, ρG, pl, pg float64
+	var err error
 
 	// allocate slices of states
-	nip := len(o.IpsElem)
 	o.States = make([]*mporous.State, nip)
 	o.StatesBkp = make([]*mporous.State, nip)
 
 	// for each integration point
-	var err error
-	var ρL, ρG, pl, pg float64
 	for idx, _ := range o.IpsElem {
 
 		// interpolation functions and gradients
-		if LogErr(o.Shp.CalcAtIp(o.X, o.IpsElem[idx], false), "SetIniIvs") {
+		if LogErr(o.Shp.CalcAtIp(o.X, o.IpsElem[idx], true), "SetIniIvs") {
 			return
 		}
+		S := o.Shp.S
+		G := o.Shp.G
 
-		// get densities @ ip
-		if len(ρLvals) > 0 {
-			ρL = ρLvals[idx]
-		} else {
-			ρL = o.Mdl.RhoL0
-		}
-		if len(ρGvals) > 0 {
-			ρG = ρGvals[idx]
-		} else {
-			ρG = o.Mdl.RhoG0
-		}
-
-		// compute pl @ ip by means of interpolating from nodes
+		// interpolate pl variables
 		pl = 0
-		for m := 0; m < o.Shp.Nverts; m++ {
+		for i := 0; i < ndim; i++ {
+			o.gpl[i] = 0
+		}
+		for m := 0; m < nverts; m++ {
 			r := o.Pmap[m]
-			pl += o.Shp.S[m] * sol.Y[r]
+			pl += S[m] * sol.Y[r]
+			for i := 0; i < ndim; i++ {
+				o.gpl[i] += G[m][i] * sol.Y[r]
+			}
 		}
 
-		// pg
-		if len(pgVals) > 0 {
-			pg = pgVals[idx]
+		// compute density from hydrostatic condition => enforce initial ρwl = 0
+		ρL = o.Mdl.RhoL0
+		o.compute_gvec(sol.T)
+		if math.Abs(o.g[ndim-1]) > 0 {
+			ρL = o.gpl[ndim-1] / o.g[ndim-1]
 		}
 
 		// state initialisation
@@ -533,14 +532,18 @@ func (o *ElemP) SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) {
 	if o.HasSeep {
 		o.Plmax = la.MatAlloc(len(o.NatBcs), len(o.IpsFace))
 		for idx, nbc := range o.NatBcs {
+			iface := nbc.IdxFace
 			for jdx, ipf := range o.IpsFace {
-				iface := nbc.IdxFace
 				if LogErr(o.Shp.CalcAtFaceIp(o.X, ipf, iface), "SetIniIvs") {
 					return
 				}
+				Sf := o.Shp.Sf
 				switch nbc.Key {
 				case "seep":
-					_, pl, _ = o.fipvars(iface, sol)
+					pl = 0
+					for i, m := range o.Shp.FaceLocalV[iface] {
+						pl += Sf[i] * sol.Y[o.Pmap[m]]
+					}
 					o.Plmax[idx][jdx] = pl
 				}
 			}
@@ -791,4 +794,12 @@ func (o *ElemP) rampD1(x float64) float64 {
 		return fun.Heav(x)
 	}
 	return fun.SrampD1(x, o.βrmp)
+}
+
+// compute_gvec computes gravity vector @ time t
+func (o ElemP) compute_gvec(t float64) {
+	o.g[Global.Ndim-1] = 0
+	if o.Gfcn != nil {
+		o.g[Global.Ndim-1] = -o.Gfcn.F(t, nil)
+	}
 }
