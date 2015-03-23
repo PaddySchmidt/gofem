@@ -8,11 +8,11 @@ package mporous
 //  pc0   -- initial capillary pressure
 //  P     -- example: {10, 5, 20, 0}
 //  np    -- number of points in each branch
-func GetPathCycle(pc0 float64, P []float64, np int) []float64 {
+func GetPathCycle(pc0 float64, P []float64, np int) (Pc []float64) {
 	if np < 2 {
 		np = 2
 	}
-	Pc := []float64{pc0}
+	Pc = []float64{pc0}
 	k := 1
 	for _, pc := range P {
 		δpc := (pc - Pc[k-1]) / float64(np-1)

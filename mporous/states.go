@@ -13,165 +13,95 @@ package mporous
 //       Computer Methods in Applied Mechanics and Engineering, 285 791-816
 //       http://dx.doi.org/10.1016/j.cma.2014.12.009
 type State struct {
-	Pl    float64 // pl: liquid pressure
-	Pg    float64 // pg: gas pressure
-	Divus float64 // div(us): divergence of solids displacement
-	Sl    float64 // sl: liquid saturation
-	Ns0   float64 // ns0: initial partial fraction of solids
-	RhoL  float64 // ρL: real (intrinsic) density of liquid
-	RhoG  float64 // ρG: real (intrinsic) density of gas
-	Dpc   float64 // Δpc: step increment of capillary pressure
-	Wet   bool    // wetting flag
+	A_ns0 float64 // 1 initial partial fraction of solids
+	A_sl  float64 // 2 liquid saturation
+	A_ρL  float64 // 3 real (intrinsic) density of liquid
+	A_ρG  float64 // 4 real (intrinsic) density of gas
+	A_Δpc float64 // 5 step increment of capillary pressure
+	A_wet bool    // 6 wetting flag
 }
 
 // GetCopy returns a copy of State
 func (o State) GetCopy() *State {
 	return &State{
-		o.Pl,
-		o.Pg,
-		o.Divus,
-		o.Sl,
-		o.Ns0,
-		o.RhoL,
-		o.RhoG,
-		o.Dpc,
-		o.Wet,
+		o.A_ns0, // 1
+		o.A_sl,  // 2
+		o.A_ρL,  // 3
+		o.A_ρG,  // 4
+		o.A_Δpc, // 5
+		o.A_wet, // 6
 	}
 }
 
 // Set sets this State with another State
-func (o *State) Set(another *State) {
-	o.Pl = another.Pl
-	o.Pg = another.Pg
-	o.Divus = another.Divus
-	o.Sl = another.Sl
-	o.Ns0 = another.Ns0
-	o.RhoL = another.RhoL
-	o.RhoG = another.RhoG
-	o.Dpc = another.Dpc
-	o.Wet = another.Wet
+func (o *State) Set(s *State) {
+	o.A_ns0 = s.A_ns0 // 1
+	o.A_sl = s.A_sl   // 2
+	o.A_ρL = s.A_ρL   // 3
+	o.A_ρG = s.A_ρG   // 4
+	o.A_Δpc = s.A_Δpc // 5
+	o.A_wet = s.A_wet // 6
 }
 
-// Lvars calculates variables for liquid-only simulations
-// see Eq. (7) of [2]
-func (o State) Lvars(m *Model) (ρl, Cpl float64, err error) {
-
-	// n variables
-	ns := (1.0 - o.Divus) * o.Ns0
-	nf := 1.0 - ns
-	nl := nf * o.Sl
-
-	// ρ variables
-	ρl = nl * o.RhoL
-
-	// moduli
-	Ccb, err := m.Ccb(&o)
-	if err != nil {
-		return
-	}
-	Cpl = nf * (o.Sl*m.Cl - o.RhoL*Ccb)
-	return
+// LsVars hold data for liquid-solid computations
+type LsVars struct {
+	ρl, ρ, p, Cpl, Cvs                      float64
+	dρdpl, dpdpl, dCpldpl, dCvsdpl, dklrdpl float64
+	dρldusM, dρdusM, dCpldusM               float64
 }
 
-// Lderivs calculates derivatives for liquid-only simulations
-// see Eq. (A.1) of [2]
-func (o State) Lderivs(m *Model) (ρl, Cpl, dCpldpl, dklrdpl float64, err error) {
+// CalcLs calculates variables for liquid-solid simulations
+func (o Model) CalcLs(res *LsVars, sta *State, pl, divus float64, derivs bool) (err error) {
 
-	// n variables
-	ns := (1.0 - o.Divus) * o.Ns0
-	nf := 1.0 - ns
-	nl := nf * o.Sl
-
-	// ρ variables
-	ρl = nl * o.RhoL
-
-	// moduli
-	Ccb, err := m.Ccb(&o)
-	if err != nil {
-		return
-	}
-	Cpl = nf * (o.Sl*m.Cl - o.RhoL*Ccb)
-
-	// derivatives
-	Ccd, err := m.Ccd(&o)
-	if err != nil {
-		return
-	}
-	dCpldpl = nf * (o.RhoL*Ccd - 2.0*Ccb*m.Cl)
-
-	// conductivity model derivatives
-	dklrdpl = -m.Cnd.DklrDsl(o.Sl) * Ccb
-	return
-}
-
-// LSvars calculates variables for liquid-solid simulations
-func (o State) LSvars(m *Model) (ρl, ρ, p, Cpl, Cvs float64, err error) {
+	// auxiliary
+	ns0 := sta.A_ns0
+	sl := sta.A_sl
+	ρL := sta.A_ρL
+	Cl := o.Cl
+	ρS := o.RhoS0
 
 	// n variables; Eqs (13) and (28) of [1]
-	ns := (1.0 - o.Divus) * o.Ns0
+	ns := (1.0 - divus) * ns0
 	nf := 1.0 - ns
-	nl := nf * o.Sl
+	nl := nf * sl
 
 	// ρ variables; Eq (13) of [1]
-	ρl = nl * o.RhoL
-	ρs := ns * m.RhoS0
-	ρ = ρl + ρs
+	ρs := ns * ρS
+	res.ρl = nl * ρL
+	res.ρ = res.ρl + ρs
 
-	//io.Pf("ρl=%13.10f ns=%13.10f ρS=%13.10f ρs=%13.10f\n", ρl, ns, m.RhoS0, ρs)
-
-	// pore-fluid pressure
-	p = o.Pl * o.Sl // Eq. (16) of [1]
-
-	// moduli
-	Ccb, err := m.Ccb(&o)
-	if err != nil {
-		return
-	}
-	Cpl = nf * (o.Sl*m.Cl - o.RhoL*Ccb) // Eq. (32a) of [1]
-	Cvs = o.Sl * o.RhoL                 // Eq. (32b) of [1]
-	return
-}
-
-// LSderivs calculates derivatives for liquid-solid simulations
-func (o State) LSderivs(m *Model) (ρl, ρ, Cpl, Cvs, dρdpl, dpdpl, dCpldpl, dCvsdpl, dklrdpl, dCpldusM, dρldusM, dρdusM float64, err error) {
-
-	// n variables; Eqs (13) and (28) of [1]
-	ns := (1.0 - o.Divus) * o.Ns0
-	nf := 1.0 - ns
-	nl := nf * o.Sl
-
-	// ρ variables; Eq (13) of [1]
-	ρl = nl * o.RhoL
-	ρs := ns * m.RhoS0
-	ρ = ρl + ρs
-
-	// capillary pressure
-	pc := o.Pg - o.Pl
+	// capillary pressure and pore-fluid pressure
+	pc := -pl
+	res.p = pl * sl // Eq. (16) of [1]
 
 	// moduli
-	Ccb, err := m.Ccb(&o)
-	if err != nil {
-		return
+	Ccb, e := o.Ccb(sta, pc)
+	if e != nil {
+		return e
 	}
-	Cpl = nf * (o.Sl*m.Cl - o.RhoL*Ccb) // Eq (32a) of [1]
-	Cvs = o.Sl * o.RhoL                 // Eq (32b) of [1]
+	res.Cpl = nf * (sl*Cl - ρL*Ccb) // Eq (32a) of [1]
+	res.Cvs = sl * ρL               // Eq (32b) of [1]
 
 	// derivatives
-	Ccd, err := m.Ccd(&o)
-	if err != nil {
-		return
+	if derivs {
+
+		// Ccd
+		Ccd, e := o.Ccd(sta, pc)
+		if e != nil {
+			return e
+		}
+
+		// derivatives w.r.t pl
+		res.dρdpl = nf * (sl*Cl - ρL*Ccb)        // Eq (A.9) of [1]
+		res.dpdpl = sl + pc*Ccb                  // Eq (A.11) of [1]
+		res.dCpldpl = nf * (ρL*Ccd - 2.0*Ccb*Cl) // Eq (A.2) of[1]
+		res.dCvsdpl = sl*Cl - Ccb*ρL             // Eq (A.4) of [1]
+		res.dklrdpl = -o.Cnd.DklrDsl(sl) * Ccb   // Eq (A.7) of [1]
+
+		// derivatives w.r.t us (multipliers only)
+		res.dρldusM = sl * ρL * ns0
+		res.dρdusM = (sl*ρL - ρS) * ns0       // Eq (A.10) of [1]
+		res.dCpldusM = (sl*Cl - ρL*Ccb) * ns0 // Eq (A.3) of [1]
 	}
-
-	// derivatives w.r.t pl
-	dρdpl = nf * (o.Sl*m.Cl - o.RhoL*Ccb)      // Eq (A.9) of [1]
-	dpdpl = o.Sl + pc*Ccb                      // Eq (A.11) of [1]
-	dCpldpl = nf * (o.RhoL*Ccd - 2.0*Ccb*m.Cl) // Eq (A.2) of[1]
-	dCvsdpl = o.Sl*m.Cl - Ccb*o.RhoL           // Eq (A.4) of [1]
-	dklrdpl = -m.Cnd.DklrDsl(o.Sl) * Ccb       // Eq (A.7) of [1]
-
-	// derivatives w.r.t us (multipliers only)
-	dρldusM = o.Sl * o.RhoL * o.Ns0
-	dρdusM = (o.Sl*o.RhoL - m.RhoS0) * o.Ns0    // Eq (A.10) of [1]
-	dCpldusM = (o.Sl*m.Cl - o.RhoL*Ccb) * o.Ns0 // Eq (A.3) of [1]
 	return
 }

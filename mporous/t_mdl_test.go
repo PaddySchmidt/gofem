@@ -7,17 +7,17 @@ package mporous
 import (
 	"testing"
 
-	"github.com/cpmech/gofem/mconduct"
-	"github.com/cpmech/gofem/mreten"
+	"github.com/cpmech/gofemT2/mconduct"
+	"github.com/cpmech/gofemT2/mreten"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/plt"
 )
 
 func Test_mdl01(tst *testing.T) {
 
-	doplot := false
+	//verbose()
 	//doplot := true
-	//utl.Tsilent = false
+	doplot := false
 	chk.PrintTitle("mdl01")
 
 	// info
@@ -67,17 +67,16 @@ func Test_mdl01(tst *testing.T) {
 	}
 
 	// state A
-	pl0 := -5.0
-	pg, divus := 0.0, 0.0
-	A, err := mdl.NewState(mdl.RhoL0, mdl.RhoG0, pl0, pg, divus)
+	pcA := 5.0
+	A, err := mdl.NewState(mdl.RhoL0, mdl.RhoG0, -pcA, 0)
 	if err != nil {
 		tst.Errorf("mporous.NewState failed: %v\n", err)
 		return
 	}
 
 	// state B
-	pl0 = -10.0
-	B, err := mdl.NewState(mdl.RhoL0, mdl.RhoG0, pl0, pg, divus)
+	pcB := 10.0
+	B, err := mdl.NewState(mdl.RhoL0, mdl.RhoG0, -pcB, 0)
 	if err != nil {
 		tst.Errorf("mporous.NewState failed: %v\n", err)
 		return
@@ -85,10 +84,8 @@ func Test_mdl01(tst *testing.T) {
 
 	// plot A and B points
 	if doplot {
-		pcA := A.Pg - A.Pl
-		pcB := B.Pg - B.Pl
-		plt.PlotOne(pcA, A.Sl, "'gs', clip_on=0, label='A', ms=10")
-		plt.PlotOne(pcB, B.Sl, "'ks', clip_on=0, label='B'")
+		plt.PlotOne(pcA, A.A_sl, "'gs', clip_on=0, label='A', ms=10")
+		plt.PlotOne(pcB, B.A_sl, "'ks', clip_on=0, label='B'")
 	}
 
 	// incremental update
@@ -98,20 +95,22 @@ func Test_mdl01(tst *testing.T) {
 	iwet := 10
 	Pc := make([]float64, n)
 	Sl := make([]float64, n)
-	Pc[0] = A.Pg - A.Pl
-	Sl[0] = A.Sl
+	pl := -pcA
+	Pc[0] = pcA
+	Sl[0] = A.A_sl
 	for i := 1; i < n; i++ {
 		if i > iwet {
 			Δpl = -Δpl
 			iwet = n
 		}
-		err = mdl.Update(A, Δpl, pg, divus)
+		pl += Δpl
+		err = mdl.Update(A, Δpl, 0, pl, 0)
 		if err != nil {
 			tst.Errorf("test failed: %v\n", err)
 			return
 		}
-		Pc[i] = A.Pg - A.Pl
-		Sl[i] = A.Sl
+		Pc[i] = -pl
+		Sl[i] = A.A_sl
 	}
 
 	// show graph
