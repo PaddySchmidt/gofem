@@ -2,8 +2,7 @@
   "data" : {
     "matfile" : "materials.mat",
     "steady" : true,
-    "showr" : true,
-    "dodebug" : false
+    "showR" : false
   },
   "solver" : {
     "nmaxit" : 20

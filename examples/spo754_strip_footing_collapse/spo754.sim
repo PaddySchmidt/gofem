@@ -3,7 +3,7 @@
     "desc"     : "De Souza Neto, Peric, Owen: Example 7.5.4 p252",
     "matfile"  : "materials.mat",
     "steady"   : true,
-    "showR"    : true
+    "showR"    : false
   },
   "functions" : [
     { "name":"disp", "type":"lin", "prms":[ {"n":"m", "v":-0.002, "u":"m"}] },
