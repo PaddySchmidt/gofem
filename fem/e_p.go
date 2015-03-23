@@ -280,7 +280,7 @@ func (o ElemP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 	β1 := Global.DynCoefs.β1
 	ndim := Global.Ndim
 	nverts := o.Shp.Nverts
-	var coef, plt, klr, RhoL, ρl, Cpl float64
+	var coef, plt, klr, ρL, ρl, Cpl float64
 	var err error
 	for idx, ip := range o.IpsElem {
 
@@ -295,7 +295,7 @@ func (o ElemP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 		// tpm variables
 		plt = β1*o.pl - o.ψl[idx]
 		klr = o.Mdl.Cnd.Klr(o.States[idx].Sl)
-		RhoL = o.States[idx].RhoL
+		ρL = o.States[idx].RhoL
 		ρl, Cpl, err = o.States[idx].Lvars(o.Mdl)
 		if LogErr(err, "calc of tpm variables failed") {
 			return
@@ -305,12 +305,9 @@ func (o ElemP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 		for i := 0; i < ndim; i++ {
 			o.ρwl[i] = 0
 			for j := 0; j < ndim; j++ {
-				o.ρwl[i] += klr * o.Mdl.Klsat[i][j] * (RhoL*o.g[j] - o.gpl[j])
+				o.ρwl[i] += klr * o.Mdl.Klsat[i][j] * (ρL*o.g[j] - o.gpl[j])
 			}
 		}
-
-		// debug
-		//io.Pforan("ρwl = %v\n", o.ρwl[1])
 
 		// add negative of residual term to fb. see Eqs. (12) and (17) of [1]
 		for m := 0; m < nverts; m++ {
@@ -323,7 +320,6 @@ func (o ElemP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 				o.ρl_ex[m] += o.Emat[m][idx] * ρl
 			}
 		}
-		//io.Pf(">>> %3d : pc=%13.10f sl=%13.10f\n", o.Id(), o.States[idx].Pg-o.States[idx].Pl, o.States[idx].Sl)
 	}
 
 	// contribution from natural boundary conditions
@@ -454,7 +450,6 @@ func (o *ElemP) Update(sol *Solution) (ok bool) {
 		if LogErr(o.Mdl.Update(o.States[idx], Δpl, 0, 0), "update failed") {
 			return
 		}
-		//io.Pf("%3d : Δpl=%13.7f pc=%13.7f sl=%13.7f RhoL=%13.7f Wet=%v\n", o.Id(), Δpl, o.States[idx].Pg-o.States[idx].Pl, o.States[idx].Sl, o.States[idx].RhoL, o.States[idx].Wet)
 	}
 	return true
 }
@@ -607,10 +602,7 @@ func (o *ElemP) ipvars(idx int, sol *Solution) (ok bool) {
 
 	// gravity
 	ndim := Global.Ndim
-	o.g[ndim-1] = 0
-	if o.Gfcn != nil {
-		o.g[ndim-1] = -o.Gfcn.F(sol.T, nil)
-	}
+	o.compute_gvec(sol.T)
 
 	// clear pl and its gradient @ ip
 	o.pl = 0
