@@ -34,7 +34,7 @@ type ElemUP struct {
 	P *ElemP // p-element
 
 	// scratchpad. computed @ each ip
-	divvs float64     // divvs = div(α4・us - χs) = α4・div(us) - div(χs); (see Eq. 35a [1]) divergence of velocity of solids
+	divus float64     // divus
 	bs    []float64   // bs = as - g = α1・u - ζs - g; (Eqs 35b and A.1 [1]) with 'as' being the acceleration of solids and g, gravity
 	hl    []float64   // hl = -ρL・bs - ∇pl; Eq (A.1) of [1]
 	Kup   [][]float64 // [nu][np] Kup := dRus/dpl consistent tangent matrix
@@ -254,8 +254,7 @@ func (o ElemUP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 	ndim := Global.Ndim
 	u_nverts := o.U.Shp.Nverts
 	p_nverts := o.P.Shp.Nverts
-	var coef, plt, ρl, ρ, p, Cpl, Cvs, divus, divvs float64
-	var err error
+	var coef, plt, klr, ρl, ρ, p, Cpl, Cvs, divvs float64
 	var r int
 	for idx, ip := range o.U.IpsElem {
 
@@ -271,23 +270,34 @@ func (o ElemUP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 
 		// auxiliary
 		σe := o.U.States[idx].Sig
-		divus = o.P.States[idx].Divus
-		divvs = dc.α4*divus - o.U.divχs[idx] // divergence of Eq. (35a) [1]
+		divvs = dc.α4*o.divus - o.U.divχs[idx] // divergence of Eq. (35a) [1]
 
 		// tpm variables
 		plt = dc.β1*o.P.pl - o.P.ψl[idx] // Eq. (35c) [1]
-		ρl, ρ, p, Cpl, Cvs, err = o.P.States[idx].LSvars(o.P.Mdl)
-		if LogErr(err, "calc of tpm variables failed") {
+		klr = o.P.Mdl.Cnd.Klr(o.P.States[idx].A_sl)
+		if LogErr(o.P.Mdl.CalcLs(o.P.res, o.P.States[idx], o.P.pl, o.divus, false), "AddToRhs") {
 			return
+		}
+		ρl = o.P.res.A_ρl
+		ρ = o.P.res.A_ρ
+		p = o.P.res.A_p
+		Cpl = o.P.res.Cpl
+		Cvs = o.P.res.Cvs
+
+		// compute ρwl. see Eq (34b) and (35) of [1]
+		for i := 0; i < ndim; i++ {
+			o.P.ρwl[i] = 0
+			for j := 0; j < ndim; j++ {
+				o.P.ρwl[i] += klr * o.P.Mdl.Klsat[i][j] * o.hl[j]
+			}
 		}
 
 		// p: add negative of residual term to fb; see Eqs. (38a) and (45a) of [1]
-		ρwl := o.P.States[idx].Rwl
 		for m := 0; m < p_nverts; m++ {
 			r = o.P.Pmap[m]
 			fb[r] -= coef * Sb[m] * (Cpl*plt + Cvs*divvs)
 			for i := 0; i < ndim; i++ {
-				fb[r] += coef * Gb[m][i] * ρwl[i] // += coef * div(ρl*wl)
+				fb[r] += coef * Gb[m][i] * o.P.ρwl[i] // += coef * div(ρl*wl)
 			}
 			if o.P.DoExtrap { // Eq. (19) of [2]
 				o.P.ρl_ex[m] += o.P.Emat[m][idx] * ρl
@@ -352,9 +362,8 @@ func (o ElemUP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) {
 
 	// for each integration point
 	dc := Global.DynCoefs
-	var coef, plt, klr, ρL, Cl, divus, divvs float64
+	var coef, plt, klr, ρL, Cl, divvs float64
 	var ρl, ρ, Cpl, Cvs, dρdpl, dpdpl, dCpldpl, dCvsdpl, dklrdpl, dCpldusM, dρldusM, dρdusM float64
-	var err error
 	var r, c int
 	for idx, ip := range o.U.IpsElem {
 
@@ -369,18 +378,28 @@ func (o ElemUP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) {
 		Gb := o.P.Shp.G
 
 		// auxiliary
-		divus = o.P.States[idx].Divus
-		divvs = dc.α4*divus - o.U.divχs[idx] // divergence of Eq (35a) [1]
+		divvs = dc.α4*o.divus - o.U.divχs[idx] // divergence of Eq (35a) [1]
 
 		// tpm variables
 		plt = dc.β1*o.P.pl - o.P.ψl[idx] // Eq (35c) [1]
-		klr = o.P.Mdl.Cnd.Klr(o.P.States[idx].Sl)
-		ρL = o.P.States[idx].RhoL
+		klr = o.P.Mdl.Cnd.Klr(o.P.States[idx].A_sl)
+		ρL = o.P.States[idx].A_ρL
 		Cl = o.P.Mdl.Cl
-		ρl, ρ, Cpl, Cvs, dρdpl, dpdpl, dCpldpl, dCvsdpl, dklrdpl, dCpldusM, dρldusM, dρdusM, err = o.P.States[idx].LSderivs(o.P.Mdl)
-		if LogErr(err, "calc of tpm derivatives failed") {
+		if LogErr(o.P.Mdl.CalcLs(o.P.res, o.P.States[idx], o.P.pl, o.divus, true), "AddToKb") {
 			return
 		}
+		ρl = o.P.res.A_ρl
+		ρ = o.P.res.A_ρ
+		Cpl = o.P.res.Cpl
+		Cvs = o.P.res.Cvs
+		dρdpl = o.P.res.Dρdpl
+		dpdpl = o.P.res.Dpdpl
+		dCpldpl = o.P.res.DCpldpl
+		dCvsdpl = o.P.res.DCvsdpl
+		dklrdpl = o.P.res.Dklrdpl
+		dCpldusM = o.P.res.DCpldusM
+		dρldusM = o.P.res.DρldusM
+		dρdusM = o.P.res.DρdusM
 
 		// Kpu, Kup and Kpp
 		for n := 0; n < p_nverts; n++ {
@@ -500,74 +519,10 @@ func (o ElemUP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) {
 
 // Update perform (tangent) update
 func (o *ElemUP) Update(sol *Solution) (ok bool) {
-
-	// auxiliary
-	ndim := Global.Ndim
-	dc := Global.DynCoefs
-
-	// for each integration point
-	var Δpl, divus, klr, ρL float64
-	for idx, ip := range o.U.IpsElem {
-
-		// interpolation functions and gradients
-		if LogErr(o.P.Shp.CalcAtIp(o.P.X, ip, true), "Update") {
-			return
-		}
-		if LogErr(o.U.Shp.CalcAtIp(o.U.X, ip, true), "Update") {
-			return
-		}
-
-		// clear gpl and recover u-variables @ ip => new us and new divus
-		divus = 0
-		for i := 0; i < ndim; i++ {
-			o.P.gpl[i] = 0 // clear gpl here
-			o.U.us[i] = 0
-			for m := 0; m < o.U.Shp.Nverts; m++ {
-				r := o.U.Umap[i+m*ndim]
-				o.U.us[i] += o.U.Shp.S[m] * sol.Y[r]
-				divus += o.U.Shp.G[m][i] * sol.Y[r]
-			}
-		}
-
-		// compute Δpl and new ∇pl @ ip by means of interpolating from nodes
-		Δpl = 0
-		for m := 0; m < o.P.Shp.Nverts; m++ {
-			r := o.P.Pmap[m]
-			Δpl += o.P.Shp.S[m] * sol.ΔY[r]
-			for i := 0; i < ndim; i++ {
-				o.P.gpl[i] += o.P.Shp.G[m][i] * sol.Y[r]
-			}
-		}
-
-		// p: update internal state
-		if LogErr(o.P.Mdl.Update(o.P.States[idx], Δpl, 0, divus), "p: update failed") {
-			return
-		}
-
-		// u: update internal state
-		if !o.U.ipupdate(idx, o.U.Shp.S, o.U.Shp.G, sol) {
-			return
-		}
-
-		// update bs and hl. see Eqs (A.1) of [1]
-		o.P.compute_gvec(sol.T)
-		klr = o.P.Mdl.Cnd.Klr(o.P.States[idx].Sl) // with updated Sl
-		ρL = o.P.States[idx].RhoL                 // updated ρL
-		for i := 0; i < ndim; i++ {
-			o.bs[i] = dc.α1*o.U.us[i] - o.U.ζs[idx][i] - o.P.g[i]
-			o.hl[i] = -ρL*o.bs[i] - o.P.gpl[i]
-		}
-
-		// update ρwl. see Eq (34b) and (35) of [1]
-		ρwl := o.P.States[idx].Rwl
-		for i := 0; i < ndim; i++ {
-			ρwl[i] = 0
-			for j := 0; j < ndim; j++ {
-				ρwl[i] += klr * o.P.Mdl.Klsat[i][j] * o.hl[j]
-			}
-		}
+	if !o.U.Update(sol) {
+		return
 	}
-	return true
+	return o.P.Update(sol)
 }
 
 // internal variables ///////////////////////////////////////////////////////////////////////////////
@@ -583,42 +538,10 @@ func (o ElemUP) Ipoints() (coords [][]float64) {
 
 // SetIniIvs sets initial ivs for given values in sol and ivs map
 func (o *ElemUP) SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) {
-
-	// set p-element first => will need pl @ ips
-	if !o.P.SetIniIvs(sol, nil) {
+	if !o.U.SetIniIvs(sol, ivs) {
 		return
 	}
-
-	// initial stresses given
-	if _, ok := ivs["svT"]; ok {
-
-		// total vertical stresses and K0
-		nip := len(o.U.IpsElem)
-		svT := ivs["svT"]
-		K0s := ivs["K0"]
-		chk.IntAssert(len(svT), nip)
-		chk.IntAssert(len(K0s), 1)
-		K0 := K0s[0]
-
-		// compute effective stresses
-		sx := make([]float64, nip)
-		sy := make([]float64, nip)
-		sz := make([]float64, nip)
-		sl := 1.0
-		for i, _ := range o.U.IpsElem {
-			p := o.P.States[i].Pl * sl
-			svE := svT[i] + p
-			shE := K0 * svE
-			sx[i], sy[i], sz[i] = shE, svE, shE
-			if Global.Ndim == 3 {
-				sx[i], sy[i], sz[i] = shE, shE, svE
-			}
-		}
-		ivs = map[string][]float64{"sx": sx, "sy": sy, "sz": sz}
-	}
-
-	// set u-element
-	return o.U.SetIniIvs(sol, ivs)
+	return o.P.SetIniIvs(sol, ivs)
 }
 
 // BackupIvs create copy of internal variables
@@ -653,8 +576,8 @@ func (o *ElemUP) Ureset(sol *Solution) (ok bool) {
 				divus += G[m][i] * sol.Y[r]
 			}
 		}
-		o.P.States[idx].Ns0 = (1.0 - divus) * (1.0 - o.P.Mdl.Nf0)
-		o.P.StatesBkp[idx].Ns0 = o.P.States[idx].Ns0
+		o.P.States[idx].A_ns0 = (1.0 - divus) * (1.0 - o.P.Mdl.Nf0)
+		o.P.StatesBkp[idx].A_ns0 = o.P.States[idx].A_ns0
 	}
 	if !o.U.Ureset(sol) {
 		return
@@ -710,19 +633,21 @@ func (o *ElemUP) ipvars(idx int, sol *Solution) (ok bool) {
 		return
 	}
 
-	// auxiliary and gravity
+	// auxiliary
 	ndim := Global.Ndim
 	dc := Global.DynCoefs
-	ρL := o.P.States[idx].RhoL
+	ρL := o.P.States[idx].A_ρL
 	o.P.compute_gvec(sol.T)
 
 	// clear gpl and recover u-variables @ ip
+	o.divus = 0
 	for i := 0; i < ndim; i++ {
 		o.P.gpl[i] = 0 // clear gpl here
 		o.U.us[i] = 0
 		for m := 0; m < o.U.Shp.Nverts; m++ {
 			r := o.U.Umap[i+m*ndim]
 			o.U.us[i] += o.U.Shp.S[m] * sol.Y[r]
+			o.divus += o.U.Shp.G[m][i] * sol.Y[r]
 		}
 	}
 

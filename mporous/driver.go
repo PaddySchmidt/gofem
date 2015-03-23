@@ -46,8 +46,7 @@ func (o *Driver) Run(Pc []float64) (err error) {
 	o.Res = make([]*State, np)
 
 	// initialise first state
-	pg, divus := 0.0, 0.0
-	o.Res[0], err = o.Mdl.NewState(o.Mdl.RhoL0, o.Mdl.RhoG0, -Pc[0], pg, divus)
+	o.Res[0], err = o.Mdl.NewState(o.Mdl.RhoL0, o.Mdl.RhoG0, -Pc[0], 0)
 	if err != nil {
 		return
 	}
@@ -70,7 +69,7 @@ func (o *Driver) Run(Pc []float64) (err error) {
 
 		// update
 		o.Res[i] = o.Res[i-1].GetCopy()
-		err = o.Mdl.Update(o.Res[i], -Δpc, pg, divus)
+		err = o.Mdl.Update(o.Res[i], -Δpc, 0, -pcNew, 0)
 		if err != nil {
 			return
 		}
@@ -79,7 +78,7 @@ func (o *Driver) Run(Pc []float64) (err error) {
 		if o.CheckD {
 
 			// check Ccb
-			Ccb, err = o.Mdl.Ccb(o.Res[i])
+			Ccb, err = o.Mdl.Ccb(o.Res[i], pcNew)
 			if err != nil {
 				return
 			}
@@ -88,23 +87,23 @@ func (o *Driver) Run(Pc []float64) (err error) {
 				tmp, pcNew = pcNew, x
 				Δpc = pcNew - pcOld
 				stmp.Set(o.Res[i-1])
-				e := o.Mdl.Update(&stmp, -Δpc, pg, divus)
+				e := o.Mdl.Update(&stmp, -Δpc, 0, -pcNew, 0)
 				if e != nil {
 					has_errors = true
 				}
-				res, pcNew = stmp.Sl, tmp
+				res, pcNew = stmp.A_sl, tmp
 				return
 			}, pcNew)
 			if has_errors {
 				return chk.Err("problems arised during update in numerical derivative for Ccb")
 			}
-			err = chk.PrintAnaNum(io.Sf("Ccb @ %.3f,%.4f", pcNew, o.Res[i].Sl), o.TolCcb, Ccb, dnum, o.VerD)
+			err = chk.PrintAnaNum(io.Sf("Ccb @ %.3f,%.4f", pcNew, o.Res[i].A_sl), o.TolCcb, Ccb, dnum, o.VerD)
 			if err != nil {
 				return
 			}
 
 			// check Ccd
-			Ccd, err = o.Mdl.Ccd(o.Res[i])
+			Ccd, err = o.Mdl.Ccd(o.Res[i], pcNew)
 			if err != nil {
 				return
 			}
@@ -113,18 +112,18 @@ func (o *Driver) Run(Pc []float64) (err error) {
 				tmp, pcNew = pcNew, x
 				Δpc = pcNew - pcOld
 				stmp.Set(o.Res[i-1])
-				e := o.Mdl.Update(&stmp, -Δpc, pg, divus)
+				e := o.Mdl.Update(&stmp, -Δpc, 0, -pcNew, 0)
 				if e != nil {
 					has_errors = true
 				}
-				Ccbtmp, _ = o.Mdl.Ccb(&stmp)
+				Ccbtmp, _ = o.Mdl.Ccb(&stmp, pcNew)
 				res, pcNew = Ccbtmp, tmp
 				return
 			}, pcNew)
 			if has_errors {
 				return chk.Err("problems arised during update in numerical derivative for Ccd")
 			}
-			err = chk.PrintAnaNum(io.Sf("Ccd @ %.3f,%.4f", pcNew, o.Res[i].Sl), o.TolCcd, Ccd, dnum, o.VerD)
+			err = chk.PrintAnaNum(io.Sf("Ccd @ %.3f,%.4f", pcNew, o.Res[i].A_sl), o.TolCcd, Ccd, dnum, o.VerD)
 			if err != nil {
 				return
 			}

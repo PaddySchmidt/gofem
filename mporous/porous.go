@@ -35,7 +35,6 @@ import (
 type Model struct {
 
 	// constants
-	Ndim    int     // space dimension
 	NmaxIt  int     // max number iterations in Update
 	Itol    float64 // iterations tolerance in Update
 	PcZero  float64 // minimum value allowed for pc
@@ -71,7 +70,7 @@ type Model struct {
 }
 
 // Init initialises this structure
-func (o *Model) Init(ndim int, prms fun.Prms, cnd mconduct.Model, lrm mreten.Model) (err error) {
+func (o *Model) Init(prms fun.Prms, cnd mconduct.Model, lrm mreten.Model) (err error) {
 
 	// conductivity and retention models
 	if cnd == nil || lrm == nil {
@@ -84,7 +83,6 @@ func (o *Model) Init(ndim int, prms fun.Prms, cnd mconduct.Model, lrm mreten.Mod
 	}
 
 	// constants
-	o.Ndim = ndim
 	o.NmaxIt = 20
 	o.Itol = 1e-9
 	o.PcZero = 1e-10
@@ -183,147 +181,137 @@ func (o Model) GetPrms(example bool) fun.Prms {
 	}
 }
 
-// InitState initialises a state structure with a continous solver and saturation starting at 1
-func (o Model) InitState(s *State, ρL, ρG, pl, pg, divus float64) (err error) {
-	s.Pl = pl
-	s.Pg = pg
-	s.Divus = divus
-	s.Sl = 1
-	s.Ns0 = 1 - o.Nf0
-	s.RhoL = ρL
-	s.RhoG = ρG
-	s.Dpc = 0
-	s.Wet = false
-	s.Rwl = make([]float64, o.Ndim)
-	pc := pg - pl
-	if pc > 0 {
-		s.Sl, err = mreten.Update(o.Lrm, 0, 1, pc)
-	}
-	return
-}
-
 // NewState creates and initialises a new state structure
 //  Note: returns nil on errors
-func (o Model) NewState(ρL, ρG, pl, pg, divus float64) (s *State, err error) {
-	s = new(State)
-	err = o.InitState(s, ρL, ρG, pl, pg, divus)
+func (o Model) NewState(ρL, ρG, pl, pg float64) (s *State, err error) {
+	sl := 1.0
+	pc := pg - pl
+	if pc > 0 {
+		sl, err = mreten.Update(o.Lrm, 0, 1, pc)
+		if err != nil {
+			return
+		}
+	}
+	ns0 := 1.0 - o.Nf0
+	s = &State{ns0, sl, ρL, ρG, 0, false}
 	return
 }
 
 // Update updates state
-func (o Model) Update(s *State, Δpl, Δpg, divusNew float64) (err error) {
+//  pl and pg are updated (new) values
+func (o Model) Update(s *State, Δpl, Δpg, pl, pg float64) (err error) {
 
 	// auxiliary variables
-	pc0 := s.Pg - s.Pl
-	sl0 := s.Sl
-	Δpc := Δpg - Δpl
-	pc := pc0 + Δpc
 	slmin := o.Lrm.SlMin()
+	Δpc := Δpg - Δpl
+	wet := Δpc < 0
+	pl0 := pl - Δpl
+	pg0 := pg - Δpg
+	pc0 := pg0 - pl0
+	sl0 := s.A_sl
+	pc := pc0 + Δpc
+	sl := sl0
 
-	// check results upon exist
-	defer func() {
-		if pc < 0 && s.Sl < 1 {
-			err = chk.Err("inconsistent results: saturation must be equal to one when the capillary pressure is ineffective. pc = %g < 0 and sl = %g < 1 is incorrect", pc, s.Sl)
-		}
-		if s.Sl < slmin {
-			err = chk.Err("inconsistent results: saturation must be greater than minimum saturation. sl = %g < %g is incorrect", s.Sl, slmin)
-		}
-	}()
-
-	// set State with new pressure, densities and flags
-	s.Pl += Δpl
-	s.Pg += Δpg
-	s.Divus = divusNew
-	s.RhoL += o.Cl * Δpl
-	s.RhoG += o.Cg * Δpg
-	s.Dpc = Δpc
-	s.Wet = Δpc < 0
-
-	// exit with full liquid saturation if capillary pressure is ineffective
+	// update liquid saturation
 	if pc <= 0.0 {
-		s.Sl = 1
-		return
-	}
+		sl = 1 // full liquid saturation if capillary pressure is ineffective
 
-	// handle simple retention models
-	if o.nonrateLrm != nil && !o.AllBE {
-		s.Sl = o.nonrateLrm.Sl(pc)
-		return
-	}
+	} else if o.nonrateLrm != nil && !o.AllBE {
+		sl = o.nonrateLrm.Sl(pc) // handle simple retention models
 
-	// trial liquid saturation update
-	fA, err := o.Lrm.Cc(pc0, sl0, s.Wet)
-	if err != nil {
-		return err
-	}
-	if o.MEtrial {
-		slFE := sl0 + Δpc*fA
-		fB, err := o.Lrm.Cc(pc, slFE, s.Wet)
-		if err != nil {
-			return err
+	} else { // unsaturated case with rate-type model
+
+		// trial liquid saturation update
+		fA, e := o.Lrm.Cc(pc0, sl0, wet)
+		if e != nil {
+			return e
 		}
-		s.Sl += 0.5 * Δpc * (fA + fB)
-	} else {
-		s.Sl += Δpc * fA
-	}
-
-	// fix trial sl out-of-range values
-	if s.Sl < slmin {
-		s.Sl = slmin
-	}
-	if s.Sl > 1 {
-		s.Sl = 1
-	}
-
-	// message
-	if o.ShowR {
-		io.PfYel("%6s%18s%18s%18s%18s%8s\n", "it", "Cc", "sl", "δsl", "r", "ex(r)")
-	}
-
-	// backward-Euler update
-	var f, r, J, δsl float64
-	var it int
-	for it = 0; it < o.NmaxIt; it++ {
-		f, err = o.Lrm.Cc(pc, s.Sl, s.Wet)
-		if err != nil {
-			return
+		if o.MEtrial {
+			slFE := sl0 + Δpc*fA
+			fB, e := o.Lrm.Cc(pc, slFE, wet)
+			if e != nil {
+				return e
+			}
+			sl += 0.5 * Δpc * (fA + fB)
+		} else {
+			sl += Δpc * fA
 		}
-		r = s.Sl - sl0 - Δpc*f
+
+		// fix trial sl out-of-range values
+		if sl < slmin {
+			sl = slmin
+		}
+		if sl > 1 {
+			sl = 1
+		}
+
+		// message
 		if o.ShowR {
-			io.Pfyel("%6d%18.14f%18.14f%18.14f%18.10e%8d\n", it, f, s.Sl, δsl, r, utl.Expon(r))
+			io.PfYel("%6s%18s%18s%18s%18s%8s\n", "it", "Cc", "sl", "δsl", "r", "ex(r)")
 		}
-		if math.Abs(r) < o.Itol {
-			break
+
+		// backward-Euler update
+		var f, r, J, δsl float64
+		var it int
+		for it = 0; it < o.NmaxIt; it++ {
+			f, err = o.Lrm.Cc(pc, sl, wet)
+			if err != nil {
+				return
+			}
+			r = sl - sl0 - Δpc*f
+			if o.ShowR {
+				io.Pfyel("%6d%18.14f%18.14f%18.14f%18.10e%8d\n", it, f, sl, δsl, r, utl.Expon(r))
+			}
+			if math.Abs(r) < o.Itol {
+				break
+			}
+			J, err = o.Lrm.J(pc, sl, wet)
+			if err != nil {
+				return
+			}
+			δsl = -r / (1.0 - Δpc*J)
+			sl += δsl
+			if math.IsNaN(sl) {
+				return chk.Err("NaN found: Δpc=%v f=%v r=%v J=%v sl=%v\n", Δpc, f, r, J, sl)
+			}
 		}
-		J, err = o.Lrm.J(pc, s.Sl, s.Wet)
-		if err != nil {
-			return
+
+		// message
+		if o.ShowR {
+			io.Pfgrey("  pc0=%.6f  sl0=%.6f  Δpl=%.6f  Δpg=%.6f  Δpc=%.6f\n", pc0, sl0, Δpl, Δpg, Δpc)
+			io.Pfgrey("  converged with %d iterations\n", it)
 		}
-		δsl = -r / (1.0 - Δpc*J)
-		s.Sl += δsl
-		if math.IsNaN(s.Sl) {
-			return chk.Err("NaN found: Δpc=%v f=%v r=%v J=%v sl=%v\n", Δpc, f, r, J, s.Sl)
+
+		// check convergence
+		if it == o.NmaxIt {
+			return chk.Err("saturation update failed after %d iterations\n", it)
 		}
 	}
 
-	// message
-	if o.ShowR {
-		io.Pfgrey("  pc0=%.6f  sl0=%.6f  Δpl=%.6f  Δpg=%.6f  Δpc=%.6f\n", pc0, sl0, Δpl, Δpg, Δpc)
-		io.Pfgrey("  converged with %d iterations\n", it)
+	// check results
+	if pc < 0 && sl < 1 {
+		return chk.Err("inconsistent results: saturation must be equal to one when the capillary pressure is ineffective. pc = %g < 0 and sl = %g < 1 is incorrect", pc, sl)
+	}
+	if sl < slmin {
+		return chk.Err("inconsistent results: saturation must be greater than minimum saturation. sl = %g < %g is incorrect", sl, slmin)
 	}
 
-	// check convergence
-	if it == o.NmaxIt {
-		return chk.Err("saturation update failed after %d iterations\n", it)
-	}
+	// set state
+	s.A_sl = sl          // 2
+	s.A_ρL += o.Cl * Δpl // 3
+	s.A_ρG += o.Cg * Δpg // 4
+	s.A_Δpc = Δpc        // 5
+	s.A_wet = wet        // 6
 	return
 }
 
 // Ccb (Cc-bar) returns dsl/dpc consistent with the update method
 //  See Eq. (54) on page 618 of [1]
-func (o Model) Ccb(s *State) (dsldpc float64, err error) {
-	pc := s.Pg - s.Pl
-	f, err := o.Lrm.Cc(pc, s.Sl, s.Wet) // @ n+1
+func (o Model) Ccb(s *State, pc float64) (dsldpc float64, err error) {
+	sl := s.A_sl
+	wet := s.A_wet
+	Δpc := s.A_Δpc
+	f, err := o.Lrm.Cc(pc, sl, wet) // @ n+1
 	if err != nil {
 		return
 	}
@@ -331,35 +319,36 @@ func (o Model) Ccb(s *State) (dsldpc float64, err error) {
 		dsldpc = f
 		return
 	}
-	L, err := o.Lrm.L(pc, s.Sl, s.Wet) // @ n+1
+	L, err := o.Lrm.L(pc, sl, wet) // @ n+1
 	if err != nil {
 		return
 	}
-	J, err := o.Lrm.J(pc, s.Sl, s.Wet) // @ n+1
+	J, err := o.Lrm.J(pc, sl, wet) // @ n+1
 	if err != nil {
 		return
 	}
-	dsldpc = (f + s.Dpc*L) / (1.0 - s.Dpc*J)
+	dsldpc = (f + Δpc*L) / (1.0 - Δpc*J)
 	return
 }
 
 // Ccd (Cc-dash) returns dCc/dpc consistent with the update method
 //  See Eqs. (55) and (56) on page 618 of [1]
-func (o Model) Ccd(s *State) (dCcdpc float64, err error) {
-	pc := s.Pg - s.Pl
+func (o Model) Ccd(s *State, pc float64) (dCcdpc float64, err error) {
+	sl := s.A_sl
+	wet := s.A_wet
+	Δpc := s.A_Δpc
 	if o.Ncns || o.Ncns2 { // non consistent
-		dCcdpc, err = o.Lrm.L(pc, s.Sl, s.Wet) // @ n+1
+		dCcdpc, err = o.Lrm.L(pc, sl, wet) // @ n+1
 		return
 	}
-	f, err := o.Lrm.Cc(pc, s.Sl, s.Wet) // @ n+1
+	f, err := o.Lrm.Cc(pc, sl, wet) // @ n+1
 	if err != nil {
 		return
 	}
-	L, Lx, J, Jx, Jy, err := o.Lrm.Derivs(pc, s.Sl, s.Wet)
+	L, Lx, J, Jx, Jy, err := o.Lrm.Derivs(pc, sl, wet)
 	if err != nil {
 		return
 	}
-	Δpc := s.Dpc
 	Ly := Jx
 	Ccb := (f + Δpc*L) / (1.0 - Δpc*J)
 	LL := Lx + Ly*Ccb

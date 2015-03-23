@@ -184,9 +184,7 @@ func Test_up01a(tst *testing.T) {
 		for idx, ip := range e.P.IpsElem {
 			s := e.P.States[idx]
 			z := e.P.Shp.IpRealCoords(e.P.X, ip)[1]
-			plC, _, _ := Global.HydroSt.Calc(z)
-			chk.AnaNum(tst, io.Sf("sl(z=%11.8f)", z), 1e-17, s.Sl, 1, chk.Verbose)
-			chk.AnaNum(tst, io.Sf("pl(z=%11.8f)", z), 1e-4, s.Pl, plC, chk.Verbose)
+			chk.AnaNum(tst, io.Sf("sl(z=%11.8f)", z), 1e-17, s.A_sl, 1, chk.Verbose)
 		}
 	}
 

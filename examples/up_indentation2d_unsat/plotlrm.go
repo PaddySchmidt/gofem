@@ -36,11 +36,10 @@ func main() {
 	// load results
 	out.LoadResults(nil)
 
-	pg_a := out.GetRes("pg", "a", -1)
 	pl_a := out.GetRes("pl", "a", -1)
-	pc_a := make([]float64, len(pg_a))
-	for i, _ := range pg_a {
-		pc_a[i] = pg_a[i] - pl_a[i]
+	pc_a := make([]float64, len(pl_a))
+	for i, _ := range pl_a {
+		pc_a[i] = -pl_a[i]
 	}
 
 	divus := out.GetRes("divus", "a", -1)

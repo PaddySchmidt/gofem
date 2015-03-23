@@ -7,8 +7,8 @@ package mporous
 import (
 	"testing"
 
-	"github.com/cpmech/gofem/mconduct"
-	"github.com/cpmech/gofem/mreten"
+	"github.com/cpmech/gofemT2/mconduct"
+	"github.com/cpmech/gofemT2/mreten"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/plt"
@@ -16,9 +16,9 @@ import (
 
 func Test_derivs01(tst *testing.T) {
 
-	doplot := false
+	//verbose()
 	//doplot := true
-	//utl.Tsilent = false
+	doplot := false
 	chk.PrintTitle("derivs01")
 
 	// info
@@ -62,8 +62,8 @@ func Test_derivs01(tst *testing.T) {
 	np := 5
 	//P := []float64{10, 5, 20, 0}
 	P := []float64{5}
-	pth := GetPathCycle(pc0, P, np)
-	io.Pforan("pth = %v\n", pth)
+	Pc := GetPathCycle(pc0, P, np)
+	io.Pforan("Pc = %v\n", Pc)
 
 	// driver
 	var drv Driver
@@ -72,7 +72,7 @@ func Test_derivs01(tst *testing.T) {
 		tst.Errorf("test failed: %v\n", err)
 		return
 	}
-	err = drv.Run(pth)
+	err = drv.Run(Pc)
 	if err != nil {
 		tst.Errorf("test failed: %v\n", err)
 		return
@@ -84,11 +84,9 @@ func Test_derivs01(tst *testing.T) {
 		plt.Reset()
 		mreten.Plot(mdl.Lrm, pc0, 1.0, pcf, npts, "'b.-'", "'r+-'", lrm_name)
 		n := len(drv.Res)
-		Pc := make([]float64, n)
 		Sl := make([]float64, n)
 		for i, s := range drv.Res {
-			Pc[i] = s.Pg - s.Pl
-			Sl[i] = s.Sl
+			Sl[i] = s.A_sl
 		}
 		plt.Plot(Pc, Sl, "'ko--', clip_on=0")
 		mreten.PlotEnd(true)
