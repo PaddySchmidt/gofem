@@ -172,7 +172,7 @@ func Test_p01b(tst *testing.T) {
 
 func Test_p02_(tst *testing.T) {
 
-	//verbose()
+	verbose()
 	chk.PrintTitle("p02_")
 
 	// run simulation

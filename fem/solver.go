@@ -309,7 +309,7 @@ func run_iterations(t, Δt float64, d *Domain, sum *Summary) (diverging, ok bool
 
 	// message
 	if Global.Sim.Data.ShowR {
-		io.Pfyel("\n%13s%4s%23s%23s\n", "t", "it", "largFb", "Lδu")
+		io.Pf("\n%13s%4s%23s%23s\n", "t", "it", "largFb", "Lδu")
 	}
 	defer func() {
 		if Global.Sim.Data.ShowR {

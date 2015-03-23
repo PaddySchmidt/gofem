@@ -690,12 +690,6 @@ func (o ElemP) add_natbcs_to_rhs(fb []float64, sol *Solution) (ok bool) {
 				rmp = o.ramp(fl + o.κ*g)
 				rx = ρl * rmp // Eq. (30)
 				rf = fl - rmp // Eq. (26)
-
-				// debug
-				//io.Pfyel("pl=%g plmax=%g g=%g\n", pl, plmax, g)
-				//io.Pfyel("pl=%g plmax=%g g=%g rmp=%g rx=%g rf=%g\n", pl, plmax, g, rmp, rx, rf)
-				//panic("stop")
-
 				for i, m := range o.Shp.FaceLocalV[iface] {
 					μ := o.Vid2seepId[m]
 					fb[o.Pmap[m]] -= coef * Sf[i] * rx
