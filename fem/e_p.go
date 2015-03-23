@@ -36,7 +36,6 @@ type ElemP struct {
 
 	// material model
 	Mdl *mporous.Model // model
-	γl  float64        // unit weight of liquid
 
 	// problem variables
 	Pmap []int // assembly map (location array/element equations)
@@ -147,9 +146,6 @@ func init() {
 		if o.Mdl == nil {
 			return nil
 		}
-
-		// unit weight of liquid
-		o.γl = o.Mdl.RhoL0 * o.Mdl.Gref
 
 		// local starred variables
 		o.ψl = make([]float64, nip)
