@@ -113,7 +113,7 @@ func DerivSig(DσDun [][]float64, n, ndim int, G, D [][]float64) {
 	}
 }
 
-func IpBmatrix(B [][]float64, ndim, nne int, G [][]float64, axisym bool, radius float64, S []float64) {
+func IpBmatrix(B [][]float64, ndim, nne int, G [][]float64, radius float64, S []float64) {
 	if ndim == 3 {
 		for i := 0; i < nne; i++ {
 			B[0][0+i*3] = G[i][0]
@@ -128,7 +128,7 @@ func IpBmatrix(B [][]float64, ndim, nne int, G [][]float64, axisym bool, radius 
 		}
 		return
 	}
-	if axisym {
+	if Global.Sim.Data.Axisym {
 		for i := 0; i < nne; i++ {
 			B[0][0+i*2] = G[i][0]
 			B[1][1+i*2] = G[i][1]
@@ -156,7 +156,7 @@ func IpStrainsAndIncB(εs, Δεs []float64, nσ, nu int, B [][]float64, u, Δu [
 	}
 }
 
-func IpBmatrix_sparse(B *la.Triplet, ndim, nne int, G [][]float64, axisym bool, radius float64, S []float64) {
+func IpBmatrix_sparse(B *la.Triplet, ndim, nne int, G [][]float64, radius float64, S []float64) {
 	B.Start()
 	if ndim == 3 {
 		for i := 0; i < nne; i++ {
@@ -172,7 +172,7 @@ func IpBmatrix_sparse(B *la.Triplet, ndim, nne int, G [][]float64, axisym bool, 
 		}
 		return
 	}
-	if axisym {
+	if Global.Sim.Data.Axisym {
 		for i := 0; i < nne; i++ {
 			B.Put(0, 0+i*2, G[i][0])
 			B.Put(1, 1+i*2, G[i][1])

@@ -282,7 +282,7 @@ func (o *ElemU) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 				radius = o.Shp.AxisymGetRadius(o.X)
 				coef *= radius
 			}
-			IpBmatrix(o.B, ndim, nverts, G, Global.Sim.Data.Axisym, radius, S)
+			IpBmatrix(o.B, ndim, nverts, G, radius, S)
 			la.MatTrVecMulAdd(o.fi, coef, o.B, o.States[idx].Sig) // fi += coef * tr(B) * σ
 		} else {
 			for m := 0; m < nverts; m++ {
@@ -357,7 +357,7 @@ func (o *ElemU) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) {
 				radius = o.Shp.AxisymGetRadius(o.X)
 				coef *= radius
 			}
-			IpBmatrix(o.B, ndim, nverts, G, Global.Sim.Data.Axisym, radius, S)
+			IpBmatrix(o.B, ndim, nverts, G, radius, S)
 			la.MatTrMulAdd3(o.K, coef, o.B, o.D, o.B) // K += coef * tr(B) * D * B
 		} else {
 			IpAddToKt(o.K, nverts, ndim, coef, G, o.D)
@@ -407,7 +407,7 @@ func (o *ElemU) Update(sol *Solution) (ok bool) {
 			if Global.Sim.Data.Axisym {
 				radius = o.Shp.AxisymGetRadius(o.X)
 			}
-			IpBmatrix(o.B, ndim, nverts, G, Global.Sim.Data.Axisym, radius, S)
+			IpBmatrix(o.B, ndim, nverts, G, radius, S)
 			IpStrainsAndIncB(o.ε, o.Δε, 2*ndim, o.Nu, o.B, sol.Y, sol.ΔY, o.Umap)
 		} else {
 			IpStrainsAndInc(o.ε, o.Δε, nverts, ndim, sol.Y, sol.ΔY, o.Umap, G)
