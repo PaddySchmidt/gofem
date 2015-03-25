@@ -88,8 +88,9 @@ func LoadResults(times []float64) {
 				// handle integration point
 				if pid >= 0 {
 					dat := Ipoints[pid]
-					for key, val := range dat.V {
-						utl.StrDblsMapAppend(&p.Vals, key, *val)
+					vals := dat.Calc(Dom.Sol)
+					for i, key := range dat.Keys {
+						utl.StrDblsMapAppend(&p.Vals, key, vals[i])
 					}
 				}
 			}

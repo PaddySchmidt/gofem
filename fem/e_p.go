@@ -586,11 +586,30 @@ func (o ElemP) Decode(dec Decoder) (ok bool) {
 
 // OutIpsData returns data from all integration points for output
 func (o ElemP) OutIpsData() (data []*OutIpData) {
+	ndim := Global.Ndim
+	keys := SlNwlKeys() // nwl == nl・wl == filter velocity
+	nkeys := len(keys)
 	for idx, ip := range o.IpsElem {
 		s := o.States[idx]
 		x := o.Shp.IpRealCoords(o.X, ip)
-		v := map[string]*float64{"sl": &s.A_sl}
-		data = append(data, &OutIpData{o.Id(), x, v})
+		calc := func(sol *Solution) (vals []float64) {
+			if !o.ipvars(idx, sol) {
+				return
+			}
+			ρL := s.A_ρL
+			klr := o.Mdl.Cnd.Klr(s.A_sl)
+			vals = make([]float64, nkeys)
+			// sl
+			vals[0] = s.A_sl
+			// nwl
+			for i := 0; i < ndim; i++ {
+				for j := 0; j < ndim; j++ {
+					vals[1+i] += klr * o.Mdl.Klsat[i][j] * (o.g[j] - o.gpl[j]/ρL)
+				}
+			}
+			return
+		}
+		data = append(data, &OutIpData{o.Id(), x, keys, calc})
 	}
 	return
 }

@@ -647,17 +647,38 @@ func (o ElemUP) Decode(dec Decoder) (ok bool) {
 
 // OutIpsData returns data from all integration points for output
 func (o ElemUP) OutIpsData() (data []*OutIpData) {
-	u_dat := o.U.OutIpsData()
-	p_dat := o.P.OutIpsData()
-	nip := len(o.U.IpsElem)
-	chk.IntAssert(len(u_dat), nip)
-	chk.IntAssert(len(u_dat), len(p_dat))
-	data = make([]*OutIpData, nip)
-	for i, d := range u_dat {
-		for key, val := range p_dat[i].V {
-			d.V[key] = val
+	ndim := Global.Ndim
+	keys := SlNwlKeys() // nwl == nl・wl == filter velocity
+	sigs := StressKeys()
+	keys = append(keys, sigs...)
+	nkeys := len(keys)
+	for idx, ip := range o.U.IpsElem {
+		r := o.P.States[idx]
+		s := o.U.States[idx]
+		x := o.U.Shp.IpRealCoords(o.U.X, ip)
+		calc := func(sol *Solution) (vals []float64) {
+			if !o.ipvars(idx, sol) {
+				return
+			}
+			ρL := r.A_ρL
+			klr := o.P.Mdl.Cnd.Klr(r.A_sl)
+			vals = make([]float64, nkeys)
+			// sl
+			vals[0] = r.A_sl
+			// nwl
+			for i := 0; i < ndim; i++ {
+				for j := 0; j < ndim; j++ {
+					vals[1+i] += klr * o.P.Mdl.Klsat[i][j] * o.hl[j] / ρL
+				}
+			}
+			// σ
+			iσ := 1 + ndim
+			for i, _ := range sigs {
+				vals[iσ+i] = s.Sig[i]
+			}
+			return
 		}
-		data[i] = &OutIpData{d.Eid, d.X, d.V}
+		data = append(data, &OutIpData{o.Id(), x, keys, calc})
 	}
 	return
 }

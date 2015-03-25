@@ -222,3 +222,10 @@ func StressKeys() []string {
 	}
 	return []string{"sx", "sy", "sz", "sxy", "syz", "szx"}
 }
+
+func SlNwlKeys() []string {
+	if Global.Ndim == 2 {
+		return []string{"sl", "nwlx", "nwly"}
+	}
+	return []string{"sl", "nwlx", "nwly", "nwlz"}
+}

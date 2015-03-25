@@ -27,27 +27,29 @@ var (
 	nodes []*fem.Node // active/allocated nodes
 	elems []fem.Elem  // active/allocated elements
 
+	ipvals []map[string]float64 // [allNip][nkeys]
+
 	dirout string // directory for output
 	fnkey  string // filename key
 	steady bool   // steady simulation
 
 	ukeys   = []string{"ux", "uy", "uz"}                      // displacement keys
 	skeys   = []string{"sx", "sy", "sz", "sxy", "syz", "szx"} // stress keys
-	rwlkeys = []string{"rwlx", "rwly", "rwlz"}                // ρl * wl keys
+	nwlkeys = []string{"nwlx", "nwly", "nwlz"}                // nl・wl == filter velocity keys
 	plkeys  = []string{"pl"}                                  // liquid pressure keys
 	pgkeys  = []string{"pg"}                                  // gas pressure keys
 	flkeys  = []string{"fl"}                                  // constraint/flux/seepage face key
 
 	is_sig     map[string]bool     // is sigma key? "sx" => true
-	is_rwl     map[string]bool     // is rwl key? "rwlx" => true
+	is_nwl     map[string]bool     // is nwl key? "nwlx" => true
 	label2keys map[string][]string // maps, e.g., "u" => ukeys
 )
 
 func init() {
 	is_sig = map[string]bool{"sx": true, "sy": true, "sz": true, "sxy": true, "syz": true, "szx": true}
-	is_rwl = map[string]bool{"rwlx": true, "rwly": true, "rwlz": true}
+	is_nwl = map[string]bool{"nwlx": true, "nwly": true, "nwlz": true}
 	label2keys = map[string][]string{
-		"u": ukeys, "sig": skeys, "rwl": rwlkeys,
+		"u": ukeys, "sig": skeys, "nwl": nwlkeys,
 		"pl": plkeys, "pg": pgkeys, "fl": flkeys,
 	}
 }
@@ -100,7 +102,7 @@ func main() {
 	has_pl := out.Dom.YandC["pl"]
 	has_pg := out.Dom.YandC["pg"]
 	has_sig := out.Ipkeys["sx"]
-	has_rwl := out.Ipkeys["rwlx"]
+	has_nwl := out.Ipkeys["nwlx"]
 	has_p := has_pl || has_pg
 	lbb := has_u && has_p
 	if fem.Global.Sim.Data.NoLBB {
@@ -155,6 +157,18 @@ func main() {
 			for label, b := range geo {
 				topology(b, label == "ips", lbb)
 			}
+
+			// allocate integration points values
+			ipvals = make([]map[string]float64, len(out.Ipoints))
+		}
+
+		// store integration points values @ time t
+		for i, p := range out.Ipoints {
+			ipvals[i] = make(map[string]float64)
+			vals := p.Calc(out.Dom.Sol)
+			for j, key := range p.Keys {
+				ipvals[i][key] = vals[j]
+			}
 		}
 
 		// for each data buffer
@@ -169,11 +183,11 @@ func main() {
 				if has_sig {
 					pdata_write(b, "sig", skeys, true)
 				}
-				if has_rwl {
-					pdata_write(b, "rwl", rwlkeys, true)
+				if has_nwl {
+					pdata_write(b, "nwl", nwlkeys, true)
 				}
 				for key, _ := range out.Ipkeys {
-					if !is_sig[key] && !is_rwl[key] {
+					if !is_sig[key] && !is_nwl[key] {
 						pdata_write(b, key, []string{key}, true)
 					}
 				}
@@ -359,11 +373,11 @@ func pdata_write(buf *bytes.Buffer, label string, keys []string, ips bool) {
 	io.Ff(buf, "<DataArray type=\"Float64\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"ascii\">\n", label, nkeys)
 	if ips {
 		// loop over integration points
-		for _, p := range out.Ipoints {
+		for i, _ := range out.Ipoints {
 			l := ""
 			for _, key := range keys {
-				if v, ok := p.V[key]; ok {
-					l += io.Sf("%23.15e ", *v)
+				if v, ok := ipvals[i][key]; ok {
+					l += io.Sf("%23.15e ", v)
 				} else {
 					l += "0 "
 				}

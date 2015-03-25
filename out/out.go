@@ -126,7 +126,7 @@ func Start(simfnpath string, stageIdx, regionIdx int) {
 			if err != nil {
 				chk.Panic("cannot append to bins of integration points: %v", err)
 			}
-			for key, _ := range d.V {
+			for _, key := range d.Keys {
 				utl.StrIntsMapAppend(&Ipkey2ips, key, id)
 				Ipkeys[key] = true
 			}
