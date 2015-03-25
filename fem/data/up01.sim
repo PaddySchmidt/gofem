@@ -17,8 +17,8 @@
     {
       "mshfile" : "col10m4e2lay.msh",
       "elemsdata" : [
-        { "tag":-1, "mat":"porous2", "type":"up", "extra":"!nip:4 !nolbb:0" },
-        { "tag":-2, "mat":"porous1", "type":"up", "extra":"!nip:4 !nolbb:0" }
+        { "tag":-1, "mat":"porous2", "type":"up", "extra":"!useB:0" },
+        { "tag":-2, "mat":"porous1", "type":"up", "extra":"!useB:0" }
       ]
     }
   ],

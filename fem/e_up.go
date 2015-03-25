@@ -248,6 +248,9 @@ func (o ElemUP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 	if o.P.DoExtrap {
 		la.VecFill(o.P.ρl_ex, 0)
 	}
+	if o.U.UseB {
+		la.VecFill(o.U.fi, 0)
+	}
 
 	// for each integration point
 	dc := Global.DynCoefs
@@ -267,6 +270,13 @@ func (o ElemUP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 		G := o.U.Shp.G
 		Sb := o.P.Shp.S
 		Gb := o.P.Shp.G
+
+		// axisymmetric case
+		radius := 1.0
+		if Global.Sim.Data.Axisym {
+			radius = o.U.Shp.AxisymGetRadius(o.U.X)
+			coef *= radius
+		}
 
 		// auxiliary
 		σe := o.U.States[idx].Sig
@@ -305,15 +315,34 @@ func (o ElemUP) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 		}
 
 		// u: add negative of residual term to fb; see Eqs. (38b) and (45b) [1]
-		for m := 0; m < u_nverts; m++ {
-			for i := 0; i < ndim; i++ {
-				r = o.U.Umap[i+m*ndim]
-				fb[r] -= coef * S[m] * ρ * o.bs[i]
-				for j := 0; j < ndim; j++ {
-					fb[r] -= coef * tsr.M2T(σe, i, j) * G[m][j]
+		if o.U.UseB {
+			IpBmatrix(o.U.B, ndim, u_nverts, G, radius, S)
+			la.MatTrVecMulAdd(o.U.fi, coef, o.U.B, σe) // fi += coef * tr(B) * σ
+			for m := 0; m < u_nverts; m++ {
+				for i := 0; i < ndim; i++ {
+					r = o.U.Umap[i+m*ndim]
+					fb[r] -= coef * S[m] * ρ * o.bs[i]
+					fb[r] += coef * p * G[m][i]
 				}
-				fb[r] += coef * p * G[m][i]
 			}
+		} else {
+			for m := 0; m < u_nverts; m++ {
+				for i := 0; i < ndim; i++ {
+					r = o.U.Umap[i+m*ndim]
+					fb[r] -= coef * S[m] * ρ * o.bs[i]
+					for j := 0; j < ndim; j++ {
+						fb[r] -= coef * tsr.M2T(σe, i, j) * G[m][j]
+					}
+					fb[r] += coef * p * G[m][i]
+				}
+			}
+		}
+	}
+
+	// add fi term to fb, if using B matrix
+	if o.U.UseB {
+		for i, I := range o.U.Umap {
+			fb[I] -= o.U.fi[i]
 		}
 	}
 
@@ -376,6 +405,13 @@ func (o ElemUP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) {
 		G := o.U.Shp.G
 		Sb := o.P.Shp.S
 		Gb := o.P.Shp.G
+
+		// axisymmetric case
+		radius := 1.0
+		if Global.Sim.Data.Axisym {
+			radius = o.U.Shp.AxisymGetRadius(o.U.X)
+			coef *= radius
+		}
 
 		// auxiliary
 		divvs = dc.α4*o.divus - o.U.divχs[idx] // divergence of Eq (35a) [1]
@@ -468,11 +504,18 @@ func (o ElemUP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) {
 			}
 		}
 
-		// Kuu: add stiffness term ∂(σe・G^m)/∂us^n
+		// consistent tangent model matrix
 		if LogErr(o.U.MdlSmall.CalcD(o.U.D, o.U.States[idx], firstIt), "AddToKb") {
 			return
 		}
-		IpAddToKt(o.U.K, u_nverts, ndim, coef, G, o.U.D)
+
+		// Kuu: add stiffness term ∂(σe・G^m)/∂us^n
+		if o.U.UseB {
+			IpBmatrix(o.U.B, ndim, u_nverts, G, radius, S)
+			la.MatTrMulAdd3(o.U.K, coef, o.U.B, o.U.D, o.U.B) // K += coef * tr(B) * D * B
+		} else {
+			IpAddToKt(o.U.K, u_nverts, ndim, coef, G, o.U.D)
+		}
 	}
 
 	// contribution from natural boundary conditions
