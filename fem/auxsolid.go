@@ -223,9 +223,10 @@ func StressKeys() []string {
 	return []string{"sx", "sy", "sz", "sxy", "syz", "szx"}
 }
 
-func SlNwlKeys() []string {
+func FlowKeys() []string {
+	// nwl == nl・wl == filter velocity
 	if Global.Ndim == 2 {
-		return []string{"sl", "nwlx", "nwly"}
+		return []string{"sl", "pl", "nf", "nwlx", "nwly"}
 	}
-	return []string{"sl", "nwlx", "nwly", "nwlz"}
+	return []string{"sl", "pl", "nf", "nwlx", "nwly", "nwlz"}
 }

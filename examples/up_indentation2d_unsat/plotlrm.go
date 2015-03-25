@@ -36,18 +36,11 @@ func main() {
 	// load results
 	out.LoadResults(nil)
 
+	nf_a := out.GetRes("nf", "a", -1)
 	pl_a := out.GetRes("pl", "a", -1)
 	pc_a := make([]float64, len(pl_a))
 	for i, _ := range pl_a {
 		pc_a[i] = -pl_a[i]
-	}
-
-	divus := out.GetRes("divus", "a", -1)
-	ns0 := out.GetRes("ns0", "a", -1)
-	nf := make([]float64, len(divus))
-	for i, _ := range divus {
-		ns := (1.0 - divus[i]) * ns0[i]
-		nf[i] = 1.0 - ns
 	}
 
 	out.Splot("LRM")
@@ -58,7 +51,7 @@ func main() {
 	out.Csplot.Xlbl = "$p_c$"
 
 	out.Splot("porosity")
-	out.Plot("t", nf, "a", plt.Fmt{M: "+"}, -1)
+	out.Plot("t", nf_a, "a", plt.Fmt{M: "+"}, -1)
 	out.Csplot.Ylbl = "$n_f$"
 
 	// show
