@@ -16,6 +16,7 @@ import (
 	"github.com/cpmech/gofem/shp"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
+	"github.com/cpmech/gosl/la"
 )
 
 const IP_TAG_INI = 70000
@@ -27,7 +28,9 @@ var (
 	nodes []*fem.Node // active/allocated nodes
 	elems []fem.Elem  // active/allocated elements
 
-	ipvals []map[string]float64 // [allNip][nkeys]
+	ipvals []map[string]float64 // [allNip][nkeys] integration points values
+	exvals []map[string]float64 // [nverts][nkeys] extrapolated values
+	excnts []map[string]float64 // [nverts][nkeys] extrapolation: counter
 
 	dirout string // directory for output
 	fnkey  string // filename key
@@ -49,7 +52,7 @@ func init() {
 	is_sig = map[string]bool{"sx": true, "sy": true, "sz": true, "sxy": true, "syz": true, "szx": true}
 	is_nwl = map[string]bool{"nwlx": true, "nwly": true, "nwlz": true}
 	label2keys = map[string][]string{
-		"u": ukeys, "sig": skeys, "nwl": nwlkeys,
+		"u": ukeys, "sig": skeys, "nwl": nwlkeys, "ex_nwl": nwlkeys,
 		"pl": plkeys, "pg": pgkeys, "fl": flkeys,
 	}
 }
@@ -61,6 +64,7 @@ func main() {
 
 	// input data
 	simfn := "data/twoqua4.sim"
+	exnwl := false
 	stgidx := 0
 
 	// parse flags
@@ -69,7 +73,10 @@ func main() {
 		simfn = flag.Arg(0)
 	}
 	if len(flag.Args()) > 1 {
-		stgidx = io.Atoi(flag.Arg(1))
+		exnwl = io.Atob(flag.Arg(1))
+	}
+	if len(flag.Args()) > 2 {
+		stgidx = io.Atoi(flag.Arg(2))
 	}
 
 	// check extension
@@ -81,6 +88,7 @@ func main() {
 	io.Pf("\nInput data\n")
 	io.Pf("==========\n")
 	io.Pf("  simfn   = %30s // simulation filename\n", simfn)
+	io.Pf("  exnwl   = %30v // extrapolate nwl\n", exnwl)
 	io.Pf("  stgidx  = %30v // stage index\n", stgidx)
 	io.Pf("\n")
 
@@ -138,6 +146,11 @@ func main() {
 		geo["ips"] = new(bytes.Buffer)
 		vtu["ips"] = new(bytes.Buffer)
 	}
+	if exnwl {
+		pvd["ex_nwl"] = new(bytes.Buffer)
+		geo["ex_nwl"] = new(bytes.Buffer)
+		vtu["ex_nwl"] = new(bytes.Buffer)
+	}
 
 	// headers
 	for _, b := range pvd {
@@ -160,15 +173,22 @@ func main() {
 
 			// allocate integration points values
 			ipvals = make([]map[string]float64, len(out.Ipoints))
+			for i, _ := range out.Ipoints {
+				ipvals[i] = make(map[string]float64)
+			}
 		}
 
-		// store integration points values @ time t
+		// get integration points values @ time t
 		for i, p := range out.Ipoints {
-			ipvals[i] = make(map[string]float64)
 			vals := p.Calc(out.Dom.Sol)
 			for j, key := range p.Keys {
 				ipvals[i][key] = vals[j]
 			}
+		}
+
+		// compute extrapolated values
+		if exnwl {
+			compute_extrapolated_values()
 		}
 
 		// for each data buffer
@@ -369,6 +389,10 @@ func pdata_write(buf *bytes.Buffer, label string, keys []string, ips bool) {
 
 	nkeys := len(keys)
 	zeros := get_zeros(nkeys)
+	extrap := false
+	if len(label) > 2 {
+		extrap = label[:2] == "ex"
+	}
 
 	io.Ff(buf, "<DataArray type=\"Float64\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"ascii\">\n", label, nkeys)
 	if ips {
@@ -376,14 +400,31 @@ func pdata_write(buf *bytes.Buffer, label string, keys []string, ips bool) {
 		for i, _ := range out.Ipoints {
 			l := ""
 			for _, key := range keys {
-				if v, ok := ipvals[i][key]; ok {
-					l += io.Sf("%23.15e ", v)
+				if val, ok := ipvals[i][key]; ok {
+					l += io.Sf("%23.15e ", val)
 				} else {
 					l += "0 "
 				}
 			}
 			if l == "" {
 				l = zeros
+			}
+			io.Ff(buf, l)
+		}
+	} else if extrap {
+		// loop over vertices => with extrapolated values
+		for _, v := range verts {
+			n := out.Dom.Vid2node[v.Id]
+			l := zeros
+			if n != nil {
+				l = ""
+				for _, key := range keys {
+					if val, ok := exvals[v.Id][key]; ok {
+						l += io.Sf("%23.15e ", val/excnts[v.Id][key])
+					} else {
+						l += "0 "
+					}
+				}
 			}
 			io.Ff(buf, l)
 		}
@@ -471,4 +512,67 @@ func get_cell_info(ctype string, lbb bool) (ctypeNew string, nverts int) {
 	}
 	nverts = shp.GetNverts(ctypeNew)
 	return
+}
+
+func compute_extrapolated_values() {
+
+	// allocate structures for extrapolation
+	if len(exvals) == 0 {
+		exvals = make([]map[string]float64, len(verts))
+		excnts = make([]map[string]float64, len(verts))
+	}
+
+	// clear previous values
+	for _, v := range verts {
+		exvals[v.Id] = make(map[string]float64)
+		excnts[v.Id] = make(map[string]float64)
+	}
+
+	// keys
+	keys := []string{"nwlx", "nwly"}
+	if ndim == 2 {
+		keys = []string{"nwlx", "nwly", "nwlz"}
+	}
+
+	// loop over elements
+	for _, ele := range elems {
+
+		// get shape and integration points from known elements
+		var sha *shp.Shape
+		var ips []*shp.Ipoint
+		switch e := ele.(type) {
+		case *fem.ElemP:
+			sha = e.Shp
+			ips = e.IpsElem
+		case *fem.ElemU:
+			sha = e.Shp
+			ips = e.IpsElem
+		case *fem.ElemUP:
+			sha = e.U.Shp
+			ips = e.U.IpsElem
+		}
+		if sha == nil {
+			chk.Panic("cannot get shape structrue from element")
+		}
+
+		// compute Extrapolator matrix
+		Emat := la.MatAlloc(sha.Nverts, len(ips))
+		err := sha.Extrapolator(Emat, ips)
+		if err != nil {
+			chk.Panic("cannot compute extrapolator matrix: %v", err)
+		}
+
+		// perform extrapolation
+		cell := cells[ele.Id()]
+		ids := out.Cid2ips[ele.Id()]
+		for i := 0; i < sha.Nverts; i++ {
+			v := cell.Verts[i]
+			for _, key := range keys {
+				for j := 0; j < len(ips); j++ {
+					exvals[v][key] += Emat[i][j] * ipvals[ids[j]][key]
+				}
+				excnts[v][key] += 1
+			}
+		}
+	}
 }
