@@ -290,7 +290,6 @@ type Stage struct {
 
 	// specific problems data
 	HydroSt   bool           `json:"hydrost"`   // hydrostatic initial condition
-	Zwater    float64        `json:"zwater"`    // water elevation to set ponding or unsaturated condition
 	SeepFaces []int          `json:"seepfaces"` // face tags corresponding to seepage faces
 	IniStress *IniStressData `json:"inistress"` // initial stress data
 	GeoSt     *GeoStData     `json:"geost"`     // initial geostatic state data (hydrostatic as well)
