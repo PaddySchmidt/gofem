@@ -181,8 +181,8 @@ func main() {
 		// get integration points values @ time t
 		for i, p := range out.Ipoints {
 			vals := p.Calc(out.Dom.Sol)
-			for j, key := range p.Keys {
-				ipvals[i][key] = vals[j]
+			for key, val := range vals {
+				ipvals[i][key] = val
 			}
 		}
 

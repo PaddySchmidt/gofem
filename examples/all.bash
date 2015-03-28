@@ -1,6 +1,7 @@
 #!/bin/bash
 
 examples="rjoint_ex06_pullout \
+          seep_simple_flux \
           seep_ex01_freesurf \
           seep_ex02_freesurf \
           spo751_pressurised_cylinder \

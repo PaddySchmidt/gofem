@@ -501,18 +501,17 @@ func (o ElemU) Decode(dec Decoder) (ok bool) {
 // OutIpsData returns data from all integration points for output
 func (o ElemU) OutIpsData() (data []*OutIpData) {
 	keys := StressKeys()
-	nkeys := len(keys)
 	for idx, ip := range o.IpsElem {
 		s := o.States[idx]
 		x := o.Shp.IpRealCoords(o.X, ip)
-		calc := func(sol *Solution) (vals []float64) {
-			vals = make([]float64, nkeys)
+		calc := func(sol *Solution) (vals map[string]float64) {
+			vals = make(map[string]float64)
 			for i, _ := range keys {
-				vals[i] = s.Sig[i]
+				vals[keys[i]] = s.Sig[i]
 			}
 			return
 		}
-		data = append(data, &OutIpData{o.Id(), x, keys, calc})
+		data = append(data, &OutIpData{o.Id(), x, calc})
 	}
 	return
 }

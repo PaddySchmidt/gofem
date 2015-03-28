@@ -38,12 +38,16 @@ var (
 	I []int      // selected output indices
 	T []float64  // selected output times
 
+	// extrapolated values
+	Extrap []string             // keys to be extrapolated; e.g. []string{"nwlx", "nwly"}
+	ExVals []map[string]float64 // [nverts][nkeys] extrapolated values
+
 	// subplots
 	Splots []*SplotDat // all subplots
 	Csplot *SplotDat   // current subplot
 )
 
-// End must be called and the end to flush log file
+// End must be called at the end to flush log file
 func End() {
 	if err := recover(); err != nil {
 		io.PfRed("ERROR: %v\n", err)
@@ -126,7 +130,8 @@ func Start(simfnpath string, stageIdx, regionIdx int) {
 			if err != nil {
 				chk.Panic("cannot append to bins of integration points: %v", err)
 			}
-			for _, key := range d.Keys {
+			vals := d.Calc(Dom.Sol)
+			for key, _ := range vals {
 				utl.StrIntsMapAppend(&Ipkey2ips, key, id)
 				Ipkeys[key] = true
 			}

@@ -691,41 +691,35 @@ func (o ElemUP) Decode(dec Decoder) (ok bool) {
 // OutIpsData returns data from all integration points for output
 func (o ElemUP) OutIpsData() (data []*OutIpData) {
 	ndim := Global.Ndim
-	keys := FlowKeys()
+	flow := FlowKeys()
 	sigs := StressKeys()
-	keys = append(keys, sigs...)
-	nkeys := len(keys)
 	for idx, ip := range o.U.IpsElem {
 		r := o.P.States[idx]
 		s := o.U.States[idx]
 		x := o.U.Shp.IpRealCoords(o.U.X, ip)
-		calc := func(sol *Solution) (vals []float64) {
+		calc := func(sol *Solution) (vals map[string]float64) {
 			if !o.ipvars(idx, sol) {
 				return
 			}
+			ns := (1.0 - o.divus) * o.P.States[idx].A_ns0
 			ρL := r.A_ρL
 			klr := o.P.Mdl.Cnd.Klr(r.A_sl)
-			vals = make([]float64, nkeys)
-			// sl and pl
-			vals[0] = r.A_sl
-			vals[1] = o.P.pl
-			// nf
-			ns := (1.0 - o.divus) * o.P.States[idx].A_ns0
-			vals[2] = 1.0 - ns // nf
-			// nwl
+			vals = map[string]float64{
+				"sl": r.A_sl,
+				"pl": o.P.pl,
+				"nf": 1.0 - ns,
+			}
 			for i := 0; i < ndim; i++ {
 				for j := 0; j < ndim; j++ {
-					vals[3+i] += klr * o.P.Mdl.Klsat[i][j] * o.hl[j] / ρL
+					vals[flow[i]] += klr * o.P.Mdl.Klsat[i][j] * o.hl[j] / ρL
 				}
 			}
-			// σ
-			iσ := 3 + ndim
 			for i, _ := range sigs {
-				vals[iσ+i] = s.Sig[i]
+				vals[sigs[i]] = s.Sig[i]
 			}
 			return
 		}
-		data = append(data, &OutIpData{o.Id(), x, keys, calc})
+		data = append(data, &OutIpData{o.Id(), x, calc})
 	}
 	return
 }

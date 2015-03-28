@@ -67,6 +67,11 @@ func LoadResults(times []float64) {
 			chk.Panic("cannot load results into domain; please check log file")
 		}
 
+		// extrapolation
+		if Extrap != nil {
+			compute_extrapolated_values()
+		}
+
 		// for each point
 		for _, pts := range R {
 			for _, p := range pts {
@@ -77,10 +82,19 @@ func LoadResults(times []float64) {
 
 				// handle node
 				if vid >= 0 {
+
+					// add dofs to results map
 					nod := Dom.Vid2node[vid]
 					for _, dof := range nod.Dofs {
 						if dof != nil {
 							utl.StrDblsMapAppend(&p.Vals, dof.Key, Dom.Sol.Y[dof.Eq])
+						}
+					}
+
+					// add extrapolated values to results map
+					if ExVals != nil {
+						for key, val := range ExVals[vid] {
+							utl.StrDblsMapAppend(&p.Vals, "ex_"+key, val)
 						}
 					}
 				}
@@ -89,8 +103,8 @@ func LoadResults(times []float64) {
 				if pid >= 0 {
 					dat := Ipoints[pid]
 					vals := dat.Calc(Dom.Sol)
-					for i, key := range dat.Keys {
-						utl.StrDblsMapAppend(&p.Vals, key, vals[i])
+					for key, val := range vals {
+						utl.StrDblsMapAppend(&p.Vals, key, val)
 					}
 				}
 			}
@@ -127,6 +141,21 @@ func GetRes(key, alias string, idxI int) []float64 {
 	}
 	chk.Panic("cannot get %q at %q", key, alias)
 	return nil
+}
+
+// GetIds return the ids corresponding to alias
+func GetIds(alias string) (vids, ipids []int) {
+	if pts, ok := R[alias]; ok {
+		for _, p := range pts {
+			if p.Vid >= 0 {
+				vids = append(vids, p.Vid)
+			}
+			if p.IpId >= 0 {
+				ipids = append(ipids, p.IpId)
+			}
+		}
+	}
+	return
 }
 
 // GetCoords returns the coordinates of a single point

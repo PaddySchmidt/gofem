@@ -127,8 +127,8 @@ func Test_bh16a(tst *testing.T) {
 		chk.IntAssert(len(d), 1)
 		vals := d[0].Calc(dom.Sol)
 		chk.IntAssert(len(vals), 4)
-		for i, val := range vals {
-			io.Pfyel("key=%v => val=%v\n", d[0].Keys[i], val)
+		for key, val := range vals {
+			io.Pfyel("key=%v => val=%v\n", key, val)
 		}
 	}
 }
