@@ -1,0 +1,12 @@
+Exercise: Calculate flux through plane
+• Method one
+– Slice
+– Generate Normals
+– Calculator Normals dot U
+– Integrate Variables
+– Plot Selection over Time 
+
+• Method two
+– Slice
+– Surface Flow
+– Plot Selection over Time 

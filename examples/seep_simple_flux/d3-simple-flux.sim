@@ -1,0 +1,47 @@
+{
+  "data" : {
+    "matfile" : "materials.mat",
+    "debug"  : false,
+    "showR"  : false,
+    "wlevel" : 4
+  },
+  "functions" : [
+    { "name":"grav",  "type":"cte", "prms":[{"n":"c", "v":10}] },
+    { "name":"left",  "type":"cte", "prms":[{"n":"c", "v":0}] },
+    { "name":"right", "type":"rmp", "prms":[
+      { "n":"ca", "v":0   },
+      { "n":"cb", "v":10  },
+      { "n":"ta", "v":0   },
+      { "n":"tb", "v":1e3 }]
+    }
+  ],
+  "regions" : [
+    {
+      "mshfile"   : "msh/d3-coarse.msh",
+      "elemsdata" : [
+        { "tag":-1, "mat":"sand", "type":"p" }
+      ]
+    }
+  ],
+  "solver" : {
+    "dvgctrl" : true
+  },
+  "stages" : [
+    {
+      "desc" : "horizontal flow",
+      "hydrost" : true,
+      "facebcs" : [
+        { "tag":-10, "keys":["hst"], "funcs":["left"] },
+        { "tag":-11, "keys":["hst"], "funcs":["right"] }
+      ],
+      "eleconds" : [
+        { "tag":-1, "keys":["g"], "funcs":["grav"] }
+      ],
+      "control" : {
+        "tf"    : 4000,
+        "dt"    : 50,
+        "dtout" : 100
+      }
+    }
+  ]
+}
