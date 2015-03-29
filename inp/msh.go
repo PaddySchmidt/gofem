@@ -13,6 +13,7 @@ import (
 	"github.com/cpmech/gofem/shp"
 
 	"github.com/cpmech/gosl/io"
+	"github.com/cpmech/gosl/utl"
 )
 
 // constants
@@ -78,6 +79,7 @@ type Mesh struct {
 	VertTag2verts map[int][]*Vert      // vertex tag => set of vertices
 	CellTag2cells map[int][]*Cell      // cell tag => set of cells
 	FaceTag2cells map[int][]CellFaceId // face tag => set of cells
+	FaceTag2verts map[int][]int        // face tag => vertices on tagged face
 	SeamTag2cells map[int][]CellSeamId // seam tag => set of cells
 	Ctype2cells   map[string][]*Cell   // cell type => set of cells
 	Part2cells    map[int][]*Cell      // partition number => set of cells
@@ -159,6 +161,7 @@ func ReadMsh(dir, fn string) *Mesh {
 	// derived data
 	o.CellTag2cells = make(map[int][]*Cell)
 	o.FaceTag2cells = make(map[int][]CellFaceId)
+	o.FaceTag2verts = make(map[int][]int)
 	o.SeamTag2cells = make(map[int][]CellSeamId)
 	o.Ctype2cells = make(map[string][]*Cell)
 	o.Part2cells = make(map[int][]*Cell)
@@ -179,6 +182,9 @@ func ReadMsh(dir, fn string) *Mesh {
 			if ftag < 0 {
 				pairs := o.FaceTag2cells[ftag]
 				o.FaceTag2cells[ftag] = append(pairs, CellFaceId{c, i})
+				for _, l := range shp.GetFaceLocalVerts(c.Type, i) {
+					utl.IntIntsMapAppend(&o.FaceTag2verts, ftag, o.Verts[l].Id)
+				}
 			}
 		}
 
@@ -210,6 +216,11 @@ func ReadMsh(dir, fn string) *Mesh {
 				return nil
 			}
 		}
+	}
+
+	// remove duplicates
+	for ftag, verts := range o.FaceTag2verts {
+		o.FaceTag2verts[ftag] = utl.IntUnique(verts)
 	}
 
 	// log
