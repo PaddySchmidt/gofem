@@ -18,6 +18,10 @@ type Locator interface {
 // At implements locator at point => PointLocator
 type At []float64
 
+// AtIp implements locator at integration point => PointLocator
+//  Note: this is useful when there are vertices overlapping ips
+type AtIp []float64
+
 // N implements node locator
 // Ids or tags of vertices can be stored in Verts
 type N []int
@@ -52,6 +56,18 @@ func (o At) Locate() Points {
 	}
 
 	// integration point
+	ipid := IpsBins.Find(o)
+	if ipid >= 0 {
+		q := get_ip_point(ipid, nil)
+		if q != nil {
+			return Points{q}
+		}
+	}
+	return nil
+}
+
+// Locate finds integration points
+func (o AtIp) Locate() Points {
 	ipid := IpsBins.Find(o)
 	if ipid >= 0 {
 		q := get_ip_point(ipid, nil)
