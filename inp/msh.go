@@ -183,7 +183,7 @@ func ReadMsh(dir, fn string) *Mesh {
 				pairs := o.FaceTag2cells[ftag]
 				o.FaceTag2cells[ftag] = append(pairs, CellFaceId{c, i})
 				for _, l := range shp.GetFaceLocalVerts(c.Type, i) {
-					utl.IntIntsMapAppend(&o.FaceTag2verts, ftag, o.Verts[l].Id)
+					utl.IntIntsMapAppend(&o.FaceTag2verts, ftag, o.Verts[c.Verts[l]].Id)
 				}
 			}
 		}
