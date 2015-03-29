@@ -9,7 +9,6 @@ import (
 
 	"github.com/cpmech/gofem/out"
 	"github.com/cpmech/gosl/io"
-	"github.com/cpmech/gosl/num"
 	"github.com/cpmech/gosl/plt"
 )
 
@@ -42,24 +41,8 @@ func main() {
 
 	// compute water discharge along section-A
 	nwlx_TM := out.GetRes("ex_nwlx", "top-middle", -1)
-	nwlx := out.GetRes("ex_nwlx", "section-A", -1)
-	_, y, _ := out.GetXYZ("ex_nwlx", "section-A")
-	io.Pforan("y = %v\n", y)
-	io.Pforan("nwlx = %v\n", nwlx)
-	Q := num.Trapz(y, nwlx)
+	Q := out.Integrate("ex_nwlx", "section-A", "y", -1)
 	io.PfYel("Q = %g m³/s [answer: 0.0003]\n", Q)
-	/*
-		ids, _ := out.GetIds("section-A")
-		nv := len(ids)
-		s, f := make([]float64, nv), make([]float64, nv)
-		for i, id := range ids {
-			s[i] = out.Dom.Msh.Verts[id].C[1]
-			f[i] = out.ExVals[id]["nwlx"]
-			io.Pforan("%2d : y=%.2f nwlx=%v\n", id, s[i], f[i])
-		}
-		Q := num.Trapz(s, f)
-		io.PfYel("Q = %g m³/s [answer: 0.0003]\n", Q)
-	*/
 
 	// plot
 	kt := len(out.T) - 1

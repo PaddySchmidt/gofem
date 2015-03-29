@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/cpmech/gosl/chk"
+	"github.com/cpmech/gosl/num"
 	"github.com/cpmech/gosl/utl"
 )
 
@@ -210,4 +211,29 @@ func GetXYZ(key, alias string) (x, y, z []float64) {
 	}
 	chk.Panic("cannot get x-y-z coordinates with key %q and alias %q", key, alias)
 	return
+}
+
+// Integrate integrates key along direction "x", "y", or "z"
+//  idxI -- index in I slice corresponding to selected output time; use -1 for the last item.
+//          If alias defines a single point, the whole time series is returned and idxI is ignored.
+func Integrate(key, alias, along string, idxI int) float64 {
+	if idxI < 0 {
+		idxI = len(I) - 1
+	}
+	y := GetRes(key, alias, idxI)
+	var x []float64
+	switch along {
+	case "x":
+		x, _, _ = GetXYZ(key, alias)
+	case "y":
+		_, x, _ = GetXYZ(key, alias)
+	case "z":
+		_, _, x = GetXYZ(key, alias)
+	}
+	var err error
+	_, x, y, _, err = utl.SortQuadruples(nil, x, y, nil, "x")
+	if err != nil {
+		chk.Panic("%q: cannot integrate %q along %q:\n%v\n", alias, key, along, err)
+	}
+	return num.Trapz(x, y)
 }
