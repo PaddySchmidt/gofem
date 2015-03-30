@@ -165,6 +165,9 @@ func main() {
 			chk.Panic("cannot load results into domain; please check log file")
 		}
 
+		// message
+		io.PfWhite("time     = %g\r", t)
+
 		// generate topology
 		if tidx == 0 {
 			for label, b := range geo {

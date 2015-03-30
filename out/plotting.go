@@ -5,8 +5,11 @@
 package out
 
 import (
+	"math"
+
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
+	"github.com/cpmech/gosl/la"
 	"github.com/cpmech/gosl/plt"
 	"github.com/cpmech/gosl/utl"
 )
@@ -103,7 +106,16 @@ func Draw(dirout, fname string, show bool, extra ExtraPlt) {
 				if d.Style.L == "" {
 					d.Style.L = d.Alias
 				}
-				plt.Plot(d.X, d.Y, d.Style.GetArgs("clip_on=0"))
+				x, y := d.X, d.Y
+				if math.Abs(Splots[k].Xscale) > 0 {
+					x = make([]float64, len(d.X))
+					la.VecCopy(x, Splots[k].Xscale, d.X)
+				}
+				if math.Abs(Splots[k].Yscale) > 0 {
+					y = make([]float64, len(d.Y))
+					la.VecCopy(y, Splots[k].Yscale, d.Y)
+				}
+				plt.Plot(x, y, d.Style.GetArgs("clip_on=0"))
 			}
 			plt.Gll(Splots[k].Xlbl, Splots[k].Ylbl, "")
 			k += 1
