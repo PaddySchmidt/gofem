@@ -41,7 +41,7 @@ func (o PtNaturalBcs) AddToRhs(fb []float64, t float64) {
 // Set sets new point natural boundary condition data
 func (o *PtNaturalBcs) Set(key string, nod *Node, fcn fun.Func, extra string) (setisok bool) {
 	d := nod.GetDof(key)
-	if LogErrCond(d == nil, "cannot find dof named %q", key) {
+	if d == nil { // handle LBB nodes
 		return
 	}
 	if idx, ok := o.Eq2idx[d.Eq]; ok {
