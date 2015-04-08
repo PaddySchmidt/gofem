@@ -172,8 +172,8 @@ func (o *VonMises) ContD(D [][]float64, s *State) (err error) {
 // EPmodel ///////////////////////////////////////////////////////////////////////////////////////////
 
 // Info returns some information and data from this model
-func (o VonMises) Info() (nsurf int, fcoef, pt, pr float64) {
-	return 1, 1, 0, 1
+func (o VonMises) Info() (nalp, nsurf int, fcoef, pt, pr float64) {
+	return 1, 1, 1, 0, 1
 }
 
 // IsoF returns the isotropic function, if any
@@ -182,18 +182,32 @@ func (o VonMises) IsoF() *tsr.IsoFun {
 }
 
 // YieldFs computes the yield functions
-func (o VonMises) YieldFuncs(sta *State) []float64 {
-	q := tsr.M_q(sta.Sig)
-	α0 := sta.Alp[0]
+func (o VonMises) YieldFuncs(s *State) []float64 {
+	q := tsr.M_q(s.Sig)
+	α0 := s.Alp[0]
 	return []float64{q - o.qy0 - o.H*α0}
 }
 
 // ElastUpdate updates state with an elastic response
-func (o VonMises) ElastUpdate(sta *State, Δε []float64) {
-	var devΔε_i float64
-	trΔε := Δε[0] + Δε[1] + Δε[2]
+func (o VonMises) ElastUpdate(s *State, ε, Δε []float64) {
+	var devε_i float64
+	trε := ε[0] + ε[1] + ε[2]
 	for i := 0; i < o.Nsig; i++ {
-		devΔε_i = Δε[i] - trΔε*tsr.Im[i]/3.0
-		sta.Sig[i] += o.K*trΔε*tsr.Im[i] + 2.0*o.G*devΔε_i
+		devε_i = ε[i] - trε*tsr.Im[i]/3.0
+		s.Sig[i] = o.K*trε*tsr.Im[i] + 2.0*o.G*devε_i
 	}
 }
+
+// PVE_CalcSig computes principal stresses for given principal elastic strains
+func (o VonMises) PVE_CalcSig(σ, εe []float64) {
+}
+
+// PVE_FlowHard computes model variabes for given elastic strains (principal values)
+func (o VonMises) PVE_FlowHard(Nb, h, σ, α []float64) (f float64, err error) {
+	return
+}
+
+// PVE_LoadSet sets state with new data (principal strains) from elastoplastic loading
+//func (o VonMises) PVE_LoadSet(s *State, Δγ float64, εe, α []float64, P [][]float64) (err error) {
+//return
+//}

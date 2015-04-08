@@ -42,7 +42,7 @@ func Test_hyperelast01(tst *testing.T) {
 
 	for j, ed := range []float64{0, 0.05, 0.1, 0.15, 0.2} {
 		for i, ev := range Ev {
-			P[i], Q[i] = m.Invs(ev, ed)
+			P[i], Q[i] = m.Calc_pq(ev, ed)
 			X[i] = math.Log(1.0 + (P[i]+pt)/pr)
 		}
 		slope := (Ev[0] - Ev[np-1]) / (X[np-1] - X[0])
@@ -70,7 +70,7 @@ func Test_hyperelast01(tst *testing.T) {
 
 	for j, ev := range []float64{0, -0.05, -0.1, -0.15, -0.2} {
 		for i, ed := range Ed {
-			P[i], Q[i] = m.Invs(ev, ed)
+			P[i], Q[i] = m.Calc_pq(ev, ed)
 			X[i] = math.Log(1.0 + (P[i]+pt)/pr)
 		}
 		slope := (Ed[0] - Ed[np-1]) / (Q[np-1] - Q[0])

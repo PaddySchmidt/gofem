@@ -164,7 +164,7 @@ func (o *Driver) Run(pth *Path) (err error) {
 				}
 				if epm != nil {
 					tmp := o.Res[k-1].GetCopy()
-					epm.ElastUpdate(tmp, Δε)
+					epm.ElastUpdate(tmp, o.Eps[k], Δε)
 					o.PreCor = append(o.PreCor, tmp.Sig, o.Res[k].Sig)
 				}
 

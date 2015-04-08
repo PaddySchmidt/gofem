@@ -9,10 +9,15 @@ import (
 
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
+	"github.com/cpmech/gosl/tsr"
 )
 
 // HyperElast1 implements a nonlinear hyperelastic model for powders and porous media
 type HyperElast1 struct {
+
+	// constants
+	Nsig   int     // number of stress components
+	EnoMin float64 // minimum value of ||dev(ε)||
 
 	// parameters
 	κ   float64 // κ
@@ -26,6 +31,9 @@ type HyperElast1 struct {
 	// derived
 	pa float64 // pa = pr + pt
 	a  float64 // a = 1 / κ
+
+	// auxiliary
+	devε []float64 // dev(ε)
 }
 
 // add model to factory
@@ -35,6 +43,10 @@ func init() {
 
 // Init initialises model
 func (o *HyperElast1) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
+
+	// constants
+	o.Nsig = 2 * ndim
+	o.EnoMin = 1e-8
 
 	// parameters
 	for _, p := range prms {
@@ -59,6 +71,9 @@ func (o *HyperElast1) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 	// derived
 	o.pa = o.pr + o.pt
 	o.a = 1.0 / o.κ
+
+	// auxiliary
+	o.devε = make([]float64, 2*ndim)
 	return
 }
 
@@ -93,9 +108,37 @@ func (o HyperElast1) InitIntVars(σ []float64) (s *State, err error) {
 	return
 }
 
+// L_update computes principal stresses for given principal strains
+func (o *HyperElast1) L_update(σ, εe []float64) (p, q float64) {
+	eno, εv, εd := tsr.M_devε(o.devε, εe) // using principal values since len(εe)=3
+	p, q = o.Calc_pq(εv, εd)
+	if eno > o.EnoMin {
+		for i := 0; i < 3; i++ {
+			σ[i] = -p*tsr.Im[i] + tsr.SQ2by3*q*o.devε[i]/eno
+		}
+		return
+	}
+	for i := 0; i < 3; i++ {
+		σ[i] = -p * tsr.Im[i]
+	}
+	return
+}
+
 // Update updates stresses for given strains
 func (o *HyperElast1) Update(s *State, ε, Δε []float64) (err error) {
-	chk.Panic("HyperElast1: Update: not ready yet")
+	eno, εv, εd := tsr.M_devε(o.devε, ε)
+	p, q := o.Calc_pq(εv, εd)
+	if eno > o.EnoMin {
+		for i := 0; i < o.Nsig; i++ {
+			s.Sig[i] = -p*tsr.Im[i] + tsr.SQ2by3*q*o.devε[i]/eno
+		}
+		return
+	}
+	for i := 0; i < o.Nsig; i++ {
+		s.Sig[i] = -p * tsr.Im[i]
+	}
+	//io.Pforan("\nε=%v εv=%v εd=%v\n", ε, εv, εd)
+	//io.Pforan("σ=%v p=%v q=%v\n\n", s.Sig, p, q)
 	return
 }
 
@@ -105,8 +148,8 @@ func (o *HyperElast1) CalcD(D [][]float64, s *State, firstIt bool) (err error) {
 	return
 }
 
-// Invs computes p and q for given elastic εv and εd
-func (o HyperElast1) Invs(εve, εde float64) (p, q float64) {
+// Calc_pq computes p and q for given elastic εv and εd
+func (o HyperElast1) Calc_pq(εve, εde float64) (p, q float64) {
 	pv := (o.pa + o.p0) * math.Exp(o.a*(o.εv0-εve))
 	p = (1.0+1.5*o.a*o.κb*εde*εde)*pv - o.pa
 	q = 3.0 * (o.G0 + o.κb*pv) * εde

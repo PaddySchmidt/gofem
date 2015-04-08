@@ -24,8 +24,9 @@ var (
 	PlotSet3 = []string{"ed,q/p", "p,q", "ed,ev", "log(p),ev"}
 	PlotSet4 = []string{"ed,q", "i,f", "p,q,ys", "ed,ev", "p,ev", "oct"}
 	PlotSet5 = []string{"ed,q", "i,f", "p,q,ys", "ed,ev", "p,ev", "i,alp"}
-	PlotSet6 = []string{"ed,q", "i,f", "p,q,ys", "ed,ev", "p,ev", "s3,s1,ys", "i,alp", "Dgam,f", "oct,ys"}
-	PlotSet7 = []string{"ed,q", "ed,ev", "p,q,ys", "p,ev", "s3,s1,ys", "oct,ys"}
+	PlotSet6 = []string{"ed,q", "ed,ev", "p,q,ys", "p,ev", "s3,s1,ys", "oct,ys"}
+	PlotSet7 = []string{"ed,q", "i,f", "p,q,ys", "ed,ev", "p,ev", "s3,s1,ys", "i,alp", "Dgam,f", "oct,ys"}
+	PlotSet8 = []string{"ed,q", "i,f", "p,q,ys", "ed,ev", "log(p),ev", "s3,s1,ys", "i,alp", "Dgam,f", "oct,ys"}
 )
 
 type RampFcn_t func(x float64) float64
@@ -90,6 +91,7 @@ type Plotter struct {
 
 	// internal variables
 	m     EPmodel // the model
+	nalp  int     // number of α
 	nsurf int     // number of yield surfaces
 	fcoef float64 // coefficient for normalising yield functions
 	pt    float64 // tensile p
@@ -106,10 +108,10 @@ type Plotter struct {
 	PreCor [][]float64 // [npath][neps] predictor-corrector states
 
 	// limits
-	pmin     float64              // min p value to use when drawing yield surfaces
-	pmax     float64              // max p value to use when drawing yield surfaces
-	usepmin  bool                 // use pmin in yield surfaces drawing
-	usepmax  bool                 // use pmax in yield surfaces drawing
+	Pmin     float64              // min p value to use when drawing yield surfaces
+	Pmax     float64              // max p value to use when drawing yield surfaces
+	UsePmin  bool                 // use Pmin in yield surfaces drawing
+	UsePmax  bool                 // use Pmax in yield surfaces drawing
 	Lims     map[string][]float64 // limits to be used with a particular plotset; if not nil => to set plot area
 	UseOct   bool                 // use octahedral invariants (poct,qoct) in p,q plot
 	OctAxOff bool                 // turn off axes in ocahedral plane
@@ -143,7 +145,7 @@ func (o *Plotter) SetFig(split, epsfig bool, prop, width float64, savedir, savef
 // Note: this method is optional
 func (o *Plotter) SetModel(m EPmodel) {
 	o.m = m
-	o.nsurf, o.fcoef, o.pt, o.pr = o.m.Info()
+	o.nalp, o.nsurf, o.fcoef, o.pt, o.pr = o.m.Info()
 }
 
 // Title addes title to plot
@@ -376,7 +378,7 @@ func (o *Plotter) Plot_p_ev(x, y []float64, res []*State, sts [][]float64, last 
 	if last {
 		xlbl := "$p$"
 		if o.LogP {
-			xlbl = "$\\log{p}$"
+			xlbl = "$\\log{[1+(p+p_t)/p_r]}$"
 		}
 		plt.Gll(xlbl, "$\\varepsilon_v\\;[\\%]$", "leg_out=1, leg_ncol=4, leg_hlen=2")
 		if lims, ok := o.Lims["p,ev"]; ok {
@@ -515,12 +517,12 @@ func (o *Plotter) Plot_p_q(x, y []float64, res []*State, sts [][]float64, last b
 		if o.UseOct {
 			mx, my = tsr.SQ3, tsr.SQ2by3
 		}
-		if o.usepmin {
-			xmi = min(xmi, o.pmin*mx)
+		if o.UsePmin {
+			xmi = min(xmi, o.Pmin*mx)
 		}
-		if o.usepmax {
-			xma = max(xma, o.pmax*mx)
-			yma = max(yma, o.pmax*my)
+		if o.UsePmax {
+			xma = max(xma, o.Pmax*mx)
+			yma = max(yma, o.Pmax*my)
 		}
 		xmi, xma, ymi, yma = o.fix_range(xmi, xmi, xma, ymi, yma)
 		if o.PqLims != nil {
@@ -740,13 +742,13 @@ func (o *Plotter) Plot_s3_s1(x, y []float64, res []*State, sts [][]float64, last
 	plt.PlotOne(x[k], y[k], io.Sf("'bs', clip_on=0, color='%s', marker='%s', ms=%d", o.SpClr, o.EpMrk, o.EpMs))
 	// yield surface
 	if o.WithYs && o.m != nil {
-		if o.usepmin {
-			xmi = min(xmi, o.pmin*tsr.SQ2)
-			ymi = min(ymi, o.pmin)
+		if o.UsePmin {
+			xmi = min(xmi, o.Pmin*tsr.SQ2)
+			ymi = min(ymi, o.Pmin)
 		}
-		if o.usepmax {
-			xma = max(xma, o.pmax*tsr.SQ2)
-			yma = max(yma, o.pmax)
+		if o.UsePmax {
+			xma = max(xma, o.Pmax*tsr.SQ2)
+			yma = max(yma, o.Pmax)
 		}
 		xmi, xma, ymi, yma = o.fix_range(0, xmi, xma, ymi, yma)
 		if o.S3s1Lims != nil {
@@ -879,9 +881,9 @@ func (o *Plotter) Plot_ys3d(res []*State) {
 			yma = max(yma, y)
 		}
 	}
-	if o.usepmax {
-		xma = max(xma, o.pmax)
-		yma = max(yma, o.pmax)
+	if o.UsePmax {
+		xma = max(xma, o.Pmax)
+		yma = max(yma, o.Pmax)
 	}
 
 	// scene
