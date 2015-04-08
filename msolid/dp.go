@@ -217,3 +217,32 @@ func (o *DruckerPrager) ContD(D [][]float64, s *State) (err error) {
 	}
 	return
 }
+
+// EPmodel ///////////////////////////////////////////////////////////////////////////////////////////
+
+// Info returns some information and data from this model
+func (o DruckerPrager) Info() (nsurf int, fcoef, pt, pr float64) {
+	return 1, 1, o.qy0 / o.M, 1
+}
+
+// IsoF returns the isotropic function, if any
+func (o DruckerPrager) IsoF() *tsr.IsoFun {
+	return nil
+}
+
+// YieldFs computes the yield functions
+func (o DruckerPrager) YieldFuncs(sta *State) []float64 {
+	p, q := tsr.M_p(sta.Sig), tsr.M_q(sta.Sig)
+	α0 := sta.Alp[0]
+	return []float64{q - o.M*p - o.qy0 - o.H*α0}
+}
+
+// ElastUpdate updates state with an elastic response
+func (o DruckerPrager) ElastUpdate(sta *State, Δε []float64) {
+	var devΔε_i float64
+	trΔε := Δε[0] + Δε[1] + Δε[2]
+	for i := 0; i < o.Nsig; i++ {
+		devΔε_i = Δε[i] - trΔε*tsr.Im[i]/3.0
+		sta.Sig[i] += o.K*trΔε*tsr.Im[i] + 2.0*o.G*devΔε_i
+	}
+}

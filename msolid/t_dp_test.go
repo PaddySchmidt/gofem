@@ -11,8 +11,6 @@ import (
 	"github.com/cpmech/gosl/fun"
 )
 
-var DPsaveFig = false
-
 func Test_dp01(tst *testing.T) {
 
 	//verbose()
@@ -31,6 +29,7 @@ func Test_dp01(tst *testing.T) {
 		&fun.Prm{N: "H", V: 0.5},
 	})
 	drv.CheckD = true
+	drv.VerD = false // verbose
 	if err != nil {
 		tst.Errorf("test failed: %v\n", err)
 		return
@@ -64,6 +63,12 @@ func Test_dp01(tst *testing.T) {
 	}
 
 	// plot
-	//if DPsaveFig {
-	//}
+	//if true {
+	if false {
+		var plr Plotter
+		plr.SetFig(false, false, 1, 400, "/tmp", "test_dp01")
+		plr.SetModel(dp)
+		plr.PreCor = drv.PreCor
+		plr.Plot(PlotSet7, drv.Res, drv.Eps, true, true)
+	}
 }

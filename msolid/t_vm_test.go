@@ -60,6 +60,12 @@ func Test_vm01(tst *testing.T) {
 	}
 
 	// plot
-	//if DPsaveFig {
-	//}
+	//if true {
+	if false {
+		var plr Plotter
+		plr.SetFig(false, false, 1, 400, "/tmp", "test_vm01")
+		plr.SetModel(vm)
+		plr.PreCor = drv.PreCor
+		plr.Plot(PlotSet7, drv.Res, drv.Eps, true, true)
+	}
 }

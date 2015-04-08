@@ -35,7 +35,7 @@ type Driver struct {
 	D [][]float64 // consistent matrix
 
 	// for predictor-corrector plots
-	precor []*State // predictor-corrector states
+	PreCor [][]float64 // predictor-corrector stresses
 }
 
 // Init initialises driver
@@ -70,6 +70,9 @@ func (o *Driver) Run(pth *Path) (err error) {
 	default:
 		return chk.Err("cannot handle large-deformation models yet\n")
 	}
+
+	// elastoplastic model
+	epm := o.model.(EPmodel)
 
 	// initial stresses
 	σ := make([]float64, o.nsig)
@@ -159,12 +162,10 @@ func (o *Driver) Run(pth *Path) (err error) {
 					}
 					return
 				}
-				if o.WithPC {
-					/* TODO
+				if epm != nil {
 					tmp := o.Res[k-1].GetCopy()
-					o.info.Ec.Update_σ(tmp.σ, o.Δε)
-					o.precor = append(o.precor, tmp.GetCopy(), o.Res[k].GetCopy())
-					*/
+					epm.ElastUpdate(tmp, Δε)
+					o.PreCor = append(o.PreCor, tmp.Sig, o.Res[k].Sig)
 				}
 
 				// check consistent matrix

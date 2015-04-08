@@ -62,6 +62,18 @@ func (o *HyperElast1) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 	return
 }
 
+// Set_pt sets pt
+func (o *HyperElast1) Set_pt(pt float64) {
+	o.pt = pt
+	o.pa = o.pr + o.pt
+}
+
+// Set_p0_ev0 sets p0 and εv0
+func (o *HyperElast1) Set_p0_ev0(p0, εv0 float64) {
+	o.p0 = p0
+	o.εv0 = εv0
+}
+
 // GetPrms gets (an example) of parameters
 func (o HyperElast1) GetPrms() fun.Prms {
 	return []*fun.Prm{
