@@ -71,6 +71,12 @@ func (o *Driver) Run(pth *Path) (err error) {
 		return chk.Err("cannot handle large-deformation models yet\n")
 	}
 
+	// initial stresses
+	σ := make([]float64, o.nsig)
+	σ[0] = pth.MultS * pth.Sx[0]
+	σ[1] = pth.MultS * pth.Sy[0]
+	σ[2] = pth.MultS * pth.Sz[0]
+
 	// allocate results arrays
 	nr := 1 + (pth.Size()-1)*pth.Nincs
 	if nr < 2 {
@@ -79,16 +85,11 @@ func (o *Driver) Run(pth *Path) (err error) {
 	o.Res = make([]*State, nr)
 	o.Eps = la.MatAlloc(nr, o.nsig)
 	for i := 0; i < nr; i++ {
-		o.Res[i], err = o.model.InitIntVars()
+		o.Res[i], err = o.model.InitIntVars(σ)
 		if err != nil {
 			return
 		}
 	}
-
-	// initial stresses and internal variables
-	o.Res[0].Sig[0] = pth.MultS * pth.Sx[0]
-	o.Res[0].Sig[1] = pth.MultS * pth.Sy[0]
-	o.Res[0].Sig[2] = pth.MultS * pth.Sz[0]
 
 	// auxiliary variables
 	Δσ := make([]float64, o.nsig)
@@ -103,7 +104,7 @@ func (o *Driver) Run(pth *Path) (err error) {
 		εold = make([]float64, o.nsig)
 		εnew = make([]float64, o.nsig)
 		Δεtmp = make([]float64, o.nsig)
-		stmp, err = o.model.InitIntVars()
+		stmp, err = o.model.InitIntVars(σ)
 		if err != nil {
 			return
 		}

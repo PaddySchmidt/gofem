@@ -76,7 +76,7 @@ func (o HyperElast1) GetPrms() fun.Prms {
 }
 
 // InitIntVars initialises internal (secondary) variables
-func (o HyperElast1) InitIntVars() (s *State, err error) {
+func (o HyperElast1) InitIntVars(σ []float64) (s *State, err error) {
 	chk.Panic("HyperElast1: InitIntVars: not ready yet")
 	return
 }

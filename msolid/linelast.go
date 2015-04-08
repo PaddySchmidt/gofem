@@ -27,8 +27,9 @@ func (o LinElast) GetPrms() fun.Prms {
 }
 
 // InitIntVars initialises internal (secondary) variables
-func (o LinElast) InitIntVars() (s *State, err error) {
+func (o LinElast) InitIntVars(σ []float64) (s *State, err error) {
 	s = NewState(o.Nsig, 0, 0, false)
+	copy(s.Sig, σ)
 	return
 }
 

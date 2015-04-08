@@ -440,18 +440,21 @@ func (o *ElemU) SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) {
 	o.States = make([]*msolid.State, nip)
 	o.StatesBkp = make([]*msolid.State, nip)
 
-	// for each integration point
-	for i := 0; i < nip; i++ {
-		o.States[i], _ = o.Model.InitIntVars()
-		o.StatesBkp[i] = o.States[i].GetCopy()
-	}
+	// has specified stresses?
+	_, has_sig := ivs["sx"]
 
-	// initial stresses
-	if _, ok := ivs["sx"]; ok {
-		for i := 0; i < nip; i++ {
-			Ivs2sigmas(o.States[i].Sig, i, ivs)
-			copy(o.StatesBkp[i].Sig, o.States[i].Sig)
+	// for each integration point
+	σ := make([]float64, 2*Global.Ndim)
+	var err error
+	for i := 0; i < nip; i++ {
+		if has_sig {
+			Ivs2sigmas(σ, i, ivs)
 		}
+		o.States[i], err = o.Model.InitIntVars(σ)
+		if LogErr(err, "SetIniIvs") {
+			return
+		}
+		o.StatesBkp[i] = o.States[i].GetCopy()
 	}
 	return true
 }

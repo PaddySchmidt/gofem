@@ -68,8 +68,9 @@ func (o DruckerPrager) GetPrms() fun.Prms {
 }
 
 // InitIntVars initialises internal (secondary) variables
-func (o DruckerPrager) InitIntVars() (s *State, err error) {
+func (o DruckerPrager) InitIntVars(σ []float64) (s *State, err error) {
 	s = NewState(o.Nsig, 1, 0, false)
+	copy(s.Sig, σ)
 	return
 }
 

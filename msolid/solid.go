@@ -33,7 +33,7 @@ import (
 type Model interface {
 	Init(ndim int, pstress bool, prms fun.Prms) error // initialises model
 	GetPrms() fun.Prms                                // gets (an example) of parameters
-	InitIntVars() (*State, error)                     // initialises AND allocates internal (secondary) variables
+	InitIntVars(σ []float64) (*State, error)          // initialises AND allocates internal (secondary) variables
 }
 
 // Small defines rate type solid models for small strain analyses
