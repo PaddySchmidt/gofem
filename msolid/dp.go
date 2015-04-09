@@ -247,6 +247,10 @@ func (o DruckerPrager) ElastUpdate(s *State, ε, Δε []float64) {
 	}
 }
 
+// ElastD returns continuum elastic D
+func (o DruckerPrager) ElastD(D [][]float64, s *State) {
+}
+
 // E_CalcSig computes principal stresses for given principal elastic strains
 func (o DruckerPrager) E_CalcSig(σ, εe []float64) {
 }

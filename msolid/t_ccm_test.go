@@ -14,7 +14,7 @@ import (
 
 func Test_ccm01(tst *testing.T) {
 
-	//verbose()
+	verbose()
 	chk.PrintTitle("ccm01")
 
 	// allocate driver
@@ -34,7 +34,7 @@ func Test_ccm01(tst *testing.T) {
 		&fun.Prm{N: "p0", V: 0.0},
 		&fun.Prm{N: "ev0", V: 0.0},
 	})
-	drv.CheckD = false
+	drv.CheckD = true
 	drv.VerD = true // verbose
 	if err != nil {
 		tst.Errorf("test failed: %v\n", err)

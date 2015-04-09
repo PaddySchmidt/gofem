@@ -198,6 +198,10 @@ func (o VonMises) ElastUpdate(s *State, ε, Δε []float64) {
 	}
 }
 
+// ElastD returns continuum elastic D
+func (o VonMises) ElastD(D [][]float64, s *State) {
+}
+
 // E_CalcSig computes principal stresses for given principal elastic strains
 func (o VonMises) E_CalcSig(σ, εe []float64) {
 }

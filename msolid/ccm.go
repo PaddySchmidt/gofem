@@ -142,7 +142,7 @@ func (o *CamClayMod) Update(s *State, ε, Δε []float64) (err error) {
 
 // CalcD computes D = dσ_new/dε_new consistent with StressUpdate
 func (o *CamClayMod) CalcD(D [][]float64, s *State, firstIt bool) (err error) {
-	return
+	return o.PU.CalcD(D, s)
 }
 
 // ContD computes D = dσ_new/dε_new continuous
@@ -180,6 +180,11 @@ func (o CamClayMod) ElastUpdate(s *State, ε, Δε []float64) {
 		εe[i] += Δε[i]
 	}
 	o.HE.Update(s, εe, Δε)
+}
+
+// ElastD returns continuum elastic D
+func (o CamClayMod) ElastD(D [][]float64, s *State) {
+	o.HE.CalcD(D, s, false)
 }
 
 // E_CalcSig computes principal stresses for given principal elastic strains

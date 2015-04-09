@@ -17,6 +17,7 @@ type EPmodel interface {
 	IsoF() *tsr.IsoFun                              // IsoF returns the isotropic function, if any
 	YieldFuncs(s *State) []float64                  // YieldFs computes the yield functions
 	ElastUpdate(s *State, ε, Δε []float64)          // ElastUpdate updates state with an elastic response
+	ElastD(D [][]float64, s *State)                 // ElastD returns continuum elastic D
 
 	// E_CalcSig computes principal stresses for given principal elastic strains
 	E_CalcSig(σ, εe []float64)
