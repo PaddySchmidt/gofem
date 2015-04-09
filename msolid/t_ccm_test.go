@@ -14,7 +14,7 @@ import (
 
 func Test_ccm01(tst *testing.T) {
 
-	verbose()
+	//verbose()
 	chk.PrintTitle("ccm01")
 
 	// allocate driver
@@ -43,15 +43,12 @@ func Test_ccm01(tst *testing.T) {
 
 	// model
 	ccm := drv.model.(*CamClayMod)
-	//io.Pfgreen("ccm = %+v\n", ccm)
 
 	// path
 	K, G := 1000.0, ccm.HE.G0
 	p0 := 0.0
 	Δp := 10.0
-	//Δq := ccm.CS.Mcs * Δp
 	DP := []float64{Δp}
-	//DQ := []float64{Δq}
 	DQ := []float64{0}
 	nincs := 1
 	niout := 1
@@ -62,9 +59,6 @@ func Test_ccm01(tst *testing.T) {
 		tst.Errorf("test failed: %v\n", err)
 		return
 	}
-	//io.Pfblue2("pth.Ex = %v\n", pth.Ex)
-	//io.Pfcyan("pth.Ey = %v\n", pth.Ey)
-	//io.Pfblue2("pth.Ez = %v\n", pth.Ez)
 
 	// run
 	err = drv.Run(&pth)
@@ -78,8 +72,8 @@ func Test_ccm01(tst *testing.T) {
 	}
 
 	// plot
-	if true {
-		//if false {
+	//if true {
+	if false {
 		var plr Plotter
 		prop := 2.0
 		plr.SetFig(false, false, prop, 400, "/tmp", "test_ccm01")

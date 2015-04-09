@@ -198,16 +198,28 @@ func (o VonMises) ElastUpdate(s *State, ε, Δε []float64) {
 	}
 }
 
-// PVE_CalcSig computes principal stresses for given principal elastic strains
-func (o VonMises) PVE_CalcSig(σ, εe []float64) {
+// E_CalcSig computes principal stresses for given principal elastic strains
+func (o VonMises) E_CalcSig(σ, εe []float64) {
 }
 
-// PVE_FlowHard computes model variabes for given elastic strains (principal values)
-func (o VonMises) PVE_FlowHard(Nb, h, σ, α []float64) (f float64, err error) {
+// E_CalcDe computes elastic modulus in principal components
+func (o VonMises) E_CalcDe(De [][]float64, εe []float64) {
+}
+
+// L_FlowHard computes model variabes for given principal values
+func (o VonMises) L_FlowHard(Nb, h, σ, α []float64) (f float64, err error) {
 	return
 }
 
-// PVE_LoadSet sets state with new data (principal strains) from elastoplastic loading
-//func (o VonMises) PVE_LoadSet(s *State, Δγ float64, εe, α []float64, P [][]float64) (err error) {
-//return
-//}
+// L_SecondDerivs computes second order derivatives
+//  N    -- ∂f/∂σ     [nsig]
+//  Nb   -- ∂g/∂σ     [nsig]
+//  A    -- ∂f/∂α_i   [nalp]
+//  h    -- hardening [nalp]
+//  Mb   -- ∂Nb/∂εe   [nsig][nsig]
+//  a_i  -- ∂Nb/∂α_i  [nalp][nsig]
+//  b_i  -- ∂h_i/∂εe  [nalp][nsig]
+//  c_ij -- ∂h_i/∂α_j [nalp][nalp]
+func (o VonMises) L_SecondDerivs(N, Nb, A, h []float64, Mb, a, b, c [][]float64, σ, α []float64) (err error) {
+	return
+}

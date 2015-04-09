@@ -11,6 +11,8 @@ import (
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/io"
+	"github.com/cpmech/gosl/la"
+	"github.com/cpmech/gosl/num"
 	"github.com/cpmech/gosl/plt"
 	"github.com/cpmech/gosl/utl"
 )
@@ -95,4 +97,48 @@ func Test_hyperelast01(tst *testing.T) {
 	}
 
 	//plt.Show()
+}
+
+func Test_hyperelast02(tst *testing.T) {
+
+	//verbose()
+	chk.PrintTitle("hyperelast02")
+
+	var m HyperElast1
+	m.Init(2, false, []*fun.Prm{
+		&fun.Prm{N: "kap", V: 0.05},
+		&fun.Prm{N: "kapb", V: 20.0},
+		&fun.Prm{N: "G0", V: 1500},
+		&fun.Prm{N: "pr", V: 2.2},
+		&fun.Prm{N: "pt", V: 11.0},
+		&fun.Prm{N: "p0", V: 15.0},
+		&fun.Prm{N: "ev0", V: 0.0},
+	})
+	io.Pforan("m = %+v\n", m)
+
+	ε := []float64{-0.001, -0.002, -0.003}
+	σ := make([]float64, 3)
+	m.L_update(σ, ε)
+	io.Pfblue2("ε = %v\n", ε)
+	io.Pfcyan("σ = %v\n", σ)
+
+	D := la.MatAlloc(3, 3)
+	m.L_CalcD(D, ε)
+	la.PrintMat("D", D, "%14.6f", false)
+
+	tol := 1e-7
+	verb := false
+	var tmp float64
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 3; j++ {
+			dnum := num.DerivCen(func(x float64, args ...interface{}) (res float64) {
+				tmp, ε[j] = ε[j], x
+				m.L_update(σ, ε)
+				res = σ[i]
+				ε[j] = tmp
+				return
+			}, ε[j])
+			chk.AnaNum(tst, io.Sf("D%d%d", i, j), tol, D[i][j], dnum, verb)
+		}
+	}
 }

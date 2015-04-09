@@ -33,7 +33,7 @@ type HyperElast1 struct {
 	a  float64 // a = 1 / κ
 
 	// auxiliary
-	devε []float64 // dev(ε)
+	e []float64 // e = dev(ε)
 }
 
 // add model to factory
@@ -73,7 +73,7 @@ func (o *HyperElast1) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 	o.a = 1.0 / o.κ
 
 	// auxiliary
-	o.devε = make([]float64, 2*ndim)
+	o.e = make([]float64, 2*ndim)
 	return
 }
 
@@ -109,12 +109,12 @@ func (o HyperElast1) InitIntVars(σ []float64) (s *State, err error) {
 }
 
 // L_update computes principal stresses for given principal strains
-func (o *HyperElast1) L_update(σ, εe []float64) (p, q float64) {
-	eno, εv, εd := tsr.M_devε(o.devε, εe) // using principal values since len(εe)=3
+func (o *HyperElast1) L_update(σ, ε []float64) (p, q float64) {
+	eno, εv, εd := tsr.M_devε(o.e, ε) // using principal values since len(ε)=3
 	p, q = o.Calc_pq(εv, εd)
 	if eno > o.EnoMin {
 		for i := 0; i < 3; i++ {
-			σ[i] = -p*tsr.Im[i] + tsr.SQ2by3*q*o.devε[i]/eno
+			σ[i] = -p*tsr.Im[i] + tsr.SQ2by3*q*o.e[i]/eno
 		}
 		return
 	}
@@ -126,11 +126,11 @@ func (o *HyperElast1) L_update(σ, εe []float64) (p, q float64) {
 
 // Update updates stresses for given strains
 func (o *HyperElast1) Update(s *State, ε, Δε []float64) (err error) {
-	eno, εv, εd := tsr.M_devε(o.devε, ε)
+	eno, εv, εd := tsr.M_devε(o.e, ε)
 	p, q := o.Calc_pq(εv, εd)
 	if eno > o.EnoMin {
 		for i := 0; i < o.Nsig; i++ {
-			s.Sig[i] = -p*tsr.Im[i] + tsr.SQ2by3*q*o.devε[i]/eno
+			s.Sig[i] = -p*tsr.Im[i] + tsr.SQ2by3*q*o.e[i]/eno
 		}
 		return
 	}
@@ -149,10 +149,10 @@ func (o *HyperElast1) CalcD(D [][]float64, s *State, firstIt bool) (err error) {
 }
 
 // Calc_pq computes p and q for given elastic εv and εd
-func (o HyperElast1) Calc_pq(εve, εde float64) (p, q float64) {
-	pv := (o.pa + o.p0) * math.Exp(o.a*(o.εv0-εve))
-	p = (1.0+1.5*o.a*o.κb*εde*εde)*pv - o.pa
-	q = 3.0 * (o.G0 + o.κb*pv) * εde
+func (o HyperElast1) Calc_pq(εv, εd float64) (p, q float64) {
+	pv := (o.pa + o.p0) * math.Exp(o.a*(o.εv0-εv))
+	p = (1.0+1.5*o.a*o.κb*εd*εd)*pv - o.pa
+	q = 3.0 * (o.G0 + o.κb*pv) * εd
 	return
 }
 
@@ -160,10 +160,33 @@ func (o HyperElast1) Calc_pq(εve, εde float64) (p, q float64) {
 //  Dvv = ∂²ψ/(∂εve ∂εve)
 //  Dvd = ∂²ψ/(∂εve ∂εde)
 //  Ddd = ∂²ψ/(∂εde ∂εde)
-func (o HyperElast1) Moduli(εve, εde float64) (Dvv, Dvd, Ddd float64) {
-	pv := (o.pa + o.p0) * math.Exp(o.a*(o.εv0-εve))
-	Dvv = o.a * (1.0 + 1.5*o.a*o.κb*εde*εde) * pv
-	Dvd = -3.0 * o.a * o.κb * εde * pv
+func (o HyperElast1) Moduli(εv, εd float64) (Dvv, Dvd, Ddd float64) {
+	pv := (o.pa + o.p0) * math.Exp(o.a*(o.εv0-εv))
+	Dvv = o.a * (1.0 + 1.5*o.a*o.κb*εd*εd) * pv
+	Dvd = -3.0 * o.a * o.κb * εd * pv
 	Ddd = 3.0 * (o.G0 + o.κb*pv)
 	return
+}
+
+// L_CalcD computes De in principal components for given principal elastic strains
+//  D -- [3][3] elastic modulus
+//  ε -- [3] principal elastic strains
+func (o HyperElast1) L_CalcD(D [][]float64, ε []float64) {
+	eno, εv, εd := tsr.M_devε(o.e, ε) // using principal values since len(ε)=3
+	if eno > o.EnoMin {
+		for i := 0; i < 3; i++ {
+			o.e[i] /= eno
+		}
+	} else {
+		for i := 0; i < 3; i++ {
+			o.e[i] = 0
+		}
+	}
+	Dvv, Dvd, Ddd := o.Moduli(εv, εd)
+	I, II := tsr.Im, tsr.IIm
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 3; j++ {
+			D[i][j] = 2.0*Ddd*II[i][j]/3.0 + (Dvv-2.0*Ddd/9.0)*I[i]*I[j] + tsr.SQ2by3*Dvd*(I[i]*o.e[j]+o.e[i]*I[j])
+		}
+	}
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
+	"github.com/cpmech/gosl/la"
 	"github.com/cpmech/gosl/tsr"
 )
 
@@ -27,9 +28,10 @@ type CamClayMod struct {
 	ocr float64 // initial over-consolidation ratio
 
 	// auxiliary
-	ch   float64   // 1/(κ-λ)
-	devσ []float64 // dev(σ)
-	nvec []float64 // dM/dσ
+	ch float64     // 1/(κ-λ)
+	s  []float64   // dev(σ)
+	n  []float64   // dM/dσ
+	m  [][]float64 // d²M/(dσ dσ)
 }
 
 // add model to factory
@@ -84,8 +86,9 @@ func (o *CamClayMod) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 
 	// auxiliary
 	o.ch = 1.0 / (o.HE.κ - o.λ)
-	o.devσ = make([]float64, 2*ndim)
-	o.nvec = make([]float64, 2*ndim)
+	o.s = make([]float64, o.Nsig)
+	o.n = make([]float64, o.Nsig)
+	o.m = la.MatAlloc(o.Nsig, o.Nsig)
 	return
 }
 
@@ -179,67 +182,67 @@ func (o CamClayMod) ElastUpdate(s *State, ε, Δε []float64) {
 	o.HE.Update(s, εe, Δε)
 }
 
-// PVE_CalcSig computes principal stresses for given principal elastic strains
-func (o CamClayMod) PVE_CalcSig(σ, εe []float64) {
+// E_CalcSig computes principal stresses for given principal elastic strains
+func (o CamClayMod) E_CalcSig(σ, εe []float64) {
 	o.HE.L_update(σ, εe)
 }
 
-// PVE_FlowHard computes model variabes for given elastic strains (principal values)
-func (o CamClayMod) PVE_FlowHard(Nb, h, σ, α []float64) (f float64, err error) {
-	p, q, w := tsr.M_pqws(o.devσ, σ)
+// E_CalcDe computes elastic modulus in principal components
+func (o CamClayMod) E_CalcDe(De [][]float64, εe []float64) {
+	o.HE.L_CalcD(De, εe)
+}
+
+// L_FlowHard computes model variabes for given principal values
+func (o CamClayMod) L_FlowHard(Nb, h, σ, α []float64) (f float64, err error) {
+	p, q, w := tsr.M_pqws(o.s, σ)
 	M := o.CS.M(w)
 	pt := o.HE.pt
 	n0 := (p + pt) * (p - α[0])
 	n1 := 2.0*p + pt - α[0]
+	I := tsr.Im
 	for i := 0; i < 3; i++ {
-		Nb[i] = 3.0*o.devσ[i] - M*M*n1*tsr.Im[i]/3.0 + 2.0*M*n0*o.nvec[i]
+		Nb[i] = 3.0*o.s[i] - M*M*n1*I[i]/3.0 + 2.0*M*n0*o.n[i]
 	}
 	trNb := Nb[0] + Nb[1] + Nb[2]
 	h[0] = o.ch * (o.HE.pa + α[0]) * trNb
 	f = q*q + M*M*n0
-	//io.Pforan("Nb = %v\n", Nb)
-	//io.Pforan("h0 = %v\n", h[0])
 	return
 }
 
-func (o CamClayMod) PVE_SecondDerivs(Nb, h, σ, α []float64) (f float64, err error) {
-	return
-}
-
-/*
-func (o CamClayMod) SecondDerivs(dAdσ, dAdα, dNdσ, dNdα, dNbdσ, dNbdα, dhdσ, dhdα [][]float64, α []float64) (err error) {
+// L_SecondDerivs computes second order derivatives
+//  N    -- ∂f/∂σ     [nsig]
+//  Nb   -- ∂g/∂σ     [nsig]
+//  A    -- ∂f/∂α_i   [nalp]
+//  h    -- hardening [nalp]
+//  Mb   -- ∂Nb/∂εe   [nsig][nsig]
+//  a_i  -- ∂Nb/∂α_i  [nalp][nsig]
+//  b_i  -- ∂h_i/∂εe  [nalp][nsig]
+//  c_ij -- ∂h_i/∂α_j [nalp][nalp]
+func (o CamClayMod) L_SecondDerivs(N, Nb, A, h []float64, Mb, a, b, c [][]float64, σ, α []float64) (err error) {
+	p, _, w := tsr.M_pqws(o.s, σ)
+	M := o.CS.M(w)
+	pt := o.HE.pt
 	n0 := (p + pt) * (p - α[0])
 	n1 := 2.0*p + pt - α[0]
-	M := o.Calc.M(v.w)
-	M2 := M * M
-	d0 := 2.0 * M2 / 9.0
+	I := tsr.Im
+	for i := 0; i < 3; i++ {
+		Nb[i] = 3.0*o.s[i] - M*M*n1*I[i]/3.0 + 2.0*M*n0*o.n[i]
+		N[i] = Nb[i]
+	}
+	d0 := 2.0 * M * M / 9.0
 	d1 := -2.0 * M * n1 / 3.0
 	d2 := 2.0 * n0
 	d3 := 2.0 * M * n0
-	o.CS.Deriv2(o.d2Mdσdσ, o.dMdσ, v.σ, v.s, p, v.q, v.w)
-	for i := 0; i < o.nσ; i++ {
-		for j := 0; j < o.nσ; j++ {
-			dNdσ[i][j] = 3.0*tsr.Psd[i][j] + d0*tsr.Im[i]*tsr.Im[j] + d1*(tsr.Im[i]*o.dMdσ[j]+o.dMdσ[i]*tsr.Im[j]) + d2*o.dMdσ[i]*o.dMdσ[j] + d3*o.d2Mdσdσ[i][j]
-			dNbdσ[i][j] = dNdσ[i][j]
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 3; j++ {
+			Mb[i][j] = 3.0*tsr.Psd[i][j] + d0*I[i]*I[j] + d1*(I[i]*o.n[j]+o.n[i]*I[j]) + d2*o.n[i]*o.n[j] + d3*o.m[i][j]
 		}
-		b1_i := 2.0*M2*tsr.Im[i]/3.0 - 2.0*M*n1*o.dMdσ[i]
-		dAdσ[0][i] = M2*tsr.Im[i]/3.0 - 2.0*M*(p+pt)*o.dMdσ[i]
-		dNdα[i][0] = dAdσ[0][i]
-		dNbdα[i][0] = dNdα[i][0]
-		dhdσ[0][i] = o.ψ * (o.pr + α[0]) * b1_i
+		a[0][i] = M*M*I[i]/3.0 - 2.0*M*(p+pt)*o.n[i]
+		b[0][i] = o.ch * (o.HE.pa + α[0]) * M * (2.0*M*I[i]/3.0 - 2.0*n1*o.n[i])
 	}
-	trNb := -M2 * n1
-	b0 := M2
-	dAdα[0][0] = 0
-	dhdα[0][0] = o.ψ*trNb + o.ψ*(o.pr+α[0])*b0
+	trNb := Nb[0] + Nb[1] + Nb[2]
+	A[0] = -M * M * (p + pt)
+	h[0] = o.ch * (o.HE.pa + α[0]) * trNb
+	c[0][0] = o.ch*trNb + o.ch*(o.HE.pa+α[0])*M*M
+	return
 }
-*/
-
-// PVE_LoadSet sets state with new data (principal strains) from elastoplastic loading
-//func (o CamClayMod) PVE_LoadSet(s *State, Δγ float64, εe, α []float64, P [][]float64) (err error) {
-//s.Dgam = Δγ
-//s.Loading = true
-//copy(s.Alp, α)
-//o.HE.L_update(o.Lσ, εe)
-//return
-//}

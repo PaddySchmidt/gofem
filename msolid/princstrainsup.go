@@ -34,20 +34,21 @@ type PrincStrainsUp struct {
 	P    [][]float64 // eigenprojectors of strains and stresses
 	εetr []float64   // trial elastic state
 	αn   []float64   // α at beginning of update
-
-	// gradients
-	Nb []float64 // principal values: plastic flow direction
-	h  []float64 // principal values: hardening
-
-	// for Jacobian
-	N  []float64
-	Mb [][]float64
-	a  [][]float64
-	b  [][]float64
-	c  [][]float64
+	h    []float64   // [nalp] principal values: hardening
+	A    []float64   // ∂f/∂α_i     [nalp]
+	N    []float64   // ∂f/∂σ       [3]
+	Ne   []float64   // ∂f/∂σ・De   [3]
+	Nb   []float64   // ∂g/∂σ       [3]
+	Mb   [][]float64 // ∂Nb/∂εe     [3][3]
+	Mbe  [][]float64 // ∂Nb/∂σ・De  [3][3]
+	D    [][]float64 // D = ∂σ/∂ε   [3][3]
+	a    [][]float64 // ∂Nb/∂α_i    [nalp][3]
+	b    [][]float64 // ∂h_i/∂εe    [nalp][3]
+	be   [][]float64 // ∂h_i/∂σ・De [nalp][3]
+	c    [][]float64 // ∂h_i/∂α_j   [nalp][nalp]
+	x    []float64   // {εe0, εe1, εe2, α0, α1, ..., Δγ}
 
 	// nonlinear solver
-	x   []float64    // {εe0, εe1, εe2, α0, α1, ..., Δγ}
 	nls num.NlSolver // nonlinear solver
 }
 
@@ -71,16 +72,26 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 	o.P = la.MatAlloc(3, o.Nsig)
 	o.εetr = make([]float64, o.Nsig)
 	o.αn = make([]float64, o.nalp)
-	o.Nb = make([]float64, 3)
 	o.h = make([]float64, 3)
+	o.A = make([]float64, o.nalp)
+	o.N = make([]float64, 3)
+	o.Ne = make([]float64, 3)
+	o.Nb = make([]float64, 3)
+	o.Mb = la.MatAlloc(3, 3)
+	o.Mbe = la.MatAlloc(3, 3)
+	o.D = la.MatAlloc(3, 3)
+	o.a = la.MatAlloc(o.nalp, 3)
+	o.b = la.MatAlloc(o.nalp, 3)
+	o.be = la.MatAlloc(o.nalp, 3)
+	o.c = la.MatAlloc(o.nalp, o.nalp)
 	o.x = make([]float64, 4+o.nalp)
 
 	// nonlinear solver function
 	ffcn := func(fx, x []float64) error {
 		εe, α, Δγ := x[:3], x[3:3+o.nalp], x[3+o.nalp]
 		εetr := o.Lε
-		o.mdl.PVE_CalcSig(o.Lσ, εe)
-		f, err := o.mdl.PVE_FlowHard(o.Nb, o.h, o.Lσ, α)
+		o.mdl.E_CalcSig(o.Lσ, εe)
+		f, err := o.mdl.L_FlowHard(o.Nb, o.h, o.Lσ, α)
 		if err != nil {
 			return err
 		}
@@ -94,31 +105,55 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 		return nil
 	}
 
-	// nonlinear solver Jacobian
-	JfcnD := func(dfdx [][]float64, x []float64) error {
+	// nonlinear solver Jacobian: J = dfdx
+	JfcnD := func(J [][]float64, x []float64) error {
 		εe, α, Δγ := x[:3], x[3:3+o.nalp], x[3+o.nalp]
-		_ = α
-		o.mdl.PVE_CalcSig(o.Lσ, εe)
+		o.mdl.E_CalcSig(o.Lσ, εe)
+		err := o.mdl.L_SecondDerivs(o.N, o.Nb, o.A, o.h, o.Mb, o.a, o.b, o.c, o.Lσ, α)
+		if err != nil {
+			return err
+		}
+		o.mdl.E_CalcDe(o.D, εe)
+		for i := 0; i < 3; i++ {
+			o.Ne[i] = 0
+			for m := 0; m < o.nalp; m++ {
+				o.be[m][i] = 0
+			}
+			for j := 0; j < 3; j++ {
+				o.Ne[i] += o.N[j] * o.D[j][i]
+				for m := 0; m < o.nalp; m++ {
+					o.be[m][i] += o.b[m][j] * o.D[j][i]
+				}
+				o.Mbe[i][j] = 0
+				for k := 0; k < 3; k++ {
+					o.Mbe[i][j] += o.Mb[i][k] * o.D[k][j]
+				}
+			}
+		}
 		for i := 0; i < 3; i++ {
 			for j := 0; j < 3; j++ {
-				dfdx[i][j] = tsr.IIm[i][j] + Δγ*o.Mb[i][j]
+				J[i][j] = tsr.IIm[i][j] + Δγ*o.Mbe[i][j]
 			}
 			for j := 0; j < o.nalp; j++ {
-				dfdx[i][3+j] = Δγ * o.a[j][i]
-				dfdx[3+j][i] = -Δγ * o.b[j][i]
+				J[i][3+j] = Δγ * o.a[j][i]
+				J[3+j][i] = -Δγ * o.be[j][i]
 			}
-			dfdx[i][3+o.nalp] = o.Nb[i]
-			dfdx[3+o.nalp][i] = o.N[i] / o.fcoef
+			J[i][3+o.nalp] = o.Nb[i]
+			J[3+o.nalp][i] = o.Ne[i] / o.fcoef
 		}
-		// TODO
-		//for i := 0; i < o.nalp; i++ {
-		//dfdx[3+i]
-		//}
+		for i := 0; i < o.nalp; i++ {
+			for j := 0; j < o.nalp; j++ {
+				J[3+i][3+j] = tsr.IIm[i][j] - Δγ*o.c[i][j]
+			}
+			J[3+i][3+o.nalp] = -o.h[i]
+			J[3+o.nalp][3+i] = o.A[i] / o.fcoef
+		}
 		return nil
 	}
 
 	// nonlinear solver
-	o.nls.Init(4+o.nalp, ffcn, nil, JfcnD, false, true, map[string]float64{})
+	useDn, numJ := true, false
+	o.nls.Init(4+o.nalp, ffcn, nil, JfcnD, useDn, numJ, map[string]float64{})
 	return
 }
 
@@ -130,7 +165,6 @@ func (o PrincStrainsUp) Update(s *State, ε, Δε []float64) (err error) {
 
 	// check loading condition
 	ftr := o.mdl.YieldFuncs(s)[0]
-	io.Pforan("ftr = %v\n", ftr)
 	if ftr <= o.Fzero {
 		s.Loading = false
 		return
@@ -138,7 +172,6 @@ func (o PrincStrainsUp) Update(s *State, ε, Δε []float64) (err error) {
 
 	// eigenvalues/projectors
 	copy(o.εetr, s.Phi)
-	//io.Pfred("εetr = %v\n", o.εetr)
 	_, err = tsr.M_FixZeroOrRepeated(o.Lε, o.εetr, o.Pert, o.EvTol, o.Zero)
 	if err != nil {
 		return
@@ -147,11 +180,6 @@ func (o PrincStrainsUp) Update(s *State, ε, Δε []float64) (err error) {
 	if err != nil {
 		return
 	}
-	//io.Pforan("Δε = %v\n", Δε)
-	//io.Pforan("Lε = %v\n", o.Lε)
-	//io.Pfblue2("P[0] = %v\n", o.P[0])
-	//io.Pfcyan("P[1] = %v\n", o.P[1])
-	//io.Pfblue2("P[2] = %v\n", o.P[2])
 
 	// trial values
 	for i := 0; i < 3; i++ {
@@ -163,16 +191,36 @@ func (o PrincStrainsUp) Update(s *State, ε, Δε []float64) (err error) {
 	}
 	o.x[3+o.nalp] = 0 // Δγ
 
+	// check Jacobian
+	check := false
+	tolChk := 1e-5
+	silentChk := false
+	if check {
+		var cnd float64
+		cnd, err = o.nls.CheckJ(o.x, tolChk, true, silentChk)
+		io.Pfred("before: cnd(J) = %v\n", cnd)
+	}
+
 	// solve
-	silent := false
+	silent := true
 	err = o.nls.Solve(o.x, silent)
 	if err != nil {
 		return
 	}
 
+	// check Jacobian again
+	if check {
+		var cnd float64
+		cnd, err = o.nls.CheckJ(o.x, tolChk, true, silentChk)
+		io.Pfred("after: cnd(J) = %v\n", cnd)
+		if err != nil {
+			return
+		}
+	}
+
 	// set new state
 	εe, α, Δγ := o.x[:3], o.x[3:3+o.nalp], o.x[3+o.nalp]
-	o.mdl.PVE_CalcSig(o.Lσ, εe)
+	o.mdl.E_CalcSig(o.Lσ, εe)
 	for i := 0; i < o.Nsig; i++ {
 		s.Sig[i] = o.Lσ[0]*o.P[0][i] + o.Lσ[1]*o.P[1][i] + o.Lσ[2]*o.P[2][i]
 	}
