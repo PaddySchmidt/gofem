@@ -102,7 +102,53 @@ func Test_hyperelast01(tst *testing.T) {
 func Test_hyperelast02(tst *testing.T) {
 
 	//verbose()
-	chk.PrintTitle("hyperelast02")
+	chk.PrintTitle("hyperelast02 (linear)")
+
+	E, ν := 1500.0, 0.25
+	K := Calc_K_from_Enu(E, ν)
+	G := Calc_G_from_Enu(E, ν)
+	io.Pforan("K = %v\n", K)
+	io.Pforan("G = %v\n", G)
+
+	var m HyperElast1
+	m.Init(2, false, []*fun.Prm{
+		&fun.Prm{N: "K0", V: K},
+		&fun.Prm{N: "G0", V: G},
+		&fun.Prm{N: "le", V: 1},
+	})
+	io.Pforan("m = %+v\n", m)
+
+	ε := []float64{-0.001, -0.002, -0.003}
+	σ := make([]float64, 3)
+	m.L_update(σ, ε)
+	io.Pfblue2("ε = %v\n", ε)
+	io.Pfcyan("σ = %v\n", σ)
+
+	D := la.MatAlloc(3, 3)
+	m.L_CalcD(D, ε)
+	la.PrintMat("D", D, "%14.6f", false)
+
+	tol := 1e-11
+	verb := io.Verbose
+	var tmp float64
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 3; j++ {
+			dnum := num.DerivCen(func(x float64, args ...interface{}) (res float64) {
+				tmp, ε[j] = ε[j], x
+				m.L_update(σ, ε)
+				res = σ[i]
+				ε[j] = tmp
+				return
+			}, ε[j])
+			chk.AnaNum(tst, io.Sf("D%d%d", i, j), tol, D[i][j], dnum, verb)
+		}
+	}
+}
+
+func Test_hyperelast03(tst *testing.T) {
+
+	//verbose()
+	chk.PrintTitle("hyperelast03 (nonlinear)")
 
 	var m HyperElast1
 	m.Init(2, false, []*fun.Prm{
@@ -127,7 +173,7 @@ func Test_hyperelast02(tst *testing.T) {
 	la.PrintMat("D", D, "%14.6f", false)
 
 	tol := 1e-7
-	verb := false
+	verb := io.Verbose
 	var tmp float64
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 3; j++ {

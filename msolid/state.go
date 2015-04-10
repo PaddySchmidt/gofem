@@ -16,13 +16,12 @@ type State struct {
 	Sig []float64 // σ: current Cauchy stress tensor (effective) [nsig]
 
 	// for plasticity
+	EpsE       []float64 // elastic strain
+	EpsTr      []float64 // trial elastic strain
 	Alp        []float64 // α: internal variables of rate type [nalp]
 	Dgam       float64   // Δγ: increment of Lagrange multiplier (for plasticity only)
 	Loading    bool      // unloading flag (for plasticity only)
 	ApexReturn bool      // return-to-apex (for plasticity only)
-
-	// additional internal variables
-	Phi []float64 // additional internal variables; e.g. for holding Δσ in the general stress updater
 
 	// for large deformation
 	F [][]float64 // deformation gradient [3][3]
@@ -33,11 +32,10 @@ type State struct {
 func NewState(nsig, nalp, nphi int, large bool) *State {
 	var state State
 	state.Sig = make([]float64, nsig)
+	state.EpsE = make([]float64, nsig)
+	state.EpsTr = make([]float64, nsig)
 	if nalp > 0 {
 		state.Alp = make([]float64, nalp)
-	}
-	if nphi > 0 {
-		state.Phi = make([]float64, nphi)
 	}
 	if large {
 		state.F = la.MatAlloc(3, 3)
@@ -54,10 +52,10 @@ func (o *State) Set(other *State) {
 	o.ApexReturn = other.ApexReturn
 	chk.IntAssert(len(o.Sig), len(other.Sig))
 	chk.IntAssert(len(o.Alp), len(other.Alp))
-	chk.IntAssert(len(o.Phi), len(other.Phi))
 	copy(o.Sig, other.Sig)
+	copy(o.EpsE, other.EpsE)
+	copy(o.EpsTr, other.EpsTr)
 	copy(o.Alp, other.Alp)
-	copy(o.Phi, other.Phi)
 	if len(o.F) > 0 {
 		la.MatCopy(o.F, 1, other.F)
 	}
@@ -66,7 +64,7 @@ func (o *State) Set(other *State) {
 // GetCopy returns a copy of this state
 func (o *State) GetCopy() *State {
 	large := len(o.F) > 0
-	other := NewState(len(o.Sig), len(o.Alp), len(o.Phi), large)
+	other := NewState(len(o.Sig), len(o.Alp), 0, large)
 	other.Set(o)
 	return other
 }

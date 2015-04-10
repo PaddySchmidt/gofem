@@ -17,6 +17,12 @@ func Test_ccm01(tst *testing.T) {
 	verbose()
 	chk.PrintTitle("ccm01")
 
+	E, ν := 1500.0, 0.25
+	K := Calc_K_from_Enu(E, ν)
+	G := Calc_G_from_Enu(E, ν)
+	io.Pforan("K = %v\n", K)
+	io.Pforan("G = %v\n", G)
+
 	// allocate driver
 	ndim, pstress := 2, false
 	simfnk, modelname := "test", "ccm"
@@ -29,12 +35,15 @@ func Test_ccm01(tst *testing.T) {
 		&fun.Prm{N: "ocr", V: 1},
 		&fun.Prm{N: "kap", V: 0.05},
 		&fun.Prm{N: "kapb", V: 0},
-		&fun.Prm{N: "G0", V: 1000},
+		&fun.Prm{N: "G0", V: G},
 		&fun.Prm{N: "pr", V: 1.0},
 		&fun.Prm{N: "p0", V: 0.0},
 		&fun.Prm{N: "ev0", V: 0.0},
+		&fun.Prm{N: "le", V: 0},
+		&fun.Prm{N: "K0", V: K},
 	})
 	drv.CheckD = true
+	drv.TolD = 1e-6
 	drv.VerD = true // verbose
 	if err != nil {
 		tst.Errorf("test failed: %v\n", err)
@@ -45,11 +54,9 @@ func Test_ccm01(tst *testing.T) {
 	ccm := drv.model.(*CamClayMod)
 
 	// path
-	K, G := 1000.0, ccm.HE.G0
 	p0 := 0.0
-	Δp := 10.0
-	DP := []float64{Δp}
-	DQ := []float64{0}
+	DP := []float64{10, 1}
+	DQ := []float64{0, 3}
 	nincs := 1
 	niout := 1
 	noise := 0.0

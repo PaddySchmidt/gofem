@@ -30,28 +30,27 @@ type PrincStrainsUp struct {
 	fcoef float64 // coefficient to normalise yield function
 
 	// variables
-	Lσ      []float64     // eigenvalues of stresses
-	Lε      []float64     // eigenvalues of strains
-	P       [][]float64   // eigenprojectors of strains and stresses
-	εetr    []float64     // trial elastic state
-	αn      []float64     // α at beginning of update
-	h       []float64     // [nalp] principal values: hardening
-	A       []float64     // ∂f/∂α_i       [nalp]
-	N       []float64     // ∂f/∂σ         [3]
-	Ne      []float64     // ∂f/∂σ・De     [3]
-	Nb      []float64     // ∂g/∂σ         [3]
-	Mb      [][]float64   // ∂Nb/∂εe       [3][3]
-	Mbe     [][]float64   // ∂Nb/∂σ・De    [3][3]
-	De      [][]float64   // De = ∂σ/∂εe   [3][3]
-	Dt      [][]float64   // Dt = ∂σ/∂εetr [3][3]
-	a       [][]float64   // ∂Nb/∂α_i      [nalp][3]
-	b       [][]float64   // ∂h_i/∂εe      [nalp][3]
-	be      [][]float64   // ∂h_i/∂σ・De   [nalp][3]
-	c       [][]float64   // ∂h_i/∂α_j     [nalp][nalp]
-	x       []float64     // {εe0, εe1, εe2, α0, α1, ..., Δγ}
-	J       [][]float64   // Jacobian      [4+nalp][4+nalp]
-	Ji      [][]float64   // inverse of J  [4+nalp][4+nalp]
-	dPdεetr [][][]float64 // ∂P_k/∂εetr    [3][nsig][nsig]
+	Lσ   []float64     // eigenvalues of stresses
+	Lε   []float64     // eigenvalues of strains
+	P    [][]float64   // eigenprojectors of strains and stresses
+	αn   []float64     // α at beginning of update
+	h    []float64     // [nalp] principal values: hardening
+	A    []float64     // ∂f/∂α_i       [nalp]
+	N    []float64     // ∂f/∂σ         [3]
+	Ne   []float64     // ∂f/∂σ・De     [3]
+	Nb   []float64     // ∂g/∂σ         [3]
+	Mb   [][]float64   // ∂Nb/∂εe       [3][3]
+	Mbe  [][]float64   // ∂Nb/∂σ・De    [3][3]
+	De   [][]float64   // De = ∂σ/∂εe   [3][3]
+	Dt   [][]float64   // Dt = ∂σ/∂εetr [3][3]
+	a    [][]float64   // ∂Nb/∂α_i      [nalp][3]
+	b    [][]float64   // ∂h_i/∂εe      [nalp][3]
+	be   [][]float64   // ∂h_i/∂σ・De   [nalp][3]
+	c    [][]float64   // ∂h_i/∂α_j     [nalp][nalp]
+	x    []float64     // {εe0, εe1, εe2, α0, α1, ..., Δγ}
+	J    [][]float64   // Jacobian      [4+nalp][4+nalp]
+	Ji   [][]float64   // inverse of J  [4+nalp][4+nalp]
+	dPdT [][][]float64 // dP_k/dεetr == dP_k/dεe [3][nsig][nsig]
 
 	// nonlinear solver
 	nls num.NlSolver // nonlinear solver
@@ -61,7 +60,8 @@ type PrincStrainsUp struct {
 func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) {
 
 	// constants
-	o.Pert = 1e-7
+	//o.Pert = tsr.EV_PERT
+	o.Pert = 1e-5
 	o.EvTol = tsr.EV_EVTOL
 	o.Zero = tsr.EV_ZERO
 	o.Fzero = 1e-9
@@ -75,7 +75,6 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 	o.Lσ = make([]float64, 3)
 	o.Lε = make([]float64, 3)
 	o.P = la.MatAlloc(3, o.Nsig)
-	o.εetr = make([]float64, o.Nsig)
 	o.αn = make([]float64, o.nalp)
 	o.h = make([]float64, 3)
 	o.A = make([]float64, o.nalp)
@@ -93,10 +92,11 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 	o.x = make([]float64, 4+o.nalp)
 	o.J = la.MatAlloc(4+o.nalp, 4+o.nalp)
 	o.Ji = la.MatAlloc(4+o.nalp, 4+o.nalp)
-	o.dPdεetr = utl.Deep3alloc(3, o.Nsig, o.Nsig)
+	o.dPdT = utl.Deep3alloc(3, o.Nsig, o.Nsig)
 
 	// nonlinear solver
 	useDn, numJ := true, false
+	//useDn = false
 	o.nls.Init(4+o.nalp, o.ffcn, nil, o.JfcnD, useDn, numJ, map[string]float64{})
 	return
 }
@@ -105,7 +105,8 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 func (o PrincStrainsUp) Update(s *State, ε, Δε []float64) (err error) {
 
 	// trial strains and stresses
-	o.mdl.ElastUpdate(s, ε, Δε) // also updates Phi
+	o.mdl.ElastUpdate(s, ε, Δε) // also updates EpsE
+	copy(s.EpsTr, s.EpsE)
 
 	// check loading condition
 	ftr := o.mdl.YieldFuncs(s)[0]
@@ -116,17 +117,16 @@ func (o PrincStrainsUp) Update(s *State, ε, Δε []float64) (err error) {
 	}
 
 	// eigenvalues/projectors
-	copy(o.εetr, s.Phi)
-	_, err = tsr.M_FixZeroOrRepeated(o.Lε, o.εetr, o.Pert, o.EvTol, o.Zero)
+	_, err = tsr.M_FixZeroOrRepeated(o.Lε, s.EpsTr, o.Pert, o.EvTol, o.Zero)
 	if err != nil {
 		return
 	}
-	err = tsr.M_EigenValsProjsNum(o.P, o.Lε, o.εetr)
+	err = tsr.M_EigenValsProjsNum(o.P, o.Lε, s.EpsTr)
 	if err != nil {
 		return
 	}
 
-	// trial values
+	// initial values
 	for i := 0; i < 3; i++ {
 		o.x[i] = o.Lε[i]
 	}
@@ -168,7 +168,8 @@ func (o PrincStrainsUp) Update(s *State, ε, Δε []float64) (err error) {
 	o.mdl.E_CalcSig(o.Lσ, εe)
 	for i := 0; i < o.Nsig; i++ {
 		s.Sig[i] = o.Lσ[0]*o.P[0][i] + o.Lσ[1]*o.P[1][i] + o.Lσ[2]*o.P[2][i]
-		s.Phi[i] = εe[0]*o.P[0][i] + εe[1]*o.P[1][i] + εe[2]*o.P[2][i]
+		s.EpsE[i] = εe[0]*o.P[0][i] + εe[1]*o.P[1][i] + εe[2]*o.P[2][i]
+		//s.EpsTr[i] = o.Lε[0]*o.P[0][i] + o.Lε[1]*o.P[1][i] + o.Lε[2]*o.P[2][i]
 	}
 	copy(s.Alp, α)
 	s.Dgam = Δγ
@@ -176,7 +177,7 @@ func (o PrincStrainsUp) Update(s *State, ε, Δε []float64) (err error) {
 	return
 }
 
-// CalcD computes algorithm tangent operator
+// CalcD computes algorithmic tangent operator
 func (o PrincStrainsUp) CalcD(D [][]float64, s *State) (err error) {
 
 	// elastic response
@@ -186,24 +187,29 @@ func (o PrincStrainsUp) CalcD(D [][]float64, s *State) (err error) {
 	}
 
 	// eigenvalues/projectors
-	copy(o.εetr, s.Phi)
-	_, err = tsr.M_FixZeroOrRepeated(o.Lε, o.εetr, o.Pert, o.EvTol, o.Zero)
+	_, err = tsr.M_FixZeroOrRepeated(o.Lε, s.EpsTr, o.Pert, o.EvTol, o.Zero)
 	if err != nil {
 		return
 	}
-	err = tsr.M_EigenValsProjsNum(o.P, o.Lε, o.εetr)
+	err = tsr.M_EigenValsProjsNum(o.P, o.Lε, s.EpsTr)
 	if err != nil {
 		return
 	}
 
 	// derivatives of eigenprojectors w.r.t trial elastic strains
-	err = tsr.M_EigenProjsDeriv(o.dPdεetr, o.εetr, o.Lε, o.P, o.Zero)
+	err = tsr.M_EigenProjsDeriv(o.dPdT, s.EpsTr, o.Lε, o.P, o.Zero)
 	if err != nil {
 		return
 	}
 
 	// eigenvalues of stress
 	err = tsr.M_EigenValsNum(o.Lσ, s.Sig)
+	if err != nil {
+		return
+	}
+
+	// eigenvalues of strains
+	err = tsr.M_EigenValsNum(o.Lε, s.EpsE)
 	if err != nil {
 		return
 	}
@@ -246,7 +252,7 @@ func (o PrincStrainsUp) CalcD(D [][]float64, s *State) (err error) {
 				for l := 0; l < 3; l++ {
 					D[i][j] += o.Dt[k][l] * o.P[k][i] * o.P[l][j]
 				}
-				D[i][j] += o.Lσ[k] * o.dPdεetr[k][i][j]
+				D[i][j] += o.Lσ[k] * o.dPdT[k][i][j]
 			}
 		}
 	}
