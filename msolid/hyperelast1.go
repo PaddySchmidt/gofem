@@ -180,31 +180,31 @@ func (o HyperElast1) L_CalcD(D [][]float64, ε []float64) {
 				D[i][j] = o.K0*I[i]*I[j] + 2.0*o.G0*Psd[i][j]
 			}
 		}
-	} else {
+		return
+	}
 
-		// invariants of strain and normalised deviatoric direction
-		eno, εv, εd := tsr.M_devε(o.e, ε) // using principal values since len(ε)=3
-		if eno > o.EnoMin {
-			for i := 0; i < 3; i++ {
-				o.e[i] /= eno
-			}
-		} else {
-			for i := 0; i < 3; i++ {
-				o.e[i] = 0
-			}
-		}
-
-		// Dvv = ∂²ψ/(∂εve ∂εve)
-		// Dvd = (∂²ψ/(∂εve ∂εde)) * sqrt(2/3)
-		// Ddd2 = (∂²ψ/(∂εde ∂εde)) * 2 / 3
-		pv := (o.pa + o.p0) * math.Exp(o.a*(o.εv0-εv))
-		Dvv := o.a * (1.0 + 1.5*o.a*o.κb*εd*εd) * pv
-		DvdS := -3.0 * o.a * o.κb * εd * pv * tsr.SQ2by3
-		Ddd2 := 2.0 * (o.G0 + o.κb*pv)
+	// invariants of strain and normalised deviatoric direction
+	eno, εv, εd := tsr.M_devε(o.e, ε) // using principal values since len(ε)=3
+	if eno > o.EnoMin {
 		for i := 0; i < 3; i++ {
-			for j := 0; j < 3; j++ {
-				D[i][j] = Dvv*I[i]*I[j] + Ddd2*Psd[i][j] + DvdS*(I[i]*o.e[j]+o.e[i]*I[j])
-			}
+			o.e[i] /= eno
+		}
+	} else {
+		for i := 0; i < 3; i++ {
+			o.e[i] = 0
+		}
+	}
+
+	// Dvv = ∂²ψ/(∂εve ∂εve)
+	// Dvd = (∂²ψ/(∂εve ∂εde)) * sqrt(2/3)
+	// Ddd2 = (∂²ψ/(∂εde ∂εde)) * 2 / 3
+	pv := (o.pa + o.p0) * math.Exp(o.a*(o.εv0-εv))
+	Dvv := o.a * (1.0 + 1.5*o.a*o.κb*εd*εd) * pv
+	DvdS := -3.0 * o.a * o.κb * εd * pv * tsr.SQ2by3
+	Ddd2 := 2.0 * (o.G0 + o.κb*pv)
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 3; j++ {
+			D[i][j] = Dvv*I[i]*I[j] + Ddd2*Psd[i][j] + DvdS*(I[i]*o.e[j]+o.e[i]*I[j])
 		}
 	}
 }

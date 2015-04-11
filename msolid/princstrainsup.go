@@ -30,27 +30,28 @@ type PrincStrainsUp struct {
 	fcoef float64 // coefficient to normalise yield function
 
 	// variables
-	Lσ   []float64     // eigenvalues of stresses
-	Lε   []float64     // eigenvalues of strains
-	P    [][]float64   // eigenprojectors of strains and stresses
-	αn   []float64     // α at beginning of update
-	h    []float64     // [nalp] principal values: hardening
-	A    []float64     // ∂f/∂α_i       [nalp]
-	N    []float64     // ∂f/∂σ         [3]
-	Ne   []float64     // ∂f/∂σ・De     [3]
-	Nb   []float64     // ∂g/∂σ         [3]
-	Mb   [][]float64   // ∂Nb/∂εe       [3][3]
-	Mbe  [][]float64   // ∂Nb/∂σ・De    [3][3]
-	De   [][]float64   // De = ∂σ/∂εe   [3][3]
-	Dt   [][]float64   // Dt = ∂σ/∂εetr [3][3]
-	a    [][]float64   // ∂Nb/∂α_i      [nalp][3]
-	b    [][]float64   // ∂h_i/∂εe      [nalp][3]
-	be   [][]float64   // ∂h_i/∂σ・De   [nalp][3]
-	c    [][]float64   // ∂h_i/∂α_j     [nalp][nalp]
-	x    []float64     // {εe0, εe1, εe2, α0, α1, ..., Δγ}
-	J    [][]float64   // Jacobian      [4+nalp][4+nalp]
-	Ji   [][]float64   // inverse of J  [4+nalp][4+nalp]
-	dPdT [][][]float64 // dP_k/dεetr == dP_k/dεe [3][nsig][nsig]
+	Lσ    []float64     // eigenvalues of stresses
+	Lεe   []float64     // eigenvalues of elastic strains
+	Lεetr []float64     // eigenvalues of trial elastic strains
+	P     [][]float64   // eigenprojectors of strains and stresses
+	αn    []float64     // α at beginning of update
+	h     []float64     // [nalp] principal values: hardening
+	A     []float64     // ∂f/∂α_i       [nalp]
+	N     []float64     // ∂f/∂σ         [3]
+	Ne    []float64     // ∂f/∂σ・De     [3]
+	Nb    []float64     // ∂g/∂σ         [3]
+	Mb    [][]float64   // ∂Nb/∂εe       [3][3]
+	Mbe   [][]float64   // ∂Nb/∂σ・De    [3][3]
+	De    [][]float64   // De = ∂σ/∂εe   [3][3]
+	Dt    [][]float64   // Dt = ∂σ/∂εetr [3][3]
+	a     [][]float64   // ∂Nb/∂α_i      [nalp][3]
+	b     [][]float64   // ∂h_i/∂εe      [nalp][3]
+	be    [][]float64   // ∂h_i/∂σ・De   [nalp][3]
+	c     [][]float64   // ∂h_i/∂α_j     [nalp][nalp]
+	x     []float64     // {εe0, εe1, εe2, α0, α1, ..., Δγ}
+	J     [][]float64   // Jacobian      [4+nalp][4+nalp]
+	Ji    [][]float64   // inverse of J  [4+nalp][4+nalp]
+	dPdT  [][][]float64 // dP_k/dεetr == dP_k/dεe [3][nsig][nsig]
 
 	// nonlinear solver
 	nls num.NlSolver // nonlinear solver
@@ -73,7 +74,8 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 
 	// variables
 	o.Lσ = make([]float64, 3)
-	o.Lε = make([]float64, 3)
+	o.Lεe = make([]float64, 3)
+	o.Lεetr = make([]float64, 3)
 	o.P = la.MatAlloc(3, o.Nsig)
 	o.αn = make([]float64, o.nalp)
 	o.h = make([]float64, 3)
@@ -117,18 +119,18 @@ func (o PrincStrainsUp) Update(s *State, ε, Δε []float64) (err error) {
 	}
 
 	// eigenvalues/projectors
-	_, err = tsr.M_FixZeroOrRepeated(o.Lε, s.EpsTr, o.Pert, o.EvTol, o.Zero)
+	_, err = tsr.M_FixZeroOrRepeated(o.Lεetr, s.EpsTr, o.Pert, o.EvTol, o.Zero)
 	if err != nil {
 		return
 	}
-	err = tsr.M_EigenValsProjsNum(o.P, o.Lε, s.EpsTr)
+	err = tsr.M_EigenValsProjsNum(o.P, o.Lεetr, s.EpsTr)
 	if err != nil {
 		return
 	}
 
 	// initial values
 	for i := 0; i < 3; i++ {
-		o.x[i] = o.Lε[i]
+		o.x[i] = o.Lεetr[i]
 	}
 	for i := 0; i < o.nalp; i++ {
 		o.αn[i] = s.Alp[i]
@@ -163,6 +165,14 @@ func (o PrincStrainsUp) Update(s *State, ε, Δε []float64) (err error) {
 		}
 	}
 
+	//if true {
+	if false {
+		fx := make([]float64, len(o.x))
+		o.ffcn(fx, o.x)
+		io.Pfblue2("x  = %v\n", o.x)
+		io.Pfcyan("fx = %v\n", fx)
+	}
+
 	// set new state
 	εe, α, Δγ := o.x[:3], o.x[3:3+o.nalp], o.x[3+o.nalp]
 	o.mdl.E_CalcSig(o.Lσ, εe)
@@ -187,17 +197,17 @@ func (o PrincStrainsUp) CalcD(D [][]float64, s *State) (err error) {
 	}
 
 	// eigenvalues/projectors
-	_, err = tsr.M_FixZeroOrRepeated(o.Lε, s.EpsTr, o.Pert, o.EvTol, o.Zero)
+	_, err = tsr.M_FixZeroOrRepeated(o.Lεetr, s.EpsTr, o.Pert, o.EvTol, o.Zero)
 	if err != nil {
 		return
 	}
-	err = tsr.M_EigenValsProjsNum(o.P, o.Lε, s.EpsTr)
+	err = tsr.M_EigenValsProjsNum(o.P, o.Lεetr, s.EpsTr)
 	if err != nil {
 		return
 	}
 
 	// derivatives of eigenprojectors w.r.t trial elastic strains
-	err = tsr.M_EigenProjsDeriv(o.dPdT, s.EpsTr, o.Lε, o.P, o.Zero)
+	err = tsr.M_EigenProjsDeriv(o.dPdT, s.EpsTr, o.Lεetr, o.P, o.Zero)
 	if err != nil {
 		return
 	}
@@ -209,14 +219,18 @@ func (o PrincStrainsUp) CalcD(D [][]float64, s *State) (err error) {
 	}
 
 	// eigenvalues of strains
-	err = tsr.M_EigenValsNum(o.Lε, s.EpsE)
+	err = tsr.M_EigenValsNum(o.Lεe, s.EpsE)
 	if err != nil {
 		return
 	}
 
+	io.Pforan("Lσ = %v\n", o.Lσ)
+	o.mdl.E_CalcSig(o.Lσ, o.Lεe)
+	io.Pforan("Lσ = %v\n", o.Lσ)
+
 	// x vector
 	for i := 0; i < 3; i++ {
-		o.x[i] = o.Lε[i]
+		o.x[i] = o.Lεe[i]
 	}
 	for i := 0; i < o.nalp; i++ {
 		o.x[3+i] = s.Alp[i]
@@ -233,8 +247,16 @@ func (o PrincStrainsUp) CalcD(D [][]float64, s *State) (err error) {
 		return
 	}
 
+	//if true {
+	if false {
+		fx := make([]float64, len(o.x))
+		o.ffcn(fx, o.x)
+		io.Pfblue2("x  = %v\n", o.x)
+		io.Pfcyan("fx = %v\n", fx)
+	}
+
 	// compute De and Dt = De * Ji
-	o.mdl.E_CalcDe(o.De, o.Lε)
+	o.mdl.E_CalcDe(o.De, o.Lεe)
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 3; j++ {
 			o.Dt[i][j] = 0
@@ -262,7 +284,7 @@ func (o PrincStrainsUp) CalcD(D [][]float64, s *State) (err error) {
 // ffcn is the nonlinear solver function
 func (o PrincStrainsUp) ffcn(fx, x []float64) error {
 	εe, α, Δγ := x[:3], x[3:3+o.nalp], x[3+o.nalp]
-	εetr := o.Lε
+	εetr := o.Lεetr
 	o.mdl.E_CalcSig(o.Lσ, εe)
 	f, err := o.mdl.L_FlowHard(o.Nb, o.h, o.Lσ, α)
 	if err != nil {

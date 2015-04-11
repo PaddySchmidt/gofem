@@ -181,6 +181,12 @@ func (o *Driver) Run(pth *Path) (err error) {
 					if o.VerD {
 						io.Pf("\n")
 					}
+
+					io.Pforan("εold = %v\n", εold)
+					io.Pforan("εnew = %v\n", εnew)
+					la.PrintMat("D", o.D, "%10.4f", false)
+					//panic("stop")
+
 					for i := 0; i < o.nsig; i++ {
 						for j := 0; j < o.nsig; j++ {
 							dnum := derivfcn(func(x float64, args ...interface{}) (res float64) {

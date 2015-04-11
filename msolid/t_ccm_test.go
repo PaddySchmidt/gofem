@@ -14,6 +14,12 @@ import (
 
 func Test_ccm01(tst *testing.T) {
 
+	defer func() {
+		if err := recover(); err != nil {
+			io.Pfred("error = %v\n", err)
+		}
+	}()
+
 	verbose()
 	chk.PrintTitle("ccm01")
 
