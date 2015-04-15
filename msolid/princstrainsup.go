@@ -100,6 +100,7 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 	useDn, numJ := true, false
 	//useDn = false
 	o.nls.Init(4+o.nalp, o.ffcn, nil, o.JfcnD, useDn, numJ, map[string]float64{})
+	o.nls.ChkConv = false
 	return
 }
 
@@ -107,7 +108,12 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 func (o PrincStrainsUp) Update(s *State, ε, Δε []float64) (err error) {
 
 	// trial strains and stresses
-	o.mdl.ElastUpdate(s, ε, Δε) // also updates EpsE
+	for i := 0; i < o.Nsig; i++ {
+		s.EpsE[i] += Δε[i]
+	}
+
+	// trial stresses
+	o.mdl.ElastUpdate(s, ε, Δε)
 	copy(s.EpsTr, s.EpsE)
 
 	// check loading condition
@@ -213,10 +219,10 @@ func (o PrincStrainsUp) CalcD(D [][]float64, s *State) (err error) {
 	}
 
 	// eigenvalues of stress
-	err = tsr.M_EigenValsNum(o.Lσ, s.Sig)
-	if err != nil {
-		return
-	}
+	//err = tsr.M_EigenValsNum(o.Lσ, s.Sig)
+	//if err != nil {
+	//return
+	//}
 
 	// eigenvalues of strains
 	err = tsr.M_EigenValsNum(o.Lεe, s.EpsE)
@@ -224,24 +230,51 @@ func (o PrincStrainsUp) CalcD(D [][]float64, s *State) (err error) {
 		return
 	}
 
-	io.Pforan("Lσ = %v\n", o.Lσ)
+	// compute J
+	//o.mdl.E_CalcSig(o.Lσ, o.Lεetr)
 	o.mdl.E_CalcSig(o.Lσ, o.Lεe)
-	io.Pforan("Lσ = %v\n", o.Lσ)
-
-	// x vector
+	err = o.mdl.L_SecondDerivs(o.N, o.Nb, o.A, o.h, o.Mb, o.a, o.b, o.c, o.Lσ, s.Alp)
+	if err != nil {
+		return err
+	}
+	o.mdl.E_CalcDe(o.De, o.Lεe)
 	for i := 0; i < 3; i++ {
-		o.x[i] = o.Lεe[i]
+		o.Ne[i] = 0
+		for m := 0; m < o.nalp; m++ {
+			o.be[m][i] = 0
+		}
+		for j := 0; j < 3; j++ {
+			o.Ne[i] += o.N[j] * o.De[j][i]
+			for m := 0; m < o.nalp; m++ {
+				o.be[m][i] += o.b[m][j] * o.De[j][i]
+			}
+			o.Mbe[i][j] = 0
+			for k := 0; k < 3; k++ {
+				o.Mbe[i][j] += o.Mb[i][k] * o.De[k][j]
+			}
+		}
+	}
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 3; j++ {
+			o.J[i][j] = tsr.IIm[i][j] + s.Dgam*o.Mbe[i][j]
+		}
+		for j := 0; j < o.nalp; j++ {
+			o.J[i][3+j] = s.Dgam * o.a[j][i]
+			o.J[3+j][i] = -s.Dgam * o.be[j][i]
+		}
+		o.J[i][3+o.nalp] = o.Nb[i]
+		o.J[3+o.nalp][i] = o.Ne[i] / o.fcoef
 	}
 	for i := 0; i < o.nalp; i++ {
-		o.x[3+i] = s.Alp[i]
+		for j := 0; j < o.nalp; j++ {
+			o.J[3+i][3+j] = tsr.IIm[i][j] - s.Dgam*o.c[i][j]
+		}
+		o.J[3+i][3+o.nalp] = -o.h[i]
+		o.J[3+o.nalp][3+i] = o.A[i] / o.fcoef
 	}
-	o.x[3+o.nalp] = s.Dgam
+	o.J[3+o.nalp][3+o.nalp] = 0
 
-	// compute J and Ji
-	err = o.JfcnD(o.J, o.x)
-	if err != nil {
-		return
-	}
+	// Ji
 	err = la.MatInvG(o.Ji, o.J, 1e-10)
 	if err != nil {
 		return
@@ -256,7 +289,7 @@ func (o PrincStrainsUp) CalcD(D [][]float64, s *State) (err error) {
 	}
 
 	// compute De and Dt = De * Ji
-	o.mdl.E_CalcDe(o.De, o.Lεe)
+	//o.mdl.E_CalcDe(o.De, o.Lεe)
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 3; j++ {
 			o.Dt[i][j] = 0
@@ -265,6 +298,8 @@ func (o PrincStrainsUp) CalcD(D [][]float64, s *State) (err error) {
 			}
 		}
 	}
+
+	//o.mdl.E_CalcSig(o.Lσ, o.Lεetr)
 
 	// compute D
 	for i := 0; i < o.Nsig; i++ {
@@ -343,5 +378,6 @@ func (o PrincStrainsUp) JfcnD(J [][]float64, x []float64) error {
 		J[3+i][3+o.nalp] = -o.h[i]
 		J[3+o.nalp][3+i] = o.A[i] / o.fcoef
 	}
+	J[3+o.nalp][3+o.nalp] = 0
 	return nil
 }

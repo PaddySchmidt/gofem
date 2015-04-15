@@ -69,8 +69,8 @@ func Test_elast02(tst *testing.T) {
 		return
 	}
 
-	nsig, nalp, nphi, large := 2*ndim, 0, 0, false
-	state := NewState(nsig, nalp, nphi, large)
+	nsig, nalp, large := 2*ndim, 0, false
+	state := NewState(nsig, nalp, large)
 
 	D := la.MatAlloc(nsig, nsig)
 	ec.CalcD(D, state)

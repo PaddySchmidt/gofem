@@ -127,9 +127,8 @@ func (o CamClayMod) InitIntVars(σ []float64) (s *State, err error) {
 	o.HE.Set_p0_ev0(p, 0)
 
 	// set state
-	nalp := 1      // alp[0] = α0 (yield surface size controller)
-	nphi := o.Nsig // phi[0] = εe (elastic strains)
-	s = NewState(o.Nsig, nalp, nphi, false)
+	nalp := 1 // alp[0] = α0 (yield surface size controller)
+	s = NewState(o.Nsig, nalp, false)
 	copy(s.Sig, σ)
 	s.Alp[0] = α0 * o.ocr
 	return
@@ -175,9 +174,6 @@ func (o CamClayMod) YieldFuncs(s *State) []float64 {
 
 // ElastUpdate updates state with an elastic response
 func (o CamClayMod) ElastUpdate(s *State, ε, Δε []float64) {
-	for i := 0; i < o.Nsig; i++ {
-		s.EpsE[i] += Δε[i]
-	}
 	o.HE.Update(s, s.EpsE, nil)
 }
 

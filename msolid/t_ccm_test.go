@@ -49,7 +49,7 @@ func Test_ccm01(tst *testing.T) {
 		&fun.Prm{N: "K0", V: K},
 	})
 	drv.CheckD = true
-	drv.TolD = 1e-6
+	drv.TolD = 1e-4
 	drv.VerD = true // verbose
 	if err != nil {
 		tst.Errorf("test failed: %v\n", err)
@@ -78,10 +78,6 @@ func Test_ccm01(tst *testing.T) {
 	if err != nil {
 		tst.Errorf("test failed: %v\n", err)
 		return
-	}
-	io.PfYel("\nresults\n")
-	for i, res := range drv.Res {
-		io.Pfyel("ε=%v σ=%v α0=%v\n", drv.Eps[i], res.Sig, res.Alp[0])
 	}
 
 	// plot

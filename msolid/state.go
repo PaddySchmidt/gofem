@@ -29,7 +29,7 @@ type State struct {
 
 // NewState allocates state structure for small or large deformation analyses
 //  large  -- large deformation analyses; otherwise small strains
-func NewState(nsig, nalp, nphi int, large bool) *State {
+func NewState(nsig, nalp int, large bool) *State {
 	var state State
 	state.Sig = make([]float64, nsig)
 	state.EpsE = make([]float64, nsig)
@@ -64,7 +64,7 @@ func (o *State) Set(other *State) {
 // GetCopy returns a copy of this state
 func (o *State) GetCopy() *State {
 	large := len(o.F) > 0
-	other := NewState(len(o.Sig), len(o.Alp), 0, large)
+	other := NewState(len(o.Sig), len(o.Alp), large)
 	other.Set(o)
 	return other
 }

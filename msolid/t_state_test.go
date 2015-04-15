@@ -16,8 +16,8 @@ func Test_state01(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("state01")
 
-	nsig, nalp, nphi, large := 4, 1, 3, false
-	state0 := NewState(nsig, nalp, nphi, large)
+	nsig, nalp, large := 4, 1, false
+	state0 := NewState(nsig, nalp, large)
 	io.Pforan("state0 = %+v\n", state0)
 	chk.Vector(tst, "sig", 1.0e-17, state0.Sig, []float64{0, 0, 0, 0})
 	chk.Vector(tst, "alp", 1.0e-17, state0.Alp, []float64{0})
@@ -28,7 +28,7 @@ func Test_state01(tst *testing.T) {
 	state0.Sig[3] = 13.0
 	state0.Alp[0] = 20.0
 
-	state1 := NewState(nsig, nalp, nphi, large)
+	state1 := NewState(nsig, nalp, large)
 	state1.Set(state0)
 	io.Pforan("state1 = %+v\n", state1)
 	chk.Vector(tst, "sig", 1.0e-17, state1.Sig, []float64{10, 11, 12, 13})
