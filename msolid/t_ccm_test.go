@@ -20,7 +20,7 @@ func Test_ccm01(tst *testing.T) {
 		}
 	}()
 
-	verbose()
+	//verbose()
 	chk.PrintTitle("ccm01")
 
 	E, ν := 1500.0, 0.25
@@ -50,7 +50,7 @@ func Test_ccm01(tst *testing.T) {
 	})
 	drv.CheckD = true
 	drv.TolD = 1e-4
-	drv.VerD = true // verbose
+	drv.VerD = io.Verbose // verbose
 	if err != nil {
 		tst.Errorf("test failed: %v\n", err)
 		return

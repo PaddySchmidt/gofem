@@ -4,10 +4,7 @@
 
 package msolid
 
-import (
-	"github.com/cpmech/gosl/chk"
-	"github.com/cpmech/gosl/la"
-)
+import "github.com/cpmech/gosl/la"
 
 // State holds all continuum mechanics data, including for updating the state
 type State struct {
@@ -15,7 +12,7 @@ type State struct {
 	// essential
 	Sig []float64 // σ: current Cauchy stress tensor (effective) [nsig]
 
-	// for plasticity
+	// for plasticity (if len(α) > 0)
 	EpsE       []float64 // elastic strain
 	EpsTr      []float64 // trial elastic strain
 	Alp        []float64 // α: internal variables of rate type [nalp]
@@ -23,20 +20,26 @@ type State struct {
 	Loading    bool      // unloading flag (for plasticity only)
 	ApexReturn bool      // return-to-apex (for plasticity only)
 
-	// for large deformation
+	// for large deformations
 	F [][]float64 // deformation gradient [3][3]
 }
 
 // NewState allocates state structure for small or large deformation analyses
 //  large  -- large deformation analyses; otherwise small strains
 func NewState(nsig, nalp int, large bool) *State {
+
+	// essential
 	var state State
 	state.Sig = make([]float64, nsig)
-	state.EpsE = make([]float64, nsig)
-	state.EpsTr = make([]float64, nsig)
+
+	// for plasticity
 	if nalp > 0 {
+		state.EpsE = make([]float64, nsig)
+		state.EpsTr = make([]float64, nsig)
 		state.Alp = make([]float64, nalp)
 	}
+
+	// large deformations
 	if large {
 		state.F = la.MatAlloc(3, 3)
 	}
@@ -47,15 +50,21 @@ func NewState(nsig, nalp int, large bool) *State {
 //  Note: 1) this and other states must have been pre-allocated with the same sizes
 //        2) this method does not check for errors
 func (o *State) Set(other *State) {
-	o.Dgam = other.Dgam
-	o.Loading = other.Loading
-	o.ApexReturn = other.ApexReturn
-	chk.IntAssert(len(o.Sig), len(other.Sig))
-	chk.IntAssert(len(o.Alp), len(other.Alp))
+
+	// essential
 	copy(o.Sig, other.Sig)
-	copy(o.EpsE, other.EpsE)
-	copy(o.EpsTr, other.EpsTr)
-	copy(o.Alp, other.Alp)
+
+	// for plasticity
+	if len(o.Alp) > 0 {
+		copy(o.EpsE, other.EpsE)
+		copy(o.EpsTr, other.EpsTr)
+		copy(o.Alp, other.Alp)
+		o.Dgam = other.Dgam
+		o.Loading = other.Loading
+		o.ApexReturn = other.ApexReturn
+	}
+
+	// large deformations
 	if len(o.F) > 0 {
 		la.MatCopy(o.F, 1, other.F)
 	}
