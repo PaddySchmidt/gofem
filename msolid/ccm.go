@@ -21,7 +21,6 @@ type CamClayMod struct {
 	CS   tsr.NcteM      // slope of cs line
 	HE   HyperElast1    // hyper elasticity
 	PU   PrincStrainsUp // stress updater
-	Lσ   []float64      // principal stresses
 
 	// parameters
 	λ   float64 // slope of isotropic compression model
@@ -44,7 +43,6 @@ func (o *CamClayMod) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 
 	// basic data
 	o.Nsig = 2 * ndim
-	o.Lσ = make([]float64, 3)
 
 	// parameters for CS model
 	pp := []string{"φ", "Mfix"}
