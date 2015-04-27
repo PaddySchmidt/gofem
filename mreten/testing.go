@@ -36,7 +36,7 @@ func Check(tst *testing.T, mdl Model, pc0, sl0, pcf float64, npts int, tolCc, to
 			return
 		}
 		if doplot {
-			plt.PlotOne(Pc[i], Sl[i], "'ko'")
+			plt.PlotOne(Pc[i], Sl[i], "'ko', clip_on=0")
 		}
 
 		// skip point on checking of derivatives

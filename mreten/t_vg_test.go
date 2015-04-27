@@ -40,7 +40,7 @@ func Test_vg01(tst *testing.T) {
 	if doplot {
 		plt.Reset()
 		Plot(ref, pc0, sl0, pcf, nptsA, "'k--'", "'k--'", "ref-m1")
-		Plot(mdl, pc0, sl0, pcf, nptsA, "'b.-'", "'r+-'", "bc")
+		Plot(mdl, pc0, sl0, pcf, nptsA, "'b.-'", "'r+-'", "vg")
 	}
 
 	tolCc := 1e-10
