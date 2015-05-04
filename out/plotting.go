@@ -122,7 +122,11 @@ func Draw(dirout, fname string, show bool, extra ExtraPlt) {
 		}
 	}
 	if fname != "" {
-		plt.SaveD(dirout, fname)
+		if dirout == "" {
+			plt.Save(fname)
+		} else {
+			plt.SaveD(dirout, fname)
+		}
 	}
 	if show {
 		plt.Show()
