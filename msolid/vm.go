@@ -189,7 +189,7 @@ func (o VonMises) YieldFuncs(s *State) []float64 {
 }
 
 // ElastUpdate updates state with an elastic response
-func (o VonMises) ElastUpdate(s *State, ε, Δε []float64) {
+func (o VonMises) ElastUpdate(s *State, ε []float64) {
 	var devε_i float64
 	trε := ε[0] + ε[1] + ε[2]
 	for i := 0; i < o.Nsig; i++ {

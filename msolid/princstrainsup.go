@@ -113,7 +113,7 @@ func (o PrincStrainsUp) Update(s *State, ε, Δε []float64) (err error) {
 	copy(s.EpsTr, s.EpsE)
 
 	// trial stresses
-	o.Mdl.ElastUpdate(s, ε, Δε)
+	o.Mdl.ElastUpdate(s, s.EpsTr)
 
 	// check loading condition
 	ftr := o.Mdl.YieldFuncs(s)[0]

@@ -171,8 +171,8 @@ func (o CamClayMod) YieldFuncs(s *State) []float64 {
 }
 
 // ElastUpdate updates state with an elastic response
-func (o CamClayMod) ElastUpdate(s *State, ε, Δε []float64) {
-	o.HE.Update(s, s.EpsE, nil)
+func (o CamClayMod) ElastUpdate(s *State, ε []float64) {
+	o.HE.Update(s, ε, nil)
 }
 
 // ElastD returns continuum elastic D

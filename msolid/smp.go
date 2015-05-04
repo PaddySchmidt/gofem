@@ -13,6 +13,10 @@ import (
 )
 
 // SmpInvs implements a model with SMP invariants similar to Drucker-Prager model
+//  rtyp (rounding type):  0 -- straight line
+//                         1 -- circle
+//                         2 -- reference model
+//                         3 -- o2 Bezier
 type SmpInvs struct {
 
 	// basic data
@@ -23,8 +27,8 @@ type SmpInvs struct {
 	RM   fun.RefDecSp1  // reference model for smoothing
 
 	// parameters
-	r    float64 // radius
 	rtyp int     // rounding type
+	r    float64 // radius
 	pe   float64 // large p value for rounding with Bezier
 
 	// derived parameters
@@ -49,12 +53,14 @@ func (o *SmpInvs) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 	βrm := 20.0 // β_{reference-model}
 	for _, p := range prms {
 		switch p.N {
+
+		// cohesion and friction angle
 		case "c":
 			c = p.V
 		case "phi":
 			φ = p.V
-		case "r":
-			o.r = p.V
+
+		// SMP invariants
 		case "a":
 			a = p.V
 		case "b":
@@ -63,12 +69,16 @@ func (o *SmpInvs) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 			β = p.V
 		case "eps":
 			ϵ = p.V
+
+		// rounding
+		case "rtyp":
+			o.rtyp = int(p.V)
+		case "r":
+			o.r = p.V
 		case "betrm":
 			βrm = p.V
 		case "pe":
 			o.pe = p.V
-		case "rtyp":
-			o.rtyp = int(p.V)
 		}
 	}
 
@@ -131,12 +141,16 @@ func (o *SmpInvs) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 // GetPrms gets (an example) of parameters
 func (o SmpInvs) GetPrms() fun.Prms {
 	return []*fun.Prm{
-		&fun.Prm{N: "phi", V: 25},
-		&fun.Prm{N: "Mfix", V: 1},
-		&fun.Prm{N: "c", V: 10},
-		&fun.Prm{N: "K0", V: 10000},
-		&fun.Prm{N: "G0", V: 10000},
+		&fun.Prm{N: "c", V: 1},
+		&fun.Prm{N: "phi", V: 20},
+		&fun.Prm{N: "a", V: -1},
+		&fun.Prm{N: "b", V: 0},
+		&fun.Prm{N: "bet", V: 1},
+		&fun.Prm{N: "eps", V: 1e-3},
+		&fun.Prm{N: "le", V: 1},
 		&fun.Prm{N: "pr", V: 1.0},
+		&fun.Prm{N: "G0", V: 600},
+		&fun.Prm{N: "K0", V: 1000},
 		&fun.Prm{N: "p0", V: 0.0},
 		&fun.Prm{N: "ev0", V: 0.0},
 	}
@@ -195,8 +209,8 @@ func (o SmpInvs) YieldFuncs(s *State) []float64 {
 }
 
 // ElastUpdate updates state with an elastic response
-func (o SmpInvs) ElastUpdate(s *State, ε, Δε []float64) {
-	o.HE.Update(s, s.EpsE, nil)
+func (o SmpInvs) ElastUpdate(s *State, ε []float64) {
+	o.HE.Update(s, ε, nil)
 }
 
 // ElastD returns continuum elastic D

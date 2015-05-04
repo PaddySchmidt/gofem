@@ -238,7 +238,7 @@ func (o DruckerPrager) YieldFuncs(s *State) []float64 {
 }
 
 // ElastUpdate updates state with an elastic response
-func (o DruckerPrager) ElastUpdate(s *State, ε, Δε []float64) {
+func (o DruckerPrager) ElastUpdate(s *State, ε []float64) {
 	var devε_i float64
 	trε := ε[0] + ε[1] + ε[2]
 	for i := 0; i < o.Nsig; i++ {

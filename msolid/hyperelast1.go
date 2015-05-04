@@ -115,7 +115,7 @@ func (o HyperElast1) InitIntVars(σ []float64) (s *State, err error) {
 }
 
 // Update updates stresses for given strains
-func (o *HyperElast1) Update(s *State, ε, Δε []float64) (err error) {
+func (o *HyperElast1) Update(s *State, ε, dummy []float64) (err error) {
 	eno, εv, εd := tsr.M_devε(o.e, ε)
 	p, q := o.Calc_pq(εv, εd)
 	if eno > o.EnoMin {
