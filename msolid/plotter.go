@@ -157,7 +157,7 @@ func (o *Plotter) Title(text string) {
 func (o *Plotter) Plot(keys []string, res []*State, sts [][]float64, first, last bool) {
 
 	// auxiliary variables
-	nr := len(res)
+	nr := imax(len(res), len(sts))
 	if nr < 1 {
 		return
 	}
@@ -170,18 +170,15 @@ func (o *Plotter) Plot(keys []string, res []*State, sts [][]float64, first, last
 	o.Ed = make([]float64, nr)
 
 	// compute invariants
-	for i := 0; i < nr; i++ {
+	for i := 0; i < len(res); i++ {
 		if len(res[i].Sig) < 4 {
 			chk.Panic("number of stress components is incorrect: %d", len(res[i].Sig))
 		}
 		o.P[i], o.Q[i], o.W[i] = tsr.M_pqw(res[i].Sig)
 	}
-	if len(sts) != len(res) {
-		chk.Panic("number of strain results (sts) must be equal to number of stress results (res). %d != %d", len(sts), nr)
-	}
 	nsig := len(res[0].Sig)
 	devε := make([]float64, nsig)
-	for i := 0; i < nr; i++ {
+	for i := 0; i < len(sts); i++ {
 		if len(sts[i]) < 4 {
 			chk.Panic("number of strain components is incorrect: %d", len(sts[i]))
 		}
@@ -283,6 +280,9 @@ func (o *Plotter) Plot(keys []string, res []*State, sts [][]float64, first, last
 
 func (o *Plotter) Plot_ed_q(x, y []float64, res []*State, sts [][]float64, last bool) {
 	nr := len(res)
+	if len(sts) != nr {
+		return
+	}
 	k := nr - 1
 	for i := 0; i < nr; i++ {
 		x[i] = o.Ed[i] * 100.0
@@ -311,7 +311,7 @@ func (o *Plotter) Plot_ed_q(x, y []float64, res []*State, sts [][]float64, last 
 }
 
 func (o *Plotter) Plot_ed_ev(x, y []float64, res []*State, sts [][]float64, last bool) {
-	nr := len(res)
+	nr := len(sts)
 	k := nr - 1
 	for i := 0; i < nr; i++ {
 		x[i], y[i] = o.Ed[i]*100.0, o.Ev[i]*100.0
@@ -329,6 +329,9 @@ func (o *Plotter) Plot_ed_ev(x, y []float64, res []*State, sts [][]float64, last
 
 func (o *Plotter) Plot_p_ev(x, y []float64, res []*State, sts [][]float64, last bool) {
 	nr := len(res)
+	if len(sts) != nr {
+		return
+	}
 	k := nr - 1
 	var x0, x1 []float64
 	if !o.NoAlp {
