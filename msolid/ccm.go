@@ -133,8 +133,8 @@ func (o CamClayMod) InitIntVars(σ []float64) (s *State, err error) {
 }
 
 // Update updates stresses for given strains
-func (o *CamClayMod) Update(s *State, ε, Δε []float64) (err error) {
-	return o.PU.Update(s, ε, Δε)
+func (o *CamClayMod) Update(s *State, ε, Δε []float64, eid, ipid int) (err error) {
+	return o.PU.Update(s, ε, Δε, eid, ipid)
 }
 
 // CalcD computes D = dσ_new/dε_new consistent with StressUpdate

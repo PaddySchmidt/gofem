@@ -45,6 +45,7 @@ func GetAndInitPorousModel(matname string) *mporous.Model {
 	}
 
 	// initialise all models
+	// TODO: initialise just once
 	if LogErr(cnd.Init(cndmat.Prms), "cannot initialise conductivity model") {
 		return nil
 	}
@@ -84,12 +85,14 @@ func GetAndInitSolidModel(matname string, ndim int) (msolid.Model, fun.Prms) {
 	}
 
 	// initialise model
-	mdl := msolid.GetModel(Global.Sim.Data.FnameKey, matname, mdlname, false)
+	mdl, existent := msolid.GetModel(Global.Sim.Data.FnameKey, matname, mdlname, false)
 	if LogErrCond(mdl == nil, "cannot find solid model named %q", mdlname) {
 		return nil, nil
 	}
-	if LogErr(mdl.Init(ndim, Global.Sim.Data.Pstress, matdata.Prms), "solid model initialisation failed") {
-		return nil, nil
+	if !existent {
+		if LogErr(mdl.Init(ndim, Global.Sim.Data.Pstress, matdata.Prms), "solid model initialisation failed") {
+			return nil, nil
+		}
 	}
 
 	// results

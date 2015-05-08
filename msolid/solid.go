@@ -38,9 +38,9 @@ type Model interface {
 
 // Small defines rate type solid models for small strain analyses
 type Small interface {
-	Update(s *State, ε, Δε []float64) error            // updates stresses for given strains
-	CalcD(D [][]float64, s *State, firstIt bool) error // computes D = dσ_new/dε_new consistent with StressUpdate
-	ContD(D [][]float64, s *State) error               // computes D = dσ_new/dε_new continuous
+	Update(s *State, ε, Δε []float64, eid, ipid int) error // updates stresses for given strains
+	CalcD(D [][]float64, s *State, firstIt bool) error     // computes D = dσ_new/dε_new consistent with StressUpdate
+	ContD(D [][]float64, s *State) error                   // computes D = dσ_new/dε_new continuous
 }
 
 // Large defines rate type solid models for large deformation analyses
@@ -59,32 +59,32 @@ type SmallStrainUpdater interface {
 //  matname   -- name of material
 //  modelname -- model name
 //  getnew    -- force a new allocation; i.e. do not use any model found in database
-//  Note: returns nil on errors
-func GetModel(simfnk, matname, modelname string, getnew bool) Model {
+//  Note: returns model==nil on errors
+func GetModel(simfnk, matname, modelname string, getnew bool) (model Model, existent bool) {
 
 	// get new model, regardless wheter it exists in database or not
 	if getnew {
 		allocator, ok := allocators[modelname]
 		if !ok {
-			return nil
+			return nil, false
 		}
-		return allocator()
+		return allocator(), false
 	}
 
 	// search database
 	key := io.Sf("%s_%s_%s", simfnk, matname, modelname)
 	if model, ok := _models[key]; ok {
-		return model
+		return model, true
 	}
 
 	// if not found, get new
 	allocator, ok := allocators[modelname]
 	if !ok {
-		return nil
+		return nil, false
 	}
-	model := allocator()
+	model = allocator()
 	_models[key] = model
-	return model
+	return model, false
 }
 
 // LogModels prints to log information on existent and allocated Models

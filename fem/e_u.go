@@ -10,6 +10,7 @@ import (
 	"github.com/cpmech/gofem/shp"
 
 	"github.com/cpmech/gosl/fun"
+	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/la"
 	"github.com/cpmech/gosl/tsr"
 )
@@ -414,7 +415,7 @@ func (o *ElemU) Update(sol *Solution) (ok bool) {
 		}
 
 		// call model update => update stresses
-		if LogErr(o.MdlSmall.Update(o.States[idx], o.ε, o.Δε), "Update") {
+		if LogErr(o.MdlSmall.Update(o.States[idx], o.ε, o.Δε, o.Id(), idx), io.Sf("Update (eid=%d, ip=%d)\nERROR: Update Δε=%v\nERROR: Update", o.Id(), idx, o.Δε)) {
 			return
 		}
 	}

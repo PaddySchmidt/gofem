@@ -42,7 +42,7 @@ type Driver struct {
 func (o *Driver) Init(simfnk, modelname string, ndim int, pstress bool, prms fun.Prms) (err error) {
 	o.nsig = 2 * ndim
 	getnew := false
-	o.model = GetModel(simfnk, "solidmat", modelname, getnew)
+	o.model, _ = GetModel(simfnk, "solidmat", modelname, getnew)
 	if o.model == nil {
 		return chk.Err("cannot get model named %q\n", modelname)
 	}
@@ -155,7 +155,7 @@ func (o *Driver) Run(pth *Path) (err error) {
 
 				// update stresses
 				o.Res[k].Set(o.Res[k-1])
-				err = sml.Update(o.Res[k], o.Eps[k], Δε)
+				err = sml.Update(o.Res[k], o.Eps[k], Δε, 0, 0)
 				if err != nil {
 					if !o.Silent {
 						io.Pfred(_driver_err02, err)
@@ -189,7 +189,7 @@ func (o *Driver) Run(pth *Path) (err error) {
 									Δεtmp[l] = εnew[l] - εold[l]
 								}
 								stmp.Set(o.Res[k-1])
-								err = sml.Update(stmp, εnew, Δεtmp)
+								err = sml.Update(stmp, εnew, Δεtmp, 0, 0)
 								if err != nil {
 									chk.Panic("cannot run Update for numerical derivative: %v", err)
 								}

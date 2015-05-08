@@ -34,7 +34,7 @@ func (o LinElast) InitIntVars(σ []float64) (s *State, err error) {
 }
 
 // Update updates stresses for given strains
-func (o LinElast) Update(s *State, ε, Δε []float64) (err error) {
+func (o LinElast) Update(s *State, ε, Δε []float64, eid, ipid int) (err error) {
 	return o.SmallElasticity.Update(s, Δε)
 }
 

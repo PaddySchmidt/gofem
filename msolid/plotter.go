@@ -590,7 +590,6 @@ func (o *Plotter) Plot_p_q(x, y []float64, res []*State, sts [][]float64, last b
 				pnew, qnew, _ = tsr.M_pq_smp(o.PreCor[i], o.SMPa, o.SMPb, o.SMPβ, o.SMPϵ)
 			}
 			if math.Abs(pnew-p) > 1e-10 || math.Abs(qnew-q) > 1e-10 {
-				//plt.Plot([]float64{p,pnew}, []float64{q,qnew}, "'k+', ms=3, color='k'")
 				plt.Arrow(p, q, pnew, qnew, io.Sf("sc=%d, fc='%s', ec='%s'", o.ArrWid, o.ClrPC, o.ClrPC))
 			}
 		}

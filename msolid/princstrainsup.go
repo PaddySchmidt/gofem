@@ -23,6 +23,13 @@ type PrincStrainsUp struct {
 	Fzero float64 // zero yield function value
 	Nsig  int     // number of stress components
 
+	// flags
+	LineS    float64 // use linesearch
+	DbgShowR bool    // show residuals during iterations (debugging only)
+	DbgFail  bool    // show debugging results on fail
+	DbgEid   int     // debugging element Id
+	DbgIpId  int     // debugging integration point Id
+
 	// model
 	Mdl   EPmodel // elastoplastic model
 	Nalp  int     // number of α
@@ -55,6 +62,11 @@ type PrincStrainsUp struct {
 
 	// nonlinear solver
 	nls num.NlSolver // nonlinear solver
+
+	// debugging
+	DbgRes []*State    // states
+	DbgSts [][]float64 // strains
+	DbgPco [][]float64 // predictor-corrector
 }
 
 // Init initialises this structure
@@ -67,6 +79,22 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 	o.Zero = tsr.EV_ZERO
 	o.Fzero = 1e-9
 	o.Nsig = 2 * ndim
+
+	// flags
+	for _, p := range prms {
+		switch p.N {
+		case "lineS":
+			o.LineS = p.V
+		case "dbgshowR":
+			o.DbgShowR = p.V > 0
+		case "dbgfail":
+			o.DbgFail = p.V > 0
+		case "dbgeid":
+			o.DbgEid = int(p.V)
+		case "dbgipid":
+			o.DbgIpId = int(p.V)
+		}
+	}
 
 	// model
 	o.Mdl = mdl
@@ -98,13 +126,18 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 
 	// nonlinear solver
 	useDn, numJ := true, false
-	o.nls.Init(4+o.Nalp, o.ffcn, nil, o.JfcnD, useDn, numJ, map[string]float64{})
+	o.nls.Init(4+o.Nalp, o.ffcn, nil, o.JfcnD, useDn, numJ, map[string]float64{"lSearch": o.LineS})
 	o.nls.ChkConv = false
 	return
 }
 
 // Update updates state
-func (o PrincStrainsUp) Update(s *State, ε, Δε []float64) (err error) {
+func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int) (err error) {
+
+	// debugging
+	if o.DbgFail {
+		o.dbg_init(s, ε, Δε, eid, ipid)
+	}
 
 	// trial strains
 	for i := 0; i < o.Nsig; i++ {
@@ -114,6 +147,11 @@ func (o PrincStrainsUp) Update(s *State, ε, Δε []float64) (err error) {
 
 	// trial stresses
 	o.Mdl.ElastUpdate(s, s.EpsTr)
+
+	// debugging
+	if o.DbgFail {
+		defer o.dbg_end(s, ε, eid, ipid)()
+	}
 
 	// check loading condition
 	ftr := o.Mdl.YieldFuncs(s)[0]
@@ -156,8 +194,14 @@ func (o PrincStrainsUp) Update(s *State, ε, Δε []float64) (err error) {
 
 	// solve
 	silent := true
+	if o.DbgFail {
+		silent = o.dbg_silent(eid, ipid)
+	}
 	err = o.nls.Solve(o.x, silent)
 	if err != nil {
+		if o.DbgFail {
+			o.dbg_plot(eid, ipid)
+		}
 		return
 	}
 
@@ -325,4 +369,47 @@ func (o PrincStrainsUp) calcJafterDerivs(J [][]float64, εe, α []float64, Δγ 
 		J[3+o.Nalp][3+i] = o.A[i] / o.Fcoef
 	}
 	J[3+o.Nalp][3+o.Nalp] = 0
+}
+
+// debugging /////////////////////////////////////////////////////////////////////////////////////
+
+func (o PrincStrainsUp) dbg_silent(eid, ipid int) bool {
+	if eid == o.DbgEid && ipid == o.DbgIpId {
+		if o.DbgShowR {
+			return false
+		}
+	}
+	return true
+}
+
+func (o *PrincStrainsUp) dbg_init(s *State, ε, Δε []float64, eid, ipid int) {
+	if eid == o.DbgEid && ipid == o.DbgIpId {
+		if len(o.DbgRes) == 0 {
+			ε0 := make([]float64, o.Nsig)
+			la.VecAdd2(ε0, 1, ε, -1, Δε) // ε0 = ε - Δε
+			o.DbgRes = append(o.DbgRes, s.GetCopy())
+			o.DbgSts = append(o.DbgSts, ε0)
+		}
+	}
+}
+
+func (o *PrincStrainsUp) dbg_end(s *State, ε []float64, eid, ipid int) func() {
+	if eid == o.DbgEid && ipid == o.DbgIpId {
+		o.DbgPco = append(o.DbgPco, utl.DblCopy(s.Sig))
+		return func() {
+			o.DbgRes = append(o.DbgRes, s.GetCopy())
+			o.DbgSts = append(o.DbgSts, ε)
+			o.DbgPco = append(o.DbgPco, utl.DblCopy(s.Sig))
+		}
+	}
+	return func() {}
+}
+
+func (o PrincStrainsUp) dbg_plot(eid, ipid int) {
+	if eid == o.DbgEid && ipid == o.DbgIpId {
+		var plr Plotter
+		plr.SetFig(false, false, 1.5, 400, "/tmp", io.Sf("fig_stress_eid%d_ipid%d", eid, ipid))
+		plr.PreCor = o.DbgPco
+		plr.Plot([]string{"p,q,ys", "oct,ys"}, o.DbgRes, o.DbgSts, true, true)
+	}
 }
