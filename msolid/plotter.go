@@ -93,9 +93,10 @@ type Plotter struct {
 	m     EPmodel // the model
 	nalp  int     // number of α
 	nsurf int     // number of yield surfaces
-	fcoef float64 // coefficient for normalising yield functions
-	pt    float64 // tensile p
-	pr    float64 // reference p
+
+	// for computation of x(p)
+	Pt float64 // tensile p
+	Pr float64 // reference p
 
 	// results
 	P, Q, W []float64 // stress invariants
@@ -145,7 +146,7 @@ func (o *Plotter) SetFig(split, epsfig bool, prop, width float64, savedir, savef
 // Note: this method is optional
 func (o *Plotter) SetModel(m EPmodel) {
 	o.m = m
-	o.nalp, o.nsurf, o.fcoef, o.pt, o.pr = o.m.Info()
+	o.nalp, o.nsurf = o.m.Info()
 }
 
 // Title addes title to plot
@@ -402,20 +403,20 @@ func (o *Plotter) Plot_i_f(x, y []float64, res []*State, sts [][]float64, last b
 	}
 	for i := 0; i < nr; i++ {
 		ys := o.m.YieldFuncs(res[i])
-		y[i] = ys[0] / o.fcoef
+		y[i] = ys[0]
 		if o.nsurf > 1 {
-			y2[i] = ys[1] / o.fcoef
+			y2[i] = ys[1]
 		}
 		x[i] = float64(i)
 	}
-	lbl := "f/c " + o.Lbl
+	lbl := "f " + o.Lbl
 	plt.Plot(x, y, io.Sf("'r.', ls='-', clip_on=0, color='%s', marker='%s', label=r'%s'", o.Clr, o.Mrk, lbl))
 	if o.nsurf > 1 {
-		lbl = "F/c " + o.Lbl
+		lbl = "F " + o.Lbl
 		plt.Plot(x, y2, io.Sf("'b+', ls=':', lw=2, clip_on=0, color='%s', marker='%s', label=r'%s'", o.Clr, o.Mrk, lbl))
 	}
 	if last {
-		plt.Gll("$i$", "$f/c,\\;F/c$", "leg_out=1, leg_ncol=4, leg_hlen=2")
+		plt.Gll("$i$", "$f,\\;F$", "leg_out=1, leg_ncol=4, leg_hlen=2")
 		if lims, ok := o.Lims["i,f"]; ok {
 			plt.AxisLims(lims)
 		}
@@ -460,12 +461,12 @@ func (o *Plotter) Plot_Dgam_f(x, y []float64, res []*State, sts [][]float64, las
 	nr := len(res)
 	k := nr - 1
 	ys := o.m.YieldFuncs(res[0])
-	fc0 := ys[0] / o.fcoef
+	fc0 := ys[0]
 	xmi, xma, ymi, yma := res[0].Dgam, res[0].Dgam, fc0, fc0
 	for i := 0; i < nr; i++ {
 		x[i] = res[i].Dgam
 		ys = o.m.YieldFuncs(res[i])
-		y[i] = ys[0] / o.fcoef
+		y[i] = ys[0]
 		xmi = min(xmi, x[i])
 		xma = max(xma, x[i])
 		ymi = min(ymi, y[i])
@@ -476,7 +477,7 @@ func (o *Plotter) Plot_Dgam_f(x, y []float64, res []*State, sts [][]float64, las
 	plt.PlotOne(x[0], y[0], io.Sf("'bo', clip_on=0, color='%s', marker='%s', ms=%d", o.SpClr, o.SpMrk, o.SpMs))
 	plt.PlotOne(x[k], y[k], io.Sf("'bs', clip_on=0, color='%s', marker='%s', ms=%d", o.SpClr, o.EpMrk, o.EpMs))
 	if last {
-		plt.Gll("$\\Delta\\gamma$", "$f/c$", "")
+		plt.Gll("$\\Delta\\gamma$", "$f$", "")
 		if lims, ok := o.Lims["Dgam,f"]; ok {
 			plt.AxisLims(lims)
 		}
@@ -1002,5 +1003,5 @@ func (o *Plotter) fix_range(middle, Xmi, Xma, Ymi, Yma float64) (xmi, xma, ymi, 
 }
 
 func (o Plotter) calc_x(p float64) float64 {
-	return math.Log(1.0 + (p+o.pt)/o.pr)
+	return math.Log(1.0 + (p+o.Pt)/o.Pr)
 }

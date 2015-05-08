@@ -221,8 +221,8 @@ func (o *DruckerPrager) ContD(D [][]float64, s *State) (err error) {
 // EPmodel ///////////////////////////////////////////////////////////////////////////////////////////
 
 // Info returns some information and data from this model
-func (o DruckerPrager) Info() (nalp, nsurf int, fcoef, pt, pr float64) {
-	return 1, 1, 1, o.qy0 / o.M, 1
+func (o DruckerPrager) Info() (nalp, nsurf int) {
+	return 1, 1
 }
 
 // IsoF returns the isotropic function, if any

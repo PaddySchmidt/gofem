@@ -24,6 +24,7 @@ type PrincStrainsUp struct {
 	Nsig  int     // number of stress components
 
 	// flags
+	Fcoef    float64 // coefficient to normalise yield function
 	LineS    float64 // use linesearch
 	DbgShowR bool    // show residuals during iterations (debugging only)
 	DbgFail  bool    // show debugging results on fail
@@ -34,7 +35,6 @@ type PrincStrainsUp struct {
 	Mdl   EPmodel // elastoplastic model
 	Nalp  int     // number of α
 	Nsurf int     // number of yield functions
-	Fcoef float64 // coefficient to normalise yield function
 
 	// variables
 	Lσ    []float64     // eigenvalues of stresses
@@ -84,9 +84,12 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 	o.Nsig = 2 * ndim
 
 	// flags
+	o.Fcoef = 1.0
 	o.ChkJacTol = 1e-4
 	for _, p := range prms {
 		switch p.N {
+		case "fcoef":
+			o.Fcoef = p.V
 		case "lineS":
 			o.LineS = p.V
 		case "dbgShowR":
@@ -106,7 +109,7 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 
 	// model
 	o.Mdl = mdl
-	o.Nalp, o.Nsurf, o.Fcoef, _, _ = o.Mdl.Info()
+	o.Nalp, o.Nsurf = o.Mdl.Info()
 
 	// variables
 	o.Lσ = make([]float64, 3)

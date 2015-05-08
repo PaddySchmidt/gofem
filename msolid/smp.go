@@ -190,8 +190,8 @@ func (o *SmpInvs) ContD(D [][]float64, s *State) (err error) {
 // EPmodel ///////////////////////////////////////////////////////////////////////////////////////////
 
 // Info returns some information and data from this model
-func (o SmpInvs) Info() (nalp, nsurf int, fcoef, pt, pr float64) {
-	return 1, 1, o.HE.pr, o.HE.pt, o.HE.pr
+func (o SmpInvs) Info() (nalp, nsurf int) {
+	return 1, 1
 }
 
 // IsoF returns the isotropic function
