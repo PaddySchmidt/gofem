@@ -64,9 +64,12 @@ type PrincStrainsUp struct {
 	nls num.NlSolver // nonlinear solver
 
 	// debugging
-	DbgRes []*State    // states
-	DbgSts [][]float64 // strains
-	DbgPco [][]float64 // predictor-corrector
+	DbgRes    []*State    // states
+	DbgSts    [][]float64 // strains
+	DbgPco    [][]float64 // predictor-corrector
+	ChkJac    bool        // check Jacobian
+	ChkJacTol float64     // tolerance for checking Jacobian
+	ChkSilent bool        // silent check
 }
 
 // Init initialises this structure
@@ -81,18 +84,23 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 	o.Nsig = 2 * ndim
 
 	// flags
+	o.ChkJacTol = 1e-4
 	for _, p := range prms {
 		switch p.N {
 		case "lineS":
 			o.LineS = p.V
-		case "dbgshowR":
+		case "dbgShowR":
 			o.DbgShowR = p.V > 0
-		case "dbgfail":
+		case "dbgFail":
 			o.DbgFail = p.V > 0
-		case "dbgeid":
+		case "dbgEid":
 			o.DbgEid = int(p.V)
-		case "dbgipid":
+		case "dbgIpid":
 			o.DbgIpId = int(p.V)
+		case "chkJac":
+			o.ChkJac = p.V > 0
+		case "chkSilent":
+			o.ChkSilent = p.V > 0
 		}
 	}
 
@@ -183,12 +191,9 @@ func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int) (er
 	o.x[3+o.Nalp] = 0 // Δγ
 
 	// check Jacobian
-	check := false
-	tolChk := 1e-5
-	silentChk := false
-	if check {
+	if o.ChkJac {
 		var cnd float64
-		cnd, err = o.nls.CheckJ(o.x, tolChk, true, silentChk)
+		cnd, err = o.nls.CheckJ(o.x, o.ChkJacTol, true, o.ChkSilent)
 		io.Pfred("before: cnd(J) = %v\n", cnd)
 	}
 
@@ -206,9 +211,9 @@ func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int) (er
 	}
 
 	// check Jacobian again
-	if check {
+	if o.ChkJac {
 		var cnd float64
-		cnd, err = o.nls.CheckJ(o.x, tolChk, true, silentChk)
+		cnd, err = o.nls.CheckJ(o.x, o.ChkJacTol, true, o.ChkSilent)
 		io.Pfred("after: cnd(J) = %v\n", cnd)
 		if err != nil {
 			return
