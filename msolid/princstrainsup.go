@@ -27,7 +27,7 @@ type PrincStrainsUp struct {
 	Fcoef    float64 // coefficient to normalise yield function
 	LineS    float64 // use linesearch
 	DbgShowR bool    // show residuals during iterations (debugging only)
-	DbgFail  bool    // show debugging results on fail
+	DbgOn    bool    // show debugging results
 	DbgEid   int     // debugging element Id
 	DbgIpId  int     // debugging integration point Id
 
@@ -94,8 +94,8 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 			o.LineS = p.V
 		case "dbgShowR":
 			o.DbgShowR = p.V > 0
-		case "dbgFail":
-			o.DbgFail = p.V > 0
+		case "dbgOn":
+			o.DbgOn = p.V > 0
 		case "dbgEid":
 			o.DbgEid = int(p.V)
 		case "dbgIpid":
@@ -146,7 +146,7 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int) (err error) {
 
 	// debugging
-	if o.DbgFail {
+	if o.DbgOn {
 		o.dbg_init(s, ε, Δε, eid, ipid)
 	}
 
@@ -160,7 +160,7 @@ func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int) (er
 	o.Mdl.ElastUpdate(s, s.EpsTr)
 
 	// debugging
-	if o.DbgFail {
+	if o.DbgOn {
 		defer o.dbg_end(s, ε, eid, ipid)()
 	}
 
@@ -202,12 +202,12 @@ func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int) (er
 
 	// solve
 	silent := true
-	if o.DbgFail {
+	if o.DbgOn {
 		silent = o.dbg_silent(eid, ipid)
 	}
 	err = o.nls.Solve(o.x, silent)
 	if err != nil {
-		if o.DbgFail {
+		if o.DbgOn {
 			o.dbg_plot(eid, ipid)
 		}
 		return
