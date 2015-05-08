@@ -48,7 +48,7 @@ func (o *HyperElast1) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 
 	// constants
 	o.Nsig = 2 * ndim
-	o.EnoMin = 1e-8
+	o.EnoMin = 1e-14
 
 	// parameters
 	for _, p := range prms {
