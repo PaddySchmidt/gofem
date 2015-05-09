@@ -210,8 +210,8 @@ func Run() (runisok bool) {
 				Δt = tf - t
 				lasttimestep = true
 			}
-			if Δt < Global.Sim.Solver.DtMin {
-				return true
+			if LogErrCond(Δt < Global.Sim.Solver.DtMin, "Δt increment is too small: %g < %g", Δt, Global.Sim.Solver.DtMin) {
+				return
 			}
 
 			// dynamic coefficients
