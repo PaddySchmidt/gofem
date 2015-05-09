@@ -244,7 +244,7 @@ type TimeControl struct {
 	Dt     float64 `json:"dt"`     // time step size (if constant)
 	DtOut  float64 `json:"dtout"`  // time step size for output
 	DtFcn  string  `json:"dtfcn"`  // time step size (function name)
-	DtoFcn string  `json:"tdofcn"` // time step size for output (function name)
+	DtoFcn string  `json:"dtofcn"` // time step size for output (function name)
 
 	// derived
 	DtFunc  fun.Func // time step function
