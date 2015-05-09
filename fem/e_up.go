@@ -630,19 +630,19 @@ func (o *ElemUP) SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) {
 }
 
 // BackupIvs create copy of internal variables
-func (o *ElemUP) BackupIvs() (ok bool) {
-	if !o.U.BackupIvs() {
+func (o *ElemUP) BackupIvs(aux bool) (ok bool) {
+	if !o.U.BackupIvs(aux) {
 		return
 	}
-	return o.P.BackupIvs()
+	return o.P.BackupIvs(aux)
 }
 
 // RestoreIvs restore internal variables from copies
-func (o *ElemUP) RestoreIvs() (ok bool) {
-	if !o.U.RestoreIvs() {
+func (o *ElemUP) RestoreIvs(aux bool) (ok bool) {
+	if !o.U.RestoreIvs(aux) {
 		return
 	}
-	return o.P.RestoreIvs()
+	return o.P.RestoreIvs(aux)
 }
 
 // Ureset fixes internal variables after u (displacements) have been zeroed

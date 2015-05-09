@@ -43,6 +43,7 @@ type ElemP struct {
 	// internal variables
 	States    []*mporous.State
 	StatesBkp []*mporous.State
+	StatesAux []*mporous.State
 
 	// gravity
 	Gfcn fun.Func // gravity function
@@ -483,6 +484,7 @@ func (o *ElemP) SetIniIvs(sol *Solution, ignored map[string][]float64) (ok bool)
 	// allocate slices of states
 	o.States = make([]*mporous.State, nip)
 	o.StatesBkp = make([]*mporous.State, nip)
+	o.StatesAux = make([]*mporous.State, nip)
 
 	// for each integration point
 	for idx, ip := range o.IpsElem {
@@ -522,6 +524,7 @@ func (o *ElemP) SetIniIvs(sol *Solution, ignored map[string][]float64) (ok bool)
 
 		// backup copy
 		o.StatesBkp[idx] = o.States[idx].GetCopy()
+		o.StatesAux[idx] = o.States[idx].GetCopy()
 	}
 
 	// seepage face structures
@@ -549,7 +552,13 @@ func (o *ElemP) SetIniIvs(sol *Solution, ignored map[string][]float64) (ok bool)
 }
 
 // BackupIvs creates copy of internal variables
-func (o *ElemP) BackupIvs() (ok bool) {
+func (o *ElemP) BackupIvs(aux bool) (ok bool) {
+	if aux {
+		for i, s := range o.StatesAux {
+			s.Set(o.States[i])
+		}
+		return true
+	}
 	for i, s := range o.StatesBkp {
 		s.Set(o.States[i])
 	}
@@ -557,7 +566,13 @@ func (o *ElemP) BackupIvs() (ok bool) {
 }
 
 // RestoreIvs restores internal variables from copies
-func (o *ElemP) RestoreIvs() (ok bool) {
+func (o *ElemP) RestoreIvs(aux bool) (ok bool) {
+	if aux {
+		for i, s := range o.States {
+			s.Set(o.StatesAux[i])
+		}
+		return true
+	}
 	for i, s := range o.States {
 		s.Set(o.StatesBkp[i])
 	}
@@ -581,7 +596,7 @@ func (o ElemP) Decode(dec Decoder) (ok bool) {
 	if LogErr(dec.Decode(&o.States), "Decode") {
 		return
 	}
-	return o.BackupIvs()
+	return o.BackupIvs(false)
 }
 
 // OutIpsData returns data from all integration points for output

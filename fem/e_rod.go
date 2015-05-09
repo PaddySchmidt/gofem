@@ -45,6 +45,7 @@ type Rod struct {
 	Model     msolid.OnedSolid
 	States    []*msolid.OnedState
 	StatesBkp []*msolid.OnedState
+	StatesAux []*msolid.OnedState
 
 	// scratchpad. computed @ each ip
 	grav []float64 // [ndim] gravity vector
@@ -320,11 +321,13 @@ func (o *Rod) SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) {
 	nip := len(o.IpsElem)
 	o.States = make([]*msolid.OnedState, nip)
 	o.StatesBkp = make([]*msolid.OnedState, nip)
+	o.StatesAux = make([]*msolid.OnedState, nip)
 
 	// for each integration point
 	for i := 0; i < nip; i++ {
 		o.States[i], _ = o.Model.InitIntVars()
 		o.StatesBkp[i] = o.States[i].GetCopy()
+		o.StatesAux[i] = o.States[i].GetCopy()
 	}
 
 	// initial stresses
@@ -343,7 +346,13 @@ func (o *Rod) SetIvs(zvars map[string][]float64) (ok bool) {
 }
 
 // BackupIvs create copy of internal variables
-func (o *Rod) BackupIvs() (ok bool) {
+func (o *Rod) BackupIvs(aux bool) (ok bool) {
+	if aux {
+		for i, s := range o.StatesAux {
+			s.Set(o.States[i])
+		}
+		return true
+	}
 	for i, s := range o.StatesBkp {
 		s.Set(o.States[i])
 	}
@@ -351,7 +360,13 @@ func (o *Rod) BackupIvs() (ok bool) {
 }
 
 // RestoreIvs restore internal variables from copies
-func (o *Rod) RestoreIvs() (ok bool) {
+func (o *Rod) RestoreIvs(aux bool) (ok bool) {
+	if aux {
+		for i, s := range o.States {
+			s.Set(o.StatesAux[i])
+		}
+		return true
+	}
 	for i, s := range o.States {
 		s.Set(o.StatesBkp[i])
 	}
@@ -375,7 +390,7 @@ func (o Rod) Decode(dec Decoder) (ok bool) {
 	if LogErr(dec.Decode(&o.States), "Decode") {
 		return
 	}
-	return o.BackupIvs()
+	return o.BackupIvs(false)
 }
 
 // OutIpsData returns data from all integration points for output

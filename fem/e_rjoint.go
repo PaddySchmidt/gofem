@@ -107,6 +107,7 @@ type Rjoint struct {
 	// internal values
 	States    []*msolid.OnedState // [nip] internal states
 	StatesBkp []*msolid.OnedState // [nip] backup internal states
+	StatesAux []*msolid.OnedState // [nip] backup internal states
 }
 
 // initialisation ///////////////////////////////////////////////////////////////////////////////////
@@ -733,15 +734,23 @@ func (o *Rjoint) SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) {
 	nip := len(o.Rod.IpsElem)
 	o.States = make([]*msolid.OnedState, nip)
 	o.StatesBkp = make([]*msolid.OnedState, nip)
+	o.StatesAux = make([]*msolid.OnedState, nip)
 	for i := 0; i < nip; i++ {
 		o.States[i], _ = o.Mdl.InitIntVars()
 		o.StatesBkp[i] = o.States[i].GetCopy()
+		o.StatesAux[i] = o.States[i].GetCopy()
 	}
 	return true
 }
 
 // BackupIvs create copy of internal variables
-func (o *Rjoint) BackupIvs() (ok bool) {
+func (o *Rjoint) BackupIvs(aux bool) (ok bool) {
+	if aux {
+		for i, s := range o.StatesAux {
+			s.Set(o.States[i])
+		}
+		return true
+	}
 	for i, s := range o.StatesBkp {
 		s.Set(o.States[i])
 	}
@@ -749,7 +758,13 @@ func (o *Rjoint) BackupIvs() (ok bool) {
 }
 
 // RestoreIvs restore internal variables from copies
-func (o *Rjoint) RestoreIvs() (ok bool) {
+func (o *Rjoint) RestoreIvs(aux bool) (ok bool) {
+	if aux {
+		for i, s := range o.States {
+			s.Set(o.StatesAux[i])
+		}
+		return true
+	}
 	for i, s := range o.States {
 		s.Set(o.StatesBkp[i])
 	}
@@ -773,7 +788,7 @@ func (o Rjoint) Decode(dec Decoder) (ok bool) {
 	if LogErr(dec.Decode(&o.States), "Decode") {
 		return
 	}
-	return o.BackupIvs()
+	return o.BackupIvs(false)
 }
 
 // OutIpsData returns data from all integration points for output

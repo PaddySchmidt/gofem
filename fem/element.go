@@ -54,8 +54,8 @@ type ElemConnector interface {
 type ElemIntvars interface {
 	Ipoints() (coords [][]float64)                               // returns the real coordinates of integration points [nip][ndim]
 	SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) // sets initial ivs for given values in sol and ivs map
-	BackupIvs() (ok bool)                                        // create copy of internal variables
-	RestoreIvs() (ok bool)                                       // restore internal variables from copies
+	BackupIvs(aux bool) (ok bool)                                // create copy of internal variables
+	RestoreIvs(aux bool) (ok bool)                               // restore internal variables from copies
 	Ureset(sol *Solution) (ok bool)                              // fixes internal variables after u (displacements) have been zeroed
 }
 

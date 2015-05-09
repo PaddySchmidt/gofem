@@ -604,6 +604,9 @@ func (o *Domain) backup() {
 		copy(o.bkpSol.Zet, o.Sol.Zet)
 		copy(o.bkpSol.Chi, o.Sol.Chi)
 	}
+	for _, e := range o.ElemIntvars {
+		e.BackupIvs(true)
+	}
 }
 
 // restore restores solution
@@ -618,5 +621,8 @@ func (o *Domain) restore() {
 		copy(o.Sol.Psi, o.bkpSol.Psi)
 		copy(o.Sol.Zet, o.bkpSol.Zet)
 		copy(o.Sol.Chi, o.bkpSol.Chi)
+	}
+	for _, e := range o.ElemIntvars {
+		e.RestoreIvs(true)
 	}
 }

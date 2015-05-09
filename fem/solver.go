@@ -234,6 +234,7 @@ func Run() (runisok bool) {
 			}
 
 			// for all domains
+			docontinue := false
 			for _, d := range domains {
 
 				// backup solution if divergence control is on
@@ -258,11 +259,15 @@ func Run() (runisok bool) {
 						d.Sol.T = t
 						ndiverg += 1
 						md *= 0.5
-						continue
+						docontinue = true
+						break
 					}
 					ndiverg = 0
 					md = 1.0
 				}
+			}
+			if docontinue {
+				continue
 			}
 
 			// perform output
@@ -459,12 +464,12 @@ func run_iterations(t, Δt float64, d *Domain, sum *Summary) (diverging, ok bool
 		if it == 0 {
 			// create backup copy of all secondary variables
 			for _, e := range d.ElemIntvars {
-				e.BackupIvs()
+				e.BackupIvs(false)
 			}
 		} else {
 			// recover last converged state from backup copy
 			for _, e := range d.ElemIntvars {
-				e.RestoreIvs()
+				e.RestoreIvs(false)
 			}
 		}
 

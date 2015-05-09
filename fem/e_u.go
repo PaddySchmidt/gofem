@@ -46,6 +46,7 @@ type ElemU struct {
 	// internal variables
 	States    []*msolid.State // [nip] states
 	StatesBkp []*msolid.State // [nip] backup states
+	StatesAux []*msolid.State // [nip] auxiliary backup states
 
 	// problem variables
 	Umap []int // assembly map (location array/element equations)
@@ -440,6 +441,7 @@ func (o *ElemU) SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) {
 	nip := len(o.IpsElem)
 	o.States = make([]*msolid.State, nip)
 	o.StatesBkp = make([]*msolid.State, nip)
+	o.StatesAux = make([]*msolid.State, nip)
 
 	// has specified stresses?
 	_, has_sig := ivs["sx"]
@@ -456,12 +458,19 @@ func (o *ElemU) SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) {
 			return
 		}
 		o.StatesBkp[i] = o.States[i].GetCopy()
+		o.StatesAux[i] = o.States[i].GetCopy()
 	}
 	return true
 }
 
 // BackupIvs create copy of internal variables
-func (o *ElemU) BackupIvs() (ok bool) {
+func (o *ElemU) BackupIvs(aux bool) (ok bool) {
+	if aux {
+		for i, s := range o.StatesAux {
+			s.Set(o.States[i])
+		}
+		return true
+	}
 	for i, s := range o.StatesBkp {
 		s.Set(o.States[i])
 	}
@@ -469,7 +478,13 @@ func (o *ElemU) BackupIvs() (ok bool) {
 }
 
 // RestoreIvs restore internal variables from copies
-func (o *ElemU) RestoreIvs() (ok bool) {
+func (o *ElemU) RestoreIvs(aux bool) (ok bool) {
+	if aux {
+		for i, s := range o.States {
+			s.Set(o.StatesAux[i])
+		}
+		return true
+	}
 	for i, s := range o.States {
 		s.Set(o.StatesBkp[i])
 	}
@@ -499,7 +514,7 @@ func (o ElemU) Decode(dec Decoder) (ok bool) {
 	if LogErr(dec.Decode(&o.States), "Decode") {
 		return
 	}
-	return o.BackupIvs()
+	return o.BackupIvs(false)
 }
 
 // OutIpsData returns data from all integration points for output
