@@ -310,12 +310,10 @@ func run_iterations(t, Δt float64, d *Domain, sum *Summary) (diverging, ok bool
 	// message
 	if Global.Sim.Data.ShowR {
 		io.Pf("\n%13s%4s%23s%23s\n", "t", "it", "largFb", "Lδu")
-	}
-	defer func() {
-		if Global.Sim.Data.ShowR {
+		defer func() {
 			io.Pf("%13.6e%4d%23.15e%23.15e\n", t, it, largFb, Lδu)
-		}
-	}()
+		}()
+	}
 
 	// iterations
 	for it = 0; it < Global.Sim.Solver.NmaxIt; it++ {
