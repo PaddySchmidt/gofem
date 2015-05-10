@@ -191,6 +191,17 @@ func Run() (runisok bool) {
 			continue
 		}
 
+		// time loop using Richardson's extrapolation
+		// TODO: works with only one domain for now
+		if Global.Sim.Solver.RE {
+			var re RichardsonExtrap
+			re.Init(domains[0], Dt)
+			if !re.Run(domains[0], &sum, DtOut, &t, tf, tout, &tidx) {
+				return
+			}
+			continue
+		}
+
 		// time loop
 		ndiverg := 0 // number of steps diverging
 		md := 1.0    // time step multiplier if divergence control is on
@@ -199,8 +210,7 @@ func Run() (runisok bool) {
 		for t < tf {
 
 			// check for continued divergence
-			if ndiverg >= Global.Sim.Solver.NdvgMax {
-				LogErrCond(true, "continuous divergence after %d steps reached", ndiverg)
+			if LogErrCond(ndiverg >= Global.Sim.Solver.NdvgMax, "continuous divergence after %d steps reached", ndiverg) {
 				return
 			}
 
@@ -257,8 +267,8 @@ func Run() (runisok bool) {
 						d.restore()
 						t -= Δt
 						d.Sol.T = t
-						ndiverg += 1
 						md *= 0.5
+						ndiverg += 1
 						docontinue = true
 						break
 					}

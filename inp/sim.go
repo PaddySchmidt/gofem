@@ -117,6 +117,16 @@ type SolverData struct {
 	DvgCtrl bool    `json:"dvgctrl"` // use divergence control
 	NdvgMax int     `json:"ndvgmax"` // max number of continued divergence
 
+	// Richardson's extrapolation
+	RE       bool    // Richardson extrapolation is active
+	REnogus  bool    // Richardson extrapolation: no Gustafsson's step control
+	REnssmax int     // Richardson extrapolation: max number of substeps
+	REatol   float64 // Richardson extrapolation: absolute tolerance
+	RErtol   float64 // Richardson extrapolation: relative tolerance
+	REmfac   float64 // Richardson extrapolation: multiplier factor
+	REmmin   float64 // Richardson extrapolation: min multiplier
+	REmmax   float64 // Richardson extrapolation: max multiplier
+
 	// transient analyses
 	DtMin      float64 `json:"dtmin"`      // minium value of Dt for transient (θ and Newmark / Dyn coefficients)
 	Theta      float64 `json:"theta"`      // θ-method
@@ -149,6 +159,14 @@ func (o *SolverData) SetDefault() {
 	o.FbTol = 1e-8
 	o.FbMin = 1e-14
 	o.NdvgMax = 20
+
+	// Richardson's extrapolation
+	o.REnssmax = 10000
+	o.REatol = 1e-6
+	o.RErtol = 1e-6
+	o.REmfac = 0.9
+	o.REmmin = 0.1
+	o.REmmax = 2.0
 
 	// transient analyses
 	o.DtMin = 1e-8
