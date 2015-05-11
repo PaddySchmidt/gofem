@@ -223,6 +223,7 @@ func Run() (runisok bool) {
 			if Δt < Global.Sim.Solver.DtMin {
 				if md < 1 {
 					LogErrCond(true, "Δt increment is too small: %g < %g", Δt, Global.Sim.Solver.DtMin)
+					return false
 				}
 				return true
 			}
