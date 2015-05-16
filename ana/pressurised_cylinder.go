@@ -9,11 +9,13 @@ import (
 	"math"
 
 	"github.com/cpmech/gosl/fun"
+	"github.com/cpmech/gosl/la"
 	"github.com/cpmech/gosl/num"
+	"github.com/cpmech/gosl/utl"
 )
 
-// CteStressPstrain computes the constant-stress solution to a simple
-// linear elastic plane-strain problem
+// PressCylin implements the constant-stress solution to a simple
+// linear elastic plane-strain problem -- Hill's solution
 //
 //               , - - ,
 //           , '         ' ,
@@ -26,32 +28,34 @@ import (
 //         ,                 ,
 //           ,            , '
 //             ' - , ,  '
+type PressCylin struct {
 
-type Hill struct {
-	// Data
+	// input
 	a  float64 // Inner radius
 	b  float64 // Outer radius
 	E  float64 // Young's modulus
 	ν  float64 // Poisson's coefficient
 	σy float64 // Uniaxial yield stress
-	P  float64 // Pressure prescribed on the inner surface
 
-	// Derived data
-	coef float64
-	Y    float64
-	P0   float64
-	Plim float64
+	// derived data
+	coef float64 // TODO
+	Y    float64 // TODO
+	P0   float64 // Pressure at the elastic/plastic transition (TODO: check this)
+	Plim float64 // limiting pressure
+
+	// auxiliary
+	P_fx float64 // P value to be passed to fx function
 }
 
 // Init initialises this structure
-func (o *Hill) Init(prms fun.Prms) {
+func (o *PressCylin) Init(prms fun.Prms) {
+
 	// default values
-	o.a = 100  // [mm]
-	o.b = 200  // [mm]
-	o.E = 210  // Young modulus
-	o.ν = 0.3  // Poisson ratio
-	o.σy = 0.3 // Poisson ratio
-	o.P = 0.2  // Poisson ratio
+	o.a = 100    // [mm]
+	o.b = 200    // [mm]
+	o.E = 210000 // [MPa] Young modulus
+	o.ν = 0.3    // [-] Poisson's ratio
+	o.σy = 240   // [MPa] yield stress
 
 	// parameters
 	for _, p := range prms {
@@ -66,8 +70,6 @@ func (o *Hill) Init(prms fun.Prms) {
 			o.ν = p.V
 		case "σy":
 			o.σy = p.V
-		case "P":
-			o.P = p.V
 		}
 	}
 
@@ -78,51 +80,36 @@ func (o *Hill) Init(prms fun.Prms) {
 	o.Plim = o.Y * math.Log(o.b/o.a)
 }
 
-// Elastic solution for the radial displacement of the outer surface
-func (o Hill) ub_e() float64 {
-	return 2.0 * o.P * o.b * (1.0 - o.ν*o.ν) / (o.E/o.coef - o.E)
-}
-
-func (o Hill) ub_p(c float64) float64 {
-	return o.Y * c * c * (1.0 - o.ν*o.ν) / (o.E * o.b)
-}
-
-// Plastic solution for the radial displacment
-func (o Hill) plas(c float64) (float64, float64) {
-	var P float64
+// Plastic computes the pressure corresponding to c and the radial displacment
+// at the outer surface
+func (o PressCylin) Plastic(c float64) (P, ub float64) {
 	P = o.Y * (math.Log(c/o.a) + (1.0-c*c/(o.b*o.b))/2.0)
-	ub := o.Y * c * c * (1.0 - o.ν*o.ν) / (o.E * o.b)
-	return P, ub
+	ub = o.Y * c * c * (1.0 - o.ν*o.ν) / (o.E * o.b)
+	return
 }
 
-func (o Hill) Getc() float64 {
+// ElastOuterU computes the elastic solution for the radial displacement
+// at the outer surface
+func (o PressCylin) ElastOuterU(P float64) (ub float64) {
+	ub = 2.0 * P * o.b * (1.0 - o.ν*o.ν) / (o.E/o.coef - o.E)
+	return
+}
+
+// Calc_c computes the elastic/plastic transition zone
+// TODO: check what's 'c' exactly
+func (o *PressCylin) Calc_c(P float64) float64 {
 	var nls num.NlSolver
 	defer nls.Clean()
-
-	// function to be solved
-	fx_fun := func(fx, X []float64) (err error) {
-		x := X[0]
-		fx[0] = o.P/o.Y - (math.Log(x/o.a) + (1.0-x*x/(o.b*o.b))/2)
-		return
-	}
-
-	// derivative function of f
-	dfdx_fun := func(dfdx [][]float64, X []float64) (err error) {
-		x := X[0]
-		dfdx[0][0] = -1.0/x + x/(o.b*o.b)
-		return
-	}
-
-	Res := []float64{100} // initial values
-	nls.Init(1, fx_fun, nil, dfdx_fun, true, false, nil)
-	nls.Solve(Res, false)
+	o.P_fx = P
+	Res := []float64{(o.a + o.b) / 2.0} // initial values
+	nls.Init(1, o.fx_fun, nil, o.dfdx_fun, true, false, nil)
+	nls.Solve(Res, true)
 	return Res[0]
 }
 
-func (o Hill) sig(c, r float64) (float64, float64) { //_sig
-	b := o.b
-	Y := o.Y
-	var sr, st float64
+// Stresses compute the radial and tangential stresses
+func (o PressCylin) Stresses(c, r float64) (sr, st float64) {
+	b, Y := o.b, o.Y
 	if r > c { // elastic
 		sr = -Y * c * c * (b*b/(r*r) - 1.0) / (2.0 * b * b)
 		st = Y * c * c * (b*b/(r*r) + 1.0) / (2.0 * b * b)
@@ -133,8 +120,56 @@ func (o Hill) sig(c, r float64) (float64, float64) { //_sig
 	return sr, st
 }
 
-func (o Hill) Sig(c float64, R, SR, ST []float64) {
-	for i := 0; i < len(R); i++ {
-		SR[i], ST[i] = o.sig(c, R[i])
+// plot //////////////////////////////////////////////////////////////////////////
+
+// CalcLoadDisp returns the internal pressure and outer displacements for
+// plotting the load-displacement graph
+func (o PressCylin) CalcPressDisp(np int) (P, Ub []float64) {
+
+	// elastic
+	ne := 3
+	dP0 := o.P0 / float64(ne-1)
+	P = make([]float64, ne+np)
+	Ub = make([]float64, ne+np)
+	for i := 0; i < ne; i++ {
+		P[i] = float64(i) * dP0
+		Ub[i] = o.ElastOuterU(P[i])
 	}
+
+	// plastic
+	C := utl.LinSpace(o.a, o.b, np)
+	for i := 0; i < np; i++ {
+		P[ne+i], Ub[ne+i] = o.Plastic(C[i])
+	}
+	return
+}
+
+func (o PressCylin) CalcStresses(Pvals []float64, nr int) (R []float64, Sr, St [][]float64) {
+	R = utl.LinSpace(o.a, o.b, nr)
+	np := len(Pvals)
+	Sr = la.MatAlloc(np, nr)
+	St = la.MatAlloc(np, nr)
+	for i, P := range Pvals {
+		c := o.Calc_c(P)
+		for j := 0; j < nr; j++ {
+			Sr[i][j], St[i][j] = o.Stresses(c, R[j])
+		}
+	}
+	return
+}
+
+// auxiliary /////////////////////////////////////////////////////////////////////
+
+// fx_fun implements the nonlinear problem to be solved whe finding c
+func (o PressCylin) fx_fun(fx, X []float64) (err error) {
+	x := X[0]
+	fx[0] = o.P_fx/o.Y - (math.Log(x/o.a) + (1.0-x*x/(o.b*o.b))/2.0)
+	return
+}
+
+// dfdx_fun is the derivative of fx_fun
+func (o PressCylin) dfdx_fun(dfdx [][]float64, X []float64) (err error) {
+	x := X[0]
+	dfdx[0][0] = -1.0/x + x/(o.b*o.b)
+	return
 }
