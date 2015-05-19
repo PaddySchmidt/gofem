@@ -257,7 +257,7 @@ func Test_spo751b(tst *testing.T) {
 						x, y := dat.X[0], dat.X[1]
 						sx := res["sx"] * GPa2MPa
 						sy := res["sy"] * GPa2MPa
-						sxy := res["sxy"] * GPa2MPa
+						sxy := res["sxy"] * GPa2MPa / math.Sqrt2
 						R[i][j][k], Sr[i][j][k], St[i][j][k], _ = ana.PolarStresses(x, y, sx, sy, sxy)
 					}
 				}
@@ -267,42 +267,64 @@ func Test_spo751b(tst *testing.T) {
 
 		// auxiliary data for plotting stresses
 		colors := []string{"r", "m", "g", "k", "y", "c", "r", "m"}
-		markers := []string{"o", "*", "+", "x", "^", "s", "d", "."}
+		markers1 := []string{"o", "s", "x", ".", "^", "*", "o", "s"}
+		markers2 := []string{"+", "+", "+", "+", "+", "+", "+", "+"}
 
 		// plot load displacements
 		plt.SetForEps(0.8, 300)
-		plt.Plot(Ub_ana, P_ana, "'b-', label='solution', clip_on=0")
-		plt.Plot(Ub, P, "'r.--', label='fem: outer', clip_on=0")
-		plt.Gll("$u_x\\;\\mathrm{[mm]}$", "$P\\;\\mathrm{[MPa]}$", "")
-		plt.SaveD("/tmp", "gofem_spo751_disp.eps")
+		if true {
+			//if false {
+			plt.Plot(Ub_ana, P_ana, "'b-', label='solution', clip_on=0")
+			plt.Plot(Ub, P, "'r.--', label='fem: outer', clip_on=0")
+			plt.Gll("$u_x\\;\\mathrm{[mm]}$", "$P\\;\\mathrm{[MPa]}$", "")
+			plt.SaveD("/tmp", "gofem_spo751_disp.eps")
+		}
 
 		// plot radial stresses
-		plt.Reset()
-		for i, _ := range Psel {
-			plt.Plot(R_ana, Sr_ana[i], "'b-'")
-			args := io.Sf("'%s%s'", colors[i], markers[i])
-			for j := 0; j < nels; j++ {
+		if true {
+			//if false {
+			plt.Reset()
+			for i, Pval := range Psel {
+				plt.Plot(R_ana, Sr_ana[i], "'b-'")
 				for k := 0; k < nips; k++ {
-					plt.PlotOne(R[i][j][k], Sr[i][j][k], args)
+					for j := 0; j < nels; j++ {
+						args := io.Sf("'%s%s'", colors[i], markers1[i])
+						if k > 1 {
+							args = io.Sf("'k%s', ms=10", markers2[i])
+						}
+						if k == 0 && j == 0 {
+							args += io.Sf(", label='P=%g'", Pval)
+						}
+						plt.PlotOne(R[i][j][k], Sr[i][j][k], args)
+					}
 				}
 			}
+			plt.Gll("$r\\;\\mathrm{[mm]}$", "$\\sigma_r\\;\\mathrm{[MPa]}$", "leg_loc='lower right'")
+			plt.SaveD("/tmp", "gofem_spo751_sr.eps")
 		}
-		plt.Gll("$r\\;\\mathrm{[mm]}$", "$\\sigma_r\\;\\mathrm{[MPa]}$", "")
-		plt.SaveD("/tmp", "gofem_spo751_sr.eps")
 
 		// plot tangential stresses
-		plt.Reset()
-		for i, _ := range Psel {
-			plt.Plot(R_ana, St_ana[i], "'b-'")
-			args := io.Sf("'%s%s'", colors[i], markers[i])
-			for j := 0; j < nels; j++ {
+		if true {
+			//if false {
+			plt.Reset()
+			for i, Pval := range Psel {
+				plt.Plot(R_ana, St_ana[i], "'b-'")
 				for k := 0; k < nips; k++ {
-					plt.PlotOne(R[i][j][k], St[i][j][k], args)
+					for j := 0; j < nels; j++ {
+						args := io.Sf("'%s%s'", colors[i], markers1[i])
+						if k > 1 {
+							args = io.Sf("'k%s', ms=10", markers2[i])
+						}
+						if k == 0 && j == 0 {
+							args += io.Sf(", label='P=%g'", Pval)
+						}
+						plt.PlotOne(R[i][j][k], St[i][j][k], args)
+					}
 				}
 			}
+			plt.Gll("$r\\;\\mathrm{[mm]}$", "$\\sigma_t\\;\\mathrm{[MPa]}$", "leg_loc='upper left'")
+			plt.SaveD("/tmp", "gofem_spo751_st.eps")
 		}
-		plt.Gll("$r\\;\\mathrm{[mm]}$", "$\\sigma_t\\;\\mathrm{[MPa]}$", "")
-		plt.SaveD("/tmp", "gofem_spo751_st.eps")
 	}
 }
 
