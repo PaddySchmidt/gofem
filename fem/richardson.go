@@ -98,6 +98,7 @@ func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *floa
 		d.backup()
 
 		// single step with Δt
+		d.Sol.T = t + o.Δt
 		o.diverging, ok = run_iterations(t+o.Δt, o.Δt, d, s)
 		if !ok {
 			return
@@ -117,6 +118,7 @@ func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *floa
 		d.restore()
 
 		// 1st halved step
+		d.Sol.T = t + o.Δt/2.0
 		o.diverging, ok = run_iterations(t+o.Δt/2.0, o.Δt/2.0, d, s)
 		if !ok {
 			break
@@ -128,6 +130,7 @@ func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *floa
 		}
 
 		// 2nd halved step
+		d.Sol.T = t + o.Δt
 		o.diverging, ok = run_iterations(t+o.Δt, o.Δt/2.0, d, s)
 		if !ok {
 			break
@@ -153,17 +156,21 @@ func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *floa
 			t += o.Δt
 			d.Sol.T = t
 
+			io.Pfgreen("accepted t = %v\n", t)
+
 			// output
 			if Global.Verbose {
 				if !Global.Sim.Data.ShowR && !Global.Debug {
 					io.PfWhite("time     = %g\r", t)
 				}
 			}
-			if t >= tout || o.laststep {
+			if true {
+				//if t >= tout || o.laststep {
 				s.OutTimes = append(s.OutTimes, t)
 				if !d.Out(*tidx) {
 					return
 				}
+				io.Pforan("doing output with t = %v\n", t)
 				tout += DtOut.F(t, nil)
 				*tidx += 1
 			}
@@ -200,6 +207,8 @@ func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *floa
 			// rejected
 		} else {
 
+			io.Pfyel("rejected t = %v\n", t)
+
 			// restore state
 			d.restore()
 
@@ -232,7 +241,7 @@ func (o *RichardsonExtrap) divergence_control(d *Domain, name string) (docontinu
 		o.prevdiv = true
 		return true
 	}
-	if o.prevdiv {
+	if o.prevdiv && false {
 		o.Δt = o.Δtcpy
 		o.ndiverg = 0
 		o.prevdiv = false
