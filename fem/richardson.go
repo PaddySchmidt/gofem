@@ -5,6 +5,7 @@
 package fem
 
 import (
+	"log"
 	"math"
 
 	"github.com/cpmech/gosl/fun"
@@ -59,6 +60,16 @@ func (o *RichardsonExtrap) Init(d *Domain, Dt fun.Func) {
 }
 
 func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *float64, tf, tout float64, tidx *int) (ok bool) {
+
+	// stat
+	defer func() {
+		if Global.Root {
+			log.Printf("total number of steps             	= %d\n", o.nsteps)
+			log.Printf("number of accepted steps          	= %d\n", o.naccept)
+			log.Printf("number of rejected steps          	= %d\n", o.nreject)
+			log.Printf("number of Gustaffson's corrections	= %d\n", o.ngustaf)
+		}
+	}()
 
 	// constants
 	atol := Global.Sim.Solver.REatol
@@ -156,21 +167,18 @@ func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *floa
 			t += o.Δt
 			d.Sol.T = t
 
-			io.Pfgreen("accepted t = %v\n", t)
-
 			// output
 			if Global.Verbose {
 				if !Global.Sim.Data.ShowR && !Global.Debug {
 					io.PfWhite("time     = %g\r", t)
 				}
 			}
-			if true {
-				//if t >= tout || o.laststep {
+			//if true {
+			if t >= tout || o.laststep {
 				s.OutTimes = append(s.OutTimes, t)
 				if !d.Out(*tidx) {
 					return
 				}
-				io.Pforan("doing output with t = %v\n", t)
 				tout += DtOut.F(t, nil)
 				*tidx += 1
 			}
@@ -206,8 +214,6 @@ func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *floa
 
 			// rejected
 		} else {
-
-			io.Pfyel("rejected t = %v\n", t)
 
 			// restore state
 			d.restore()

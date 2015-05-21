@@ -192,7 +192,7 @@ func Test_spo751b(tst *testing.T) {
 
 func Test_spo751re(tst *testing.T) {
 
-	verbose()
+	//verbose()
 	chk.PrintTitle("spo751re (Richardson estrapolation)")
 
 	// run simulation
@@ -210,8 +210,8 @@ func Test_spo751re(tst *testing.T) {
 	}
 
 	// plot
-	if true {
-		//if false {
+	//if true {
+	if false {
 		plot_spo751("spo751re")
 	}
 }
@@ -226,7 +226,7 @@ func plot_spo751(fnkey string) {
 
 	// selected P values for stress plot
 	Psel := []float64{100, 140, 180, 190}
-	tolPsel := 0.1    // tolerance to compare P
+	tolPsel := 2.0    // tolerance to compare P
 	GPa2MPa := 1000.0 // conversion factor
 
 	// input data
@@ -306,15 +306,15 @@ func plot_spo751(fnkey string) {
 	plt.SetForEps(0.8, 300)
 	if true {
 		//if false {
-		plt.Plot(Ub_ana, P_ana, "'b-', label='solution', clip_on=0")
+		plt.Plot(Ub_ana, P_ana, "'b-', ms=2, label='solution', clip_on=0")
 		plt.Plot(Ub, P, "'r.--', label='fem: outer', clip_on=0")
 		plt.Gll("$u_x\\;\\mathrm{[mm]}$", "$P\\;\\mathrm{[MPa]}$", "")
 		plt.SaveD("/tmp", io.Sf("gofem_%s_disp.eps", fnkey))
 	}
 
 	// plot radial stresses
-	//if true {
-	if false {
+	if true {
+		//if false {
 		plt.Reset()
 		for i, Pval := range Psel {
 			plt.Plot(R_ana, Sr_ana[i], "'b-'")
@@ -332,12 +332,13 @@ func plot_spo751(fnkey string) {
 			}
 		}
 		plt.Gll("$r\\;\\mathrm{[mm]}$", "$\\sigma_r\\;\\mathrm{[MPa]}$", "leg_loc='lower right'")
+		plt.AxisXrange(a, b)
 		plt.SaveD("/tmp", io.Sf("gofem_%s_sr.eps", fnkey))
 	}
 
 	// plot tangential stresses
-	//if true {
-	if false {
+	if true {
+		//if false {
 		plt.Reset()
 		for i, Pval := range Psel {
 			plt.Plot(R_ana, St_ana[i], "'b-'")

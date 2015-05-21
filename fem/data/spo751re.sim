@@ -3,13 +3,13 @@
     "desc"    : "de Souza Neto, Peric, Owen: Example 7.5.1 p244",
     "matfile" : "spo.mat",
     "steady"  : true,
-    "showR"   : true,
+    "showR"   : false,
     "stat"    : true
   },
   "functions" : [
     { "name":"pres", "type":"lin", "prms":[ {"n":"m", "v":-0.2} ] },
     { "name":"dt",   "type":"cte", "prms":[ {"n":"c", "v":0.1} ] },
-    { "name":"dto",  "type":"cte", "prms":[ {"n":"c", "v":0.1} ] }
+    { "name":"dto",  "type":"cte", "prms":[ {"n":"c", "v":0.05} ] }
   ],
   "regions" : [
     {
