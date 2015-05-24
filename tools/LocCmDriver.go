@@ -22,12 +22,20 @@ type Input struct {
 	MatName string
 	PathFn  string
 	PlotSet []string
-	Eps     bool
+	FigEps  bool
+	FigProp float64
+	FigWid  float64
 }
 
 func (o *Input) PostProcess() {
 	if len(o.PlotSet) == 0 {
 		o.PlotSet = msolid.PlotSet6
+	}
+	if o.FigProp < 0.1 {
+		o.FigProp = 1.0
+	}
+	if o.FigWid < 10 {
+		o.FigWid = 400
 	}
 }
 
@@ -39,7 +47,9 @@ func (o Input) String() (l string) {
 	l += io.Sf("material name                      : MatName = %v\n", o.MatName)
 	l += io.Sf("path filename                      : PathFn  = %v\n", o.PathFn)
 	l += io.Sf("plot set                           : PlotSet = %q\n", o.PlotSet)
-	l += io.Sf("generate .eps instead of .png      : Eps     = %v\n", o.Eps)
+	l += io.Sf("fig: generate .eps instead of .png : FigEps  = %v\n", o.FigEps)
+	l += io.Sf("fig: proportion of figure          : FigProp = %v\n", o.FigProp)
+	l += io.Sf("fig: width  of figure              : FigWid  = %v\n", o.FigWid)
 	l += "\n"
 	return
 }
@@ -126,7 +136,9 @@ func main() {
 
 	// plot
 	var plr msolid.Plotter
-	plr.SetFig(false, in.Eps, 1.0, 400, "/tmp", "cmd_"+in.SimFn)
-	//plr.SetModel(mdl)
+	plr.SetFig(false, in.FigEps, in.FigProp, in.FigWid, "/tmp", "cmd_"+in.SimFn)
+	if m, ok := mdl.(msolid.EPmodel); ok {
+		plr.SetModel(m)
+	}
 	plr.Plot(in.PlotSet, drv.Res, drv.Eps, true, true)
 }
