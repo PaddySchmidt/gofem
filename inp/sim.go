@@ -359,7 +359,7 @@ type Simulation struct {
 // ReadSim reads all simulation data from a .sim JSON file
 //  Notes:  1) this function initialises log file
 //          2) returns nil on errors
-func ReadSim(dir, fn string, erasefiles bool) *Simulation {
+func ReadSim(dir, fn, logPrefix string, erasefiles bool) *Simulation {
 
 	// new sim
 	var o Simulation
@@ -389,7 +389,7 @@ func ReadSim(dir, fn string, erasefiles bool) *Simulation {
 	o.Solver.PostProcess()
 
 	// init log file
-	err = InitLogFile(o.Data.DirOut, o.Data.FnameKey)
+	err = InitLogFile(o.Data.DirOut, logPrefix+o.Data.FnameKey)
 	if err != nil {
 		io.PfRed("sim: cannot create log file\n%v", err)
 		return nil

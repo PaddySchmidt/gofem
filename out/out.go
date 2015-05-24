@@ -60,6 +60,7 @@ func End() {
 func Start(simfnpath string, stageIdx, regionIdx int) {
 
 	// start FE global structure
+	fem.Global.LogPrefix = "out_"
 	erasefiles := false
 	verbose := false
 	if !fem.Start(simfnpath, erasefiles, verbose) {

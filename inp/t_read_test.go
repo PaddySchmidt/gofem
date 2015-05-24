@@ -40,7 +40,7 @@ func Test_sim01(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("sim01")
 
-	sim := ReadSim("data", "bh16.sim", true)
+	sim := ReadSim("data", "bh16.sim", "", true)
 	if sim == nil {
 		tst.Errorf("test failed: check error log\n")
 		return
@@ -63,7 +63,7 @@ func Test_sim02(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("sim01")
 
-	sim := ReadSim("data", "frees01.sim", true)
+	sim := ReadSim("data", "frees01.sim", "", true)
 	if sim == nil {
 		tst.Errorf("test failed: check error log\n")
 		return

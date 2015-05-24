@@ -23,6 +23,9 @@ import (
 // Global holds global data
 var Global struct {
 
+	// constants
+	LogPrefix string // extra string to prefix log file
+
 	// multiprocessing data
 	Rank     int   // my rank in distributed cluster
 	Nproc    int   // number of processors
@@ -79,7 +82,7 @@ func Start(simfilepath string, erasefiles, verbose bool) (startisok bool) {
 	// simulation and convenience variables
 	dir := filepath.Dir(simfilepath)
 	fn := filepath.Base(simfilepath)
-	Global.Sim = inp.ReadSim(dir, fn, erasefiles)
+	Global.Sim = inp.ReadSim(dir, fn, Global.LogPrefix, erasefiles)
 	LogErrCond(Global.Sim == nil, "ReadSim failed\n")
 	if Stop() {
 		return

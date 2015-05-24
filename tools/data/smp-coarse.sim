@@ -1,0 +1,54 @@
+{
+  "data" : {
+    "desc"     : "De Souza Neto, Peric, Owen: Example 8.4.3 p346",
+    "matfile"  : "materials.mat",
+    "steady"   : true,
+    "showR"    : false
+  },
+  "functions" : [
+    { "name":"disp", "type":"lin", "prms":[ {"n":"m", "v":-0.004, "u":"m"} ] },
+    { "name":"dt",   "type":"cte", "prms":[ {"n":"c", "v":0.005} ] },
+    { "name":"dto",  "type":"cte", "prms":[ {"n":"c", "v":0.01} ] }
+  ],
+  "regions" : [
+    {
+      "desc" : "strip footing",
+      "mshfile" : "d2-coarse.msh",
+      "elemsdata" : [
+        { "tag":-1, "mat":"M.8.4.3-smp", "type":"u", "nip":4 }
+      ]
+    }
+  ],
+  "solver" : {
+    "Atol"    : 1e-4,
+    "Rtol"    : 1e-4,
+    "FbTol"   : 1e-4,
+    "FbMin"   : 1e-4,
+    "dvgctrl" : false,
+    "ndvgmax" : 40,
+    "RE"      : true,
+    "REnogus" : true,
+    "REmmax"  : 1.2,
+    "REatol"  : 1e-7,
+    "RErtol"  : 1e-7
+  },
+  "stages" : [
+    {
+      "desc" : "apply surface displacements",
+      "facebcs" : [
+        { "tag":-10, "keys":["uy"], "funcs":["zero"] },
+        { "tag":-11, "keys":["ux"], "funcs":["zero"] },
+        { "tag":-13, "keys":["ux"], "funcs":["zero"] },
+        { "tag":-14, "keys":["uy"], "funcs":["disp"] }
+      ],
+      "solver" : {
+        "rtol" : 1e-6
+      },
+      "control" : {
+        "dtfcn" : "dt",
+        "dtofcn": "dto",
+        "tf"    : 1.0
+      }
+    }
+  ]
+}
