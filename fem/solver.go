@@ -382,11 +382,10 @@ func run_iterations(t, Δt float64, d *Domain, sum *Summary) (diverging, ok bool
 			if largFb < Global.Sim.Solver.FbTol*largFb0 { // converged on fb
 				break
 			}
-		}
-
-		// check convergence on fb_min
-		if largFb < Global.Sim.Solver.FbMin { // converged with smallest value of fb
-			break
+			// check convergence on fb_min
+			if largFb < Global.Sim.Solver.FbMin { // converged with smallest value of fb
+				break
+			}
 		}
 
 		// check divergence on fb
