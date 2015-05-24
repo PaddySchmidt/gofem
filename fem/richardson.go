@@ -170,7 +170,7 @@ func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *floa
 			// output
 			if Global.Verbose {
 				if !Global.Sim.Data.ShowR && !Global.Debug {
-					io.PfWhite("time     = %g\r", t)
+					io.PfWhite("%30.15f\r", t)
 				}
 			}
 			//if true {
@@ -185,6 +185,9 @@ func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *floa
 
 			// reached final time
 			if o.laststep {
+				if Global.Verbose {
+					io.Pfgreen("\n\nRichardson extrapolation succeeded\n")
+				}
 				return true
 			}
 

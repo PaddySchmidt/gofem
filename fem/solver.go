@@ -243,7 +243,7 @@ func Run() (runisok bool) {
 			// message
 			if Global.Verbose {
 				if !Global.Sim.Data.ShowR && !Global.Debug {
-					io.PfWhite("time     = %g\r", t)
+					io.PfWhite("%30.15f\r", t)
 				}
 			}
 
