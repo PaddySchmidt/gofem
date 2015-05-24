@@ -1,0 +1,7 @@
+{
+	"dir"     : "data",
+	"simfn"   : "smp-coarse.sim",
+	"matname" : "M.8.4.3-smp",
+	"pathfn"  : "path1.pat",
+  "plotset" : ["p,q,ys"]
+}

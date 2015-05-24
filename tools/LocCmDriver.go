@@ -7,70 +7,89 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"path"
 
 	"github.com/cpmech/gofem/inp"
 	"github.com/cpmech/gofem/msolid"
 	"github.com/cpmech/gosl/io"
 )
 
+type Input struct {
+	Dir     string
+	SimFn   string
+	MatName string
+	PathFn  string
+	PlotSet []string
+	Eps     bool
+}
+
+func (o *Input) PostProcess() {
+	if len(o.PlotSet) == 0 {
+		o.PlotSet = msolid.PlotSet6
+	}
+}
+
+func (o Input) String() (l string) {
+	l += "\nInput data\n"
+	l += "==========\n"
+	l += io.Sf("directory with .sim and .pat files : Dir     = %v\n", o.Dir)
+	l += io.Sf("simulation filename                : SimFn   = %v\n", o.SimFn)
+	l += io.Sf("material name                      : MatName = %v\n", o.MatName)
+	l += io.Sf("path filename                      : PathFn  = %v\n", o.PathFn)
+	l += io.Sf("plot set                           : PlotSet = %q\n", o.PlotSet)
+	l += io.Sf("generate .eps instead of .png      : Eps     = %v\n", o.Eps)
+	l += "\n"
+	return
+}
+
 func main() {
 
-	// input data
-	dir := "data"
-	simfn := "smp-coarse.sim"
-	matname := "M.8.4.3-smp"
-	pathfn := "path1.pat"
-
-	// parse flags
+	// input data file
+	inpfn := "data/loccmdrv1.inp"
 	flag.Parse()
 	if len(flag.Args()) > 0 {
-		dir = flag.Arg(0)
+		inpfn = flag.Arg(0)
 	}
-	if len(flag.Args()) > 1 {
-		simfn = flag.Arg(1)
-	}
-	if len(flag.Args()) > 2 {
-		matname = flag.Arg(2)
-	}
-	if len(flag.Args()) > 3 {
-		pathfn = flag.Arg(3)
+	if io.FnExt(inpfn) == "" {
+		inpfn += ".inp"
 	}
 
-	// check extension
-	if io.FnExt(simfn) == "" {
-		simfn += ".sim"
+	// read and parse input data
+	var in Input
+	b, err := io.ReadFile(inpfn)
+	if err != nil {
+		io.PfRed("cannot read %s\n", inpfn)
+		return
 	}
-	if io.FnExt(pathfn) == "" {
-		pathfn += ".pat"
+	err = json.Unmarshal(b, &in)
+	if err != nil {
+		io.PfRed("cannot parse %s\n", inpfn)
+		return
 	}
+	in.PostProcess()
 
 	// print input data
-	io.Pf("\nInput data\n")
-	io.Pf("==========\n")
-	io.Pf("  dir     = %30s // directory with .sim and .pat files\n", dir)
-	io.Pf("  simfn   = %30s // simulation filename\n", simfn)
-	io.Pf("  matname = %30s // material name\n", matname)
-	io.Pf("  pathfn  = %30v // path filename\n", pathfn)
-	io.Pf("\n")
+	io.Pf("%v\n", in)
 
 	// load simulation
-	sim := inp.ReadSim(dir, simfn, "cmd_", false)
+	sim := inp.ReadSim(in.Dir, in.SimFn, "cmd_", false)
 	if sim == nil {
 		io.PfRed("cannot load simulation\n")
 		return
 	}
 
 	// get material data
-	mat := sim.Mdb.Get(matname)
+	mat := sim.Mdb.Get(in.MatName)
 	if mat == nil {
 		io.PfRed("cannot get material\n")
 		return
 	}
-	io.Pforan("mat = %v\n", mat)
+	//io.Pfcyan("mat = %v\n", mat)
 
 	// get and initialise model
-	mdl, _ := msolid.GetModel(simfn, matname, mat.Model, false)
+	mdl, _ := msolid.GetModel(in.SimFn, in.MatName, mat.Model, false)
 	if mdl == nil {
 		io.PfRed("cannot allocate model\n")
 		return
@@ -78,4 +97,36 @@ func main() {
 	ndim := 3
 	pstress := false
 	mdl.Init(ndim, pstress, mat.Prms)
+	//io.Pforan("mdl = %v\n", mdl)
+
+	// load path
+	var pth msolid.Path
+	err = pth.ReadJson(ndim, path.Join(in.Dir, in.PathFn))
+	if err != nil {
+		io.PfRed("cannot read path file %v\n", err)
+		return
+	}
+	//io.PfYel("pth = %v\n", pth)
+
+	// driver
+	var drv msolid.Driver
+	drv.InitWithModel(ndim, mdl)
+
+	// run
+	err = drv.Run(&pth)
+	if err != nil {
+		io.PfRed("driver: Run failed: %v\n", err)
+		return
+	}
+
+	for _, sta := range drv.Res {
+		io.Pforan("sta = %v\n", sta.Sig)
+	}
+	io.Pfcyan("eps = %v\n", drv.Eps)
+
+	// plot
+	var plr msolid.Plotter
+	plr.SetFig(false, in.Eps, 1.0, 400, "/tmp", "cmd_"+in.SimFn)
+	//plr.SetModel(mdl)
+	plr.Plot(in.PlotSet, drv.Res, drv.Eps, true, true)
 }

@@ -56,6 +56,16 @@ func (o *Driver) Init(simfnk, modelname string, ndim int, pstress bool, prms fun
 	return
 }
 
+// InitWithModel initialises driver with existent model
+func (o *Driver) InitWithModel(ndim int, model Model) (err error) {
+	o.nsig = 2 * ndim
+	o.model = model
+	o.D = la.MatAlloc(o.nsig, o.nsig)
+	o.TolD = 1e-8
+	o.VerD = chk.Verbose
+	return
+}
+
 // Run runs simulation
 func (o *Driver) Run(pth *Path) (err error) {
 
@@ -122,6 +132,9 @@ func (o *Driver) Run(pth *Path) (err error) {
 
 		// stress path
 		if pth.UseS[i] > 0 {
+
+			return chk.Err("cannot run StrainUpdate for stress paths at the moment")
+
 			Δσ[0] = pth.MultS * (pth.Sx[i] - pth.Sx[i-1]) / float64(pth.Nincs)
 			Δσ[1] = pth.MultS * (pth.Sy[i] - pth.Sy[i-1]) / float64(pth.Nincs)
 			Δσ[2] = pth.MultS * (pth.Sz[i] - pth.Sz[i-1]) / float64(pth.Nincs)
