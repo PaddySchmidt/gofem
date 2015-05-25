@@ -125,14 +125,8 @@ func main() {
 	// run
 	err = drv.Run(&pth)
 	if err != nil {
-		io.PfRed("driver: Run failed: %v\n", err)
-		return
+		io.Pfred("driver: Run failed: %v\n", err)
 	}
-
-	for _, sta := range drv.Res {
-		io.Pforan("sta = %v\n", sta.Sig)
-	}
-	io.Pfcyan("eps = %v\n", drv.Eps)
 
 	// plot
 	var plr msolid.Plotter
