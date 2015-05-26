@@ -7,8 +7,8 @@ package mporous
 import (
 	"testing"
 
-	"github.com/cpmech/gofemT2/mconduct"
-	"github.com/cpmech/gofemT2/mreten"
+	"github.com/cpmech/gofem/mconduct"
+	"github.com/cpmech/gofem/mreten"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/plt"
 )

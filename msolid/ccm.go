@@ -155,10 +155,14 @@ func (o CamClayMod) Info() (nalp, nsurf int) {
 	return 1, 1
 }
 
-// IsoF returns the isotropic function, if any
-func (o CamClayMod) IsoF() *tsr.IsoFun {
-	return nil
-}
+// Get_phi gets φ or returns 0
+func (o CamClayMod) Get_phi() float64 { return 0 }
+
+// Get_bsmp gets b coefficient if using SMP invariants
+func (o CamClayMod) Get_bsmp() float64 { return 0 }
+
+// Set_bsmp sets b coefficient if using SMP invariants
+func (o *CamClayMod) Set_bsmp(b float64) {}
 
 // YieldFuncs computes yield function values
 func (o CamClayMod) YieldFuncs(s *State) []float64 {

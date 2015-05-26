@@ -200,6 +200,13 @@ func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int) (er
 		io.Pfred("before: cnd(J) = %v\n", cnd)
 	}
 
+	// modify b
+	//bsmp := o.Mdl.Get_bsmp()
+	//if bsmp > 0 {
+	//o.Mdl.Set_bsmp(0)
+	//defer func() { o.Mdl.Set_bsmp(bsmp) }()
+	//}
+
 	// solve
 	silent := true
 	if o.DbgOn {
@@ -207,9 +214,9 @@ func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int) (er
 	}
 	err = o.nls.Solve(o.x, silent)
 	if err != nil {
-		if o.DbgOn {
-			o.dbg_plot(eid, ipid)
-		}
+		//if o.DbgOn {
+		//o.dbg_plot(eid, ipid)
+		//}
 		return
 	}
 

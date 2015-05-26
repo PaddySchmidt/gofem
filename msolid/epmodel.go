@@ -4,8 +4,6 @@
 
 package msolid
 
-import "github.com/cpmech/gosl/tsr"
-
 // EPmodel implements an elasto-plastic model
 //  PVS -- principal values formulation with given principal stresses
 //  PVE -- principal values formulation with given principal elastic strains
@@ -14,10 +12,13 @@ type EPmodel interface {
 	Small
 
 	Info() (nalp, nsurf int)           // Info returns some information and data from this model
-	IsoF() *tsr.IsoFun                 // IsoF returns the isotropic function, if any
 	YieldFuncs(s *State) []float64     // YieldFs computes the yield functions
 	ElastUpdate(s *State, ε []float64) // ElastUpdate updates state with an elastic response
 	ElastD(D [][]float64, s *State)    // ElastD returns continuum elastic D
+
+	Get_phi() float64   // gets φ or returns zero
+	Get_bsmp() float64  // gets b coefficient if using SMP invariants
+	Set_bsmp(b float64) // sets b coefficient if using SMP invariants
 
 	// E_CalcSig computes principal stresses for given principal elastic strains
 	E_CalcSig(σ, εe []float64)

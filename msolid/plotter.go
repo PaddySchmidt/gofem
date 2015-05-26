@@ -14,7 +14,6 @@ import (
 	"github.com/cpmech/gosl/plt"
 	"github.com/cpmech/gosl/tsr"
 	"github.com/cpmech/gosl/utl"
-	"github.com/cpmech/gosl/vtk"
 )
 
 // constants
@@ -104,6 +103,7 @@ type Plotter struct {
 
 	// rosette
 	maxR float64 // max radius for octrahedral rosette
+	Phi  float64 // φ for plotting reference criteria in rosette
 
 	// predictor-corrector
 	PreCor [][]float64 // [npath][neps] predictor-corrector states
@@ -261,8 +261,6 @@ func (o *Plotter) Plot(keys []string, res []*State, sts [][]float64, first, last
 		case "s3,s1,ys":
 			o.WithYs = true
 			o.Plot_s3_s1(x, y, res, sts, last)
-		case "ys3d":
-			o.Plot_ys3d(res)
 		case "empty":
 			continue
 		default:
@@ -658,7 +656,9 @@ func (o *Plotter) Plot_oct(x, y []float64, res []*State, sts [][]float64, last b
 	if o.OctLims != nil {
 		xmi, xma, ymi, yma = o.OctLims[0], o.OctLims[1], o.OctLims[2], o.OctLims[3]
 	}
+	//xmi, xma, ymi, yma = -20000, 20000, -20000, 20000
 	// yield surface
+	var σcmax float64
 	if o.WithYs && o.m != nil {
 		//io.Pforan("xmi,xma ymi,yma = %v,%v %v,%v\n", xmi,xma, ymi,yma)
 		dx := (xma - xmi) / float64(o.NptsOct-1)
@@ -672,6 +672,8 @@ func (o *Plotter) Plot_oct(x, y []float64, res []*State, sts [][]float64, last b
 			copy(v.Alp, res[k].Alp)
 			v.Dgam = res[k].Dgam
 			σc = tsr.M_p(res[k].Sig) * tsr.SQ3
+			//σc = 30000
+			σcmax = max(σcmax, σc)
 			for i := 0; i < o.NptsOct; i++ {
 				for j := 0; j < o.NptsOct; j++ {
 					xx[i][j] = xmi + float64(i)*dx
@@ -702,6 +704,7 @@ func (o *Plotter) Plot_oct(x, y []float64, res []*State, sts [][]float64, last b
 	}
 	// rosette and settings
 	if last {
+		tsr.PlotRefOct(o.Phi, σcmax, true)
 		tsr.PlotRosette(o.maxR, false, true, true, 6)
 		if o.OctAxOff {
 			plt.AxisOff()
@@ -859,67 +862,6 @@ func (o *Plotter) Subplot() {
 	}
 	plt.Subplot(o.Nrow, o.Ncol, o.Pidx)
 	o.Pidx += 1
-}
-
-func (o *Plotter) Plot_ys3d(res []*State) {
-
-	// model
-	isof := o.m.IsoF()
-	if isof == nil {
-		chk.Panic("Plot_ys3d works with models based on iso-functions only", o.m)
-	}
-
-	// limits
-	nr := len(res)
-	var xmi, xma, ymi, yma float64
-	for i := 0; i < nr; i++ {
-		x, y := o.P[i], o.Q[i]
-		if i == 0 {
-			xmi, xma = x, x
-			ymi, yma = y, y
-		} else {
-			xmi = min(xmi, x)
-			xma = max(xma, x)
-			ymi = min(ymi, y)
-			yma = max(yma, y)
-		}
-	}
-	if o.UsePmax {
-		xma = max(xma, o.Pmax)
-		yma = max(yma, o.Pmax)
-	}
-
-	// scene
-	scn := vtk.NewScene()
-	scn.AxesLen = xma * tsr.SQ3
-	scn.SaveOnExit = false
-
-	// isosurface
-	ncp := len(res[0].Sig)
-	A := make([]float64, ncp)
-	isf := vtk.NewIsoSurf(func(x []float64) (f, vx, vy, vz float64) {
-		A[0], A[1], A[2] = x[0], x[1], x[2]
-		f, _ = isof.Fa(A, res[0].Alp[0])
-		return
-	})
-
-	// set isosurface
-	isf.OctRotate = true
-	if isf.OctRotate {
-		isf.Limits = []float64{xmi, xma, ymi, yma, 0, 360}
-		isf.Ndiv = []int{21, 21, 31}
-	} else {
-		l := xma * tsr.SQ3
-		isf.Limits = []float64{-l, l, -l, l, -l, l}
-		isf.Ndiv = []int{31, 31, 31}
-	}
-	isf.Nlevels = 20
-	isf.Frange = []float64{-10, 10}
-	isf.CmapNclrs = 24
-	isf.CmapType = "warm"
-
-	// run visualisation
-	scn.Run()
 }
 
 // Auxiliary ////////////////////////////////////////////////////////////////////////////////////

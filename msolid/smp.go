@@ -26,6 +26,9 @@ type SmpInvs struct {
 	Isof tsr.IsoFun     // isotropic function structure
 	RM   fun.RefDecSp1  // reference model for smoothing
 
+	// auxiliary parameters
+	c, φ, a, b, β, ϵ, βrm, shift float64 // parameters
+
 	// parameters
 	rtyp int     // rounding type
 	r    float64 // radius
@@ -42,80 +45,30 @@ func init() {
 	allocators["smp"] = func() Model { return new(SmpInvs) }
 }
 
-// Init initialises model
-func (o *SmpInvs) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
+func (o *SmpInvs) calc_auxiliary() {
 
-	// basic data
-	o.Nsig = 2 * ndim
-
-	// parameters
-	var c, φ, a, b, β, ϵ float64
-	βrm := 20.0 // β_{reference-model}
-	for _, p := range prms {
-		switch p.N {
-
-		// cohesion and friction angle
-		case "c":
-			c = p.V
-		case "phi":
-			φ = p.V
-
-		// SMP invariants
-		case "a":
-			a = p.V
-		case "b":
-			b = p.V
-		case "bet":
-			β = p.V
-		case "eps":
-			ϵ = p.V
-
-		// rounding
-		case "rtyp":
-			o.rtyp = int(p.V)
-		case "r":
-			o.r = p.V
-		case "betrm":
-			βrm = p.V
-		case "pe":
-			o.pe = p.V
-		}
-	}
-
-	// auxiliary
-	o.M = tsr.NewSmpCalcμ(φ, a, b, β, ϵ)
+	o.M = tsr.SmpCalcμ(o.φ, o.a, o.b, o.β, o.ϵ)
 	α := math.Atan(o.M)
 	o.sα = math.Sin(α)
 	o.cα = math.Cos(α)
-	shift := c / math.Tan(φ*math.Pi/180.0)
+	o.shift = o.c / math.Tan(o.φ*math.Pi/180.0)
 
-	// parameters for HE model
-	err = o.HE.Init(ndim, pstress, prms)
-	if err != nil {
-		return
-	}
-	o.HE.Set_pt(shift)
-
-	// stress updater
-	o.PU.Init(ndim, prms, o)
-
-	// rounding
 	switch o.rtyp {
 	case 1: // circle
 		m := o.r/o.sα - o.r
-		if m > shift {
-			shift = m
+		if m > o.shift {
+			o.shift = m
 		}
 	case 2: // reference model
 		m := o.r/o.sα - o.r
-		if m > shift {
-			shift = m
+		if m > o.shift {
+			o.shift = m
 		}
 		pc := o.r / o.sα
 		pb := pc - o.r
 		pa := 0.0
 		o.RM.Init([]*fun.Prm{
-			&fun.Prm{N: "bet", V: βrm},
+			&fun.Prm{N: "bet", V: o.βrm},
 			&fun.Prm{N: "lam1", V: 1.0 / o.M},
 			&fun.Prm{N: "ya", V: -pa},
 			&fun.Prm{N: "yb", V: -pb},
@@ -124,17 +77,70 @@ func (o *SmpInvs) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 		pa := 0.0
 		pb := o.r
 		m := pb - pa
-		if m > shift {
-			shift = m
+		if m > o.shift {
+			o.shift = m
 		}
 		pemin := 2.0*pb - pa + 1e-7
 		if o.pe < pemin {
 			chk.Panic("pe(%g) must be greater than %g", o.pe, pemin)
 		}
 	}
+}
+
+// Init initialises model
+func (o *SmpInvs) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
+
+	// basic data
+	o.Nsig = 2 * ndim
+
+	// parameters
+	o.βrm = 20.0 // β_{reference-model}
+	for _, p := range prms {
+		switch p.N {
+
+		// cohesion and friction angle
+		case "c":
+			o.c = p.V
+		case "phi":
+			o.φ = p.V
+
+		// SMP invariants
+		case "a":
+			o.a = p.V
+		case "b":
+			o.b = p.V
+		case "bet":
+			o.β = p.V
+		case "eps":
+			o.ϵ = p.V
+
+		// rounding
+		case "rtyp":
+			o.rtyp = int(p.V)
+		case "r":
+			o.r = p.V
+		case "betrm":
+			o.βrm = p.V
+		case "pe":
+			o.pe = p.V
+		}
+	}
+
+	// auxiliary
+	o.calc_auxiliary()
+
+	// parameters for HE model
+	err = o.HE.Init(ndim, pstress, prms)
+	if err != nil {
+		return
+	}
+	o.HE.Set_pt(o.shift)
+
+	// stress updater
+	o.PU.Init(ndim, prms, o)
 
 	// set isotropic function
-	o.Isof.Init(a, b, β, ϵ, shift, o.Nsig, o.ffcn, o.gfcn, o.hfcn)
+	o.Isof.Init(o.a, o.b, o.β, o.ϵ, o.shift, o.Nsig, o.ffcn, o.gfcn, o.hfcn)
 	return
 }
 
@@ -194,16 +200,28 @@ func (o SmpInvs) Info() (nalp, nsurf int) {
 	return 1, 1
 }
 
-// IsoF returns the isotropic function
-func (o SmpInvs) IsoF() *tsr.IsoFun {
-	return &o.Isof
+// Get_phi returns φ or zero
+func (o SmpInvs) Get_phi() float64 {
+	return o.φ
+}
+
+// Get_bsmp gets b coefficient if using SMP invariants
+func (o SmpInvs) Get_bsmp() float64 {
+	return o.b
+}
+
+// Set_bsmp sets b coefficient if using SMP invariants
+func (o *SmpInvs) Set_bsmp(b float64) {
+	o.b = b
+	o.calc_auxiliary()
+	o.Isof.SetPrms(o.a, o.b, o.β, o.ϵ, o.shift, o.ffcn, o.gfcn, o.hfcn)
 }
 
 // YieldFuncs computes yield function values
 func (o SmpInvs) YieldFuncs(s *State) []float64 {
 	res, err := o.Isof.Fa(s.Sig, s.Alp[0])
 	if err != nil {
-		chk.Panic("cannot compute isotrpic function Fa: %v", err)
+		chk.Panic("cannot compute isotropic function Fa: %v", err)
 	}
 	return []float64{res}
 }

@@ -5,8 +5,8 @@
 package main
 
 import (
-	"code.google.com/p/gemlab"
-	"code.google.com/p/gosl/utl"
+	"github.com/cpmech/gemlab"
+	"github.com/cpmech/gosl/io"
 )
 
 func main() {
@@ -198,6 +198,6 @@ func main() {
 	}
 
 	if err := gemlab.Generate(fnk, &dat); err != nil {
-		utl.PfRed("%v\n", err.Error())
+		io.PfRed("%v\n", err.Error())
 	}
 }

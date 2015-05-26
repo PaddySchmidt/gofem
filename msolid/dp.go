@@ -225,10 +225,14 @@ func (o DruckerPrager) Info() (nalp, nsurf int) {
 	return 1, 1
 }
 
-// IsoF returns the isotropic function, if any
-func (o DruckerPrager) IsoF() *tsr.IsoFun {
-	return nil
-}
+// Get_phi gets φ or returns 0
+func (o DruckerPrager) Get_phi() float64 { return 0 }
+
+// Get_bsmp gets b coefficient if using SMP invariants
+func (o DruckerPrager) Get_bsmp() float64 { return 0 }
+
+// Set_bsmp sets b coefficient if using SMP invariants
+func (o *DruckerPrager) Set_bsmp(b float64) {}
 
 // YieldFs computes the yield functions
 func (o DruckerPrager) YieldFuncs(s *State) []float64 {

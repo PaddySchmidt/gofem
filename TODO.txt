@@ -1,1 +1,2 @@
 - add option for log file; so run and output will have different log filenames
+- check why ffcn and others are necessary to IsoFun SetPrms in order to refresh plot

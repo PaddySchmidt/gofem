@@ -14,6 +14,8 @@ import (
 	"github.com/cpmech/gofem/inp"
 	"github.com/cpmech/gofem/msolid"
 	"github.com/cpmech/gosl/io"
+	"github.com/cpmech/gosl/plt"
+	"github.com/cpmech/gosl/tsr"
 )
 
 type Input struct {
@@ -129,10 +131,45 @@ func main() {
 	}
 
 	// plot
-	var plr msolid.Plotter
-	plr.SetFig(false, in.FigEps, in.FigProp, in.FigWid, "/tmp", "cmd_"+in.SimFn)
-	if m, ok := mdl.(msolid.EPmodel); ok {
-		plr.SetModel(m)
+	//if false {
+	if true {
+		var plr msolid.Plotter
+		plr.SetFig(false, in.FigEps, in.FigProp, in.FigWid, "/tmp", "cmd_"+in.SimFn)
+		var epm msolid.EPmodel
+		if m, ok := mdl.(msolid.EPmodel); ok {
+			plr.SetModel(m)
+			epm = m
+		}
+		if epm != nil {
+			//plr.Phi = epm.Get_phi()
+			b := epm.Get_bsmp()
+			epm.Set_bsmp(0)
+			plr.YsClr0 = "magenta"
+			plr.Plot(in.PlotSet, drv.Res, nil, true, false)
+			epm.Set_bsmp(b)
+		}
+		plr.YsClr0 = "green"
+		plr.Plot(in.PlotSet, drv.Res, drv.Eps, false, true)
 	}
-	plr.Plot(in.PlotSet, drv.Res, drv.Eps, true, true)
+
+	// plot ys
+	if false {
+		//if true {
+		plt.Reset()
+		m := mdl.(*msolid.SmpInvs)
+		φ := m.Get_phi()
+		σcCte := 10.0
+		M := tsr.Phi2M(φ, "oct")
+		rmin, rmax := 0.0, 1.28*M*σcCte
+		nr, nα := 31, 81
+		//nr,   nα   := 31, 1001
+		npolarc := true
+		simplec := false
+		only0 := false
+		grads := false
+		showpts := false
+		ferr := 10.0
+		tsr.PlotOct("fig_isofun02.png", σcCte, rmin, rmax, nr, nα, φ, m.Isof.Fa, m.Isof.Ga,
+			npolarc, simplec, only0, grads, showpts, true, true, ferr)
+	}
 }
