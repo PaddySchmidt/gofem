@@ -945,5 +945,8 @@ func (o *Plotter) fix_range(middle, Xmi, Xma, Ymi, Yma float64) (xmi, xma, ymi, 
 }
 
 func (o Plotter) calc_x(p float64) float64 {
+	if math.Abs(o.Pr) < 1e-10 {
+		chk.Panic("cannot plot with log scale when pr=0")
+	}
 	return math.Log(1.0 + (p+o.Pt)/o.Pr)
 }

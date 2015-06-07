@@ -30,6 +30,7 @@ func Test_ccm01(tst *testing.T) {
 	io.Pforan("G = %v\n", G)
 
 	// allocate driver
+	pr := 1.0
 	ndim, pstress := 2, false
 	simfnk, modelname := "test", "ccm"
 	var drv Driver
@@ -42,7 +43,7 @@ func Test_ccm01(tst *testing.T) {
 		&fun.Prm{N: "kap", V: 0.05},
 		&fun.Prm{N: "kapb", V: 0},
 		&fun.Prm{N: "G0", V: G},
-		&fun.Prm{N: "pr", V: 1.0},
+		&fun.Prm{N: "pr", V: pr},
 		&fun.Prm{N: "p0", V: 0.0},
 		&fun.Prm{N: "ev0", V: 0.0},
 		&fun.Prm{N: "le", V: 0},
@@ -84,6 +85,7 @@ func Test_ccm01(tst *testing.T) {
 	//if true {
 	if false {
 		var plr Plotter
+		plr.Pr = pr
 		prop := 2.0
 		plr.SetFig(false, false, prop, 400, "/tmp", "test_ccm01")
 		plr.SetModel(ccm)
