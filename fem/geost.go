@@ -138,6 +138,7 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
 	L = make([]*GeoLayer, nlayers)
 	ndim := Global.Ndim
 	nodehandled := make(map[int]bool)
+	ctaghandled := make(map[int]bool) // required to make sure all elements were initialised
 	for i, tags := range geo.Layers {
 
 		// new layer
@@ -182,7 +183,15 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
 					L[i].Zmax = max(L[i].Zmax, o.Msh.Verts[v].C[ndim-1])
 					nodehandled[v] = true
 				}
+				ctaghandled[c.Tag] = true
 			}
+		}
+	}
+
+	// make sure all elements tags were handled
+	for tag, _ := range o.Msh.CellTag2cells {
+		if LogErrCond(!ctaghandled[tag], "geost: there are cells not included in any layer: ctag=%d", tag) {
+			return
 		}
 	}
 
