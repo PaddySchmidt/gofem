@@ -88,13 +88,24 @@ type ExtraPlt func(i, j, nplots int)
 //  fname  -- file name; e.g. myplot.eps or myplot.png. Use "" to skip saving
 //  show   -- shows figure
 //  extra  -- is called just after Subplot command and before any plotting
+//  Note: subplots will be split if using 'eps' files
 func Draw(dirout, fname string, show bool, extra ExtraPlt) {
+	var fnk string // filename key
+	var ext string // extension
+	var eps bool   // is eps figure
+	if fname != "" {
+		fnk = io.FnKey(fname)
+		ext = io.FnExt(fname)
+		eps = ext == ".eps"
+	}
 	nplots := len(Splots)
 	nr, nc := utl.BestSquare(nplots)
 	var k int
 	for i := 0; i < nr; i++ {
 		for j := 0; j < nc; j++ {
-			plt.Subplot(nr, nc, k+1)
+			if !eps {
+				plt.Subplot(nr, nc, k+1)
+			}
 			if extra != nil {
 				extra(i+1, j+1, nplots)
 			}
@@ -118,15 +129,15 @@ func Draw(dirout, fname string, show bool, extra ExtraPlt) {
 				plt.Plot(x, y, d.Style.GetArgs("clip_on=0"))
 			}
 			plt.Gll(Splots[k].Xlbl, Splots[k].Ylbl, "")
+			if eps {
+				savefig(dirout, fnk, ext, k)
+				plt.Clf()
+			}
 			k += 1
 		}
 	}
-	if fname != "" {
-		if dirout == "" {
-			plt.Save(fname)
-		} else {
-			plt.SaveD(dirout, fname)
-		}
+	if !eps && fname != "" {
+		savefig(dirout, fnk, ext, -1)
 	}
 	if show {
 		plt.Show()
@@ -134,6 +145,18 @@ func Draw(dirout, fname string, show bool, extra ExtraPlt) {
 }
 
 // auxiliary /////////////////////////////////////////////////////////////////////////////////////////
+
+func savefig(dirout, fnk, ext string, idx int) {
+	fn := fnk + ext
+	if idx >= 0 {
+		fn = io.Sf("%s_%d%s", fnk, idx, ext)
+	}
+	if dirout == "" {
+		plt.Save(fn)
+	} else {
+		plt.SaveD(dirout, fn)
+	}
+}
 
 func get_vals_and_labels(handle, otherHandle interface{}, alias string, idxI int) ([]float64, string) {
 	otherKey := "any"
