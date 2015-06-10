@@ -86,26 +86,38 @@ func (o MatDb) GroupGet3(matname, key1, key2, key3 string) (m1, m2, m3 *Material
 		err = chk.Err("cannot find material named %q", matname)
 		return
 	}
-	if submat1, found := io.Keycode(mat.Extra, key1); found {
+	var submat1, submat2, submat3 string
+	var found bool
+	if submat1, found = io.Keycode(mat.Extra, key1); found {
 		m1 = o.Get(submat1)
 	} else {
 		err = chk.Err("cannot find key %q in grouped material data %q", key1, mat.Extra)
 		return
 	}
-	if submat2, found := io.Keycode(mat.Extra, key2); found {
+	if submat2, found = io.Keycode(mat.Extra, key2); found {
 		m2 = o.Get(submat2)
 	} else {
 		err = chk.Err("cannot find key %q in grouped material data %q", key2, mat.Extra)
 		return
 	}
-	if submat3, found := io.Keycode(mat.Extra, key3); found {
+	if submat3, found = io.Keycode(mat.Extra, key3); found {
 		m3 = o.Get(submat3)
 	} else {
 		err = chk.Err("cannot find key %q in grouped material data %q", key3, mat.Extra)
 		return
 	}
-	if m1 == nil || m2 == nil || m3 == nil {
-		err = chk.Err("material data in grouped materials cannot be parsed")
+	errmsg := ""
+	if m1 == nil {
+		errmsg += io.Sf("material data in grouped materials (!%s:%s) cannot be found\n", key1, submat1)
+	}
+	if m2 == nil {
+		errmsg += io.Sf("material data in grouped materials (!%s:%s) cannot be found\n", key2, submat2)
+	}
+	if m3 == nil {
+		errmsg += io.Sf("material data in grouped materials (!%s:%s) cannot be found\n", key3, submat3)
+	}
+	if errmsg != "" {
+		err = chk.Err(errmsg)
 	}
 	return
 }
