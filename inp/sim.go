@@ -37,6 +37,7 @@ type Data struct {
 	Debug   bool    `json:"debug"`   // activate debugging
 	Stat    bool    `json:"stat"`    // activate statistics
 	Wlevel  float64 `json:"wlevel"`  // water level; 0 means use max elevation
+	Surch   float64 `json:"surch"`   // surcharge load at surface == qn0
 
 	// options
 	React bool `json:"react"` // indicates whether or not reaction forces must be computed

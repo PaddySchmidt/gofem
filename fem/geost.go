@@ -208,10 +208,10 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
 		nf := lay.nf0
 		sl := 1.0
 		if i == 0 {
-			pl := 0.0
+			pl := (Global.Sim.WaterLevel - Global.Sim.MaxElev) * Global.Sim.WaterRho0 * Global.Sim.Gfcn.F(0, nil)
 			ρL := Global.Sim.WaterRho0
 			ρ := nf*sl*ρL + (1.0-nf)*ρS
-			σV := 0.0
+			σV := -Global.Sim.Data.Surch
 			top = &geostate{pl, ρL, ρ, σV}
 		} else {
 			top, err = L[i-1].Calc(L[i-1].Zmin)
