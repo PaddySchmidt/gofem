@@ -43,5 +43,6 @@ func main() {
 
 	// convert old => new
 	inp.MatfileOld2New("", matNew, matOld, convSymb)
-	io.Pfblue2("conversion successful\n")
+	io.Pf("conversion successful\n")
+	io.Pfblue2("file <matNew.mat> created\n")
 }
