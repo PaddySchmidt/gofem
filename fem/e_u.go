@@ -9,6 +9,7 @@ import (
 	"github.com/cpmech/gofem/msolid"
 	"github.com/cpmech/gofem/shp"
 
+	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/la"
@@ -143,6 +144,8 @@ func init() {
 			o.MdlSmall = m
 		case msolid.Large:
 			o.MdlLarge = m
+		default:
+			chk.Panic("__internal_error__: 'u' element cannot determine the type of the material model")
 		}
 
 		// parameters
