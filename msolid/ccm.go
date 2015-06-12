@@ -102,8 +102,6 @@ func (o CamClayMod) GetPrms() fun.Prms {
 		&fun.Prm{N: "kapb", V: 0},
 		&fun.Prm{N: "G0", V: 10000},
 		&fun.Prm{N: "pr", V: 1.0},
-		&fun.Prm{N: "p0", V: 0.0},
-		&fun.Prm{N: "ev0", V: 0.0},
 	}
 }
 
@@ -123,7 +121,7 @@ func (o CamClayMod) InitIntVars(σ []float64) (s *State, err error) {
 
 	// set state
 	nalp := 1 // alp[0] = α0 (yield surface size controller)
-	s = NewState(o.Nsig, nalp, false)
+	s = NewState(o.Nsig, nalp, false, true)
 	copy(s.Sig, σ)
 	s.Alp[0] = α0 * o.ocr
 	return

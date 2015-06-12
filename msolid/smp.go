@@ -165,7 +165,7 @@ func (o SmpInvs) GetPrms() fun.Prms {
 // InitIntVars initialises internal (secondary) variables
 func (o SmpInvs) InitIntVars(σ []float64) (s *State, err error) {
 	nalp := 1 // alp[0] = εpb (cumulated plastic strain)
-	s = NewState(o.Nsig, nalp, false)
+	s = NewState(o.Nsig, nalp, false, true)
 	copy(s.Sig, σ)
 	s.Alp[0] = 0
 	return

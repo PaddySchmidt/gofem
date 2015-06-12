@@ -26,8 +26,9 @@ type State struct {
 }
 
 // NewState allocates state structure for small or large deformation analyses
-//  large  -- large deformation analyses; otherwise small strains
-func NewState(nsig, nalp int, large bool) *State {
+//  large -- large deformation analyses; otherwise small strains
+//  nle   -- non-linear elastic
+func NewState(nsig, nalp int, large, nle bool) *State {
 
 	// essential
 	var state State
@@ -36,9 +37,13 @@ func NewState(nsig, nalp int, large bool) *State {
 
 	// for plasticity
 	if nalp > 0 {
-		state.EpsE = make([]float64, nsig)
 		state.EpsTr = make([]float64, nsig)
 		state.Alp = make([]float64, nalp)
+	}
+
+	// non-linear elasticity
+	if nalp > 0 || nle {
+		state.EpsE = make([]float64, nsig)
 	}
 
 	// large deformations
@@ -59,12 +64,16 @@ func (o *State) Set(other *State) {
 
 	// for plasticity
 	if len(o.Alp) > 0 {
-		copy(o.EpsE, other.EpsE)
 		copy(o.EpsTr, other.EpsTr)
 		copy(o.Alp, other.Alp)
 		o.Dgam = other.Dgam
 		o.Loading = other.Loading
 		o.ApexReturn = other.ApexReturn
+	}
+
+	// non-linear elasticity
+	if len(o.EpsE) > 0 {
+		copy(o.EpsE, other.EpsE)
 	}
 
 	// large deformations
@@ -76,7 +85,7 @@ func (o *State) Set(other *State) {
 // GetCopy returns a copy of this state
 func (o *State) GetCopy() *State {
 	large := len(o.F) > 0
-	other := NewState(len(o.Sig), len(o.Alp), large)
+	other := NewState(len(o.Sig), len(o.Alp), large, len(o.EpsE) > 0)
 	other.Set(o)
 	return other
 }

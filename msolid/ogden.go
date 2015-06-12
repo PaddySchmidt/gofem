@@ -78,7 +78,7 @@ func (o Ogden) GetPrms() fun.Prms {
 
 // InitIntVars initialises internal (secondary) variables
 func (o Ogden) InitIntVars(σ []float64) (s *State, err error) {
-	s = NewState(o.Nsig, 0, true)
+	s = NewState(o.Nsig, 0, true, false)
 	copy(s.Sig, σ)
 	return
 }

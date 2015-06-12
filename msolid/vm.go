@@ -58,7 +58,7 @@ func (o VonMises) GetPrms() fun.Prms {
 
 // InitIntVars initialises internal (secondary) variables
 func (o VonMises) InitIntVars(σ []float64) (s *State, err error) {
-	s = NewState(o.Nsig, 1, false)
+	s = NewState(o.Nsig, 1, false, false)
 	copy(s.Sig, σ)
 	return
 }

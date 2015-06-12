@@ -538,7 +538,7 @@ func (o *Plotter) Plot_p_q(x, y []float64, res []*State, sts [][]float64, last b
 		za := la.MatAlloc(o.NptsPq, o.NptsPq)
 		zb := la.MatAlloc(o.NptsPq, o.NptsPq)
 		var p, q, σa, σb, σc, λ0, λ1, λ2 float64
-		v := NewState(len(res[0].Sig), len(res[0].Alp), false)
+		v := NewState(len(res[0].Sig), len(res[0].Alp), false, len(res[0].EpsE) > 0)
 		for k := 0; k < nr; k++ {
 			copy(v.Alp, res[k].Alp)
 			v.Dgam = res[k].Dgam
@@ -667,7 +667,7 @@ func (o *Plotter) Plot_oct(x, y []float64, res []*State, sts [][]float64, last b
 		yy := la.MatAlloc(o.NptsOct, o.NptsOct)
 		zz := la.MatAlloc(o.NptsOct, o.NptsOct)
 		var λ0, λ1, λ2, σc float64
-		v := NewState(len(res[0].Sig), len(res[0].Alp), false)
+		v := NewState(len(res[0].Sig), len(res[0].Alp), false, len(res[0].EpsE) > 0)
 		for k := 0; k < nr; k++ {
 			copy(v.Alp, res[k].Alp)
 			v.Dgam = res[k].Dgam
@@ -766,7 +766,7 @@ func (o *Plotter) Plot_s3_s1(x, y []float64, res []*State, sts [][]float64, last
 		xx := la.MatAlloc(o.NptsSig, o.NptsSig)
 		yy := la.MatAlloc(o.NptsSig, o.NptsSig)
 		zz := la.MatAlloc(o.NptsSig, o.NptsSig)
-		v := NewState(len(res[0].Sig), len(res[0].Alp), false)
+		v := NewState(len(res[0].Sig), len(res[0].Alp), false, len(res[0].EpsE) > 0)
 		for k := 0; k < nr; k++ {
 			copy(v.Alp, res[k].Alp)
 			v.Dgam = res[k].Dgam
