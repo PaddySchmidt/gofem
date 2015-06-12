@@ -29,8 +29,6 @@ func Test_hyperelast01(tst *testing.T) {
 		&fun.Prm{N: "G0", V: 10000},
 		&fun.Prm{N: "pr", V: 2.0},
 		&fun.Prm{N: "pt", V: 10.0},
-		&fun.Prm{N: "p0", V: 20.0},
-		&fun.Prm{N: "ev0", V: 0.0},
 	})
 	io.Pforan("m = %+v\n", m)
 	pr := m.pr
@@ -157,8 +155,6 @@ func Test_hyperelast03(tst *testing.T) {
 		&fun.Prm{N: "G0", V: 1500},
 		&fun.Prm{N: "pr", V: 2.2},
 		&fun.Prm{N: "pt", V: 11.0},
-		&fun.Prm{N: "p0", V: 15.0},
-		&fun.Prm{N: "ev0", V: 0.0},
 	})
 	io.Pforan("m = %+v\n", m)
 

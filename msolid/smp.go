@@ -164,12 +164,6 @@ func (o SmpInvs) GetPrms() fun.Prms {
 
 // InitIntVars initialises internal (secondary) variables
 func (o SmpInvs) InitIntVars(σ []float64) (s *State, err error) {
-
-	// set HE model
-	p := tsr.M_p(σ)
-	o.HE.Set_p0_ev0(p, 0)
-
-	// set state
 	nalp := 1 // alp[0] = εpb (cumulated plastic strain)
 	s = NewState(o.Nsig, nalp, false)
 	copy(s.Sig, σ)
@@ -228,7 +222,7 @@ func (o SmpInvs) YieldFuncs(s *State) []float64 {
 
 // ElastUpdate updates state with an elastic response
 func (o SmpInvs) ElastUpdate(s *State, ε []float64) {
-	o.HE.Update(s, ε, nil)
+	o.HE.Update(s, ε, nil, 0, 0)
 }
 
 // ElastD returns continuum elastic D

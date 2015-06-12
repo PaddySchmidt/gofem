@@ -55,7 +55,10 @@ func Test_elast02(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("elast02")
 
-	K, G := 2.0, 3.0/4.0
+	//K, G := 2.0, 3.0/4.0
+	K, G := 1116.6666666666667, 837.5
+	io.Pfgreen("K = %v\n", Calc_K_from_Enu(2010, 0.2))
+	io.Pfgreen("G = %v\n", Calc_G_from_Knu(K, 0.2))
 
 	ndim, pstress := 2, false
 	var ec SmallElasticity
@@ -63,7 +66,7 @@ func Test_elast02(tst *testing.T) {
 		&fun.Prm{N: "K", V: K},
 		&fun.Prm{N: "G", V: G},
 	})
-	io.Pforan("ec: %v\n", &ec)
+	io.Pforan("ec: %+v\n", &ec)
 	if err != nil {
 		tst.Errorf("test failed: %v\n", err)
 		return
@@ -78,7 +81,7 @@ func Test_elast02(tst *testing.T) {
 	a := K + 4.0*G/3.0
 	b := K - 2.0*G/3.0
 	c := 2.0 * G
-	chk.Matrix(tst, "D", 1e-15, D, [][]float64{
+	chk.Matrix(tst, "D", 1e-12, D, [][]float64{
 		{a, b, b, 0},
 		{b, a, b, 0},
 		{b, b, a, 0},
