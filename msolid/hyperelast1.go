@@ -95,7 +95,7 @@ func (o HyperElast1) GetPrms() fun.Prms {
 
 // InitIntVars initialises internal (secondary) variables
 func (o HyperElast1) InitIntVars(σ []float64) (s *State, err error) {
-	s = NewState(o.Nsig, 0, false)
+	s = NewState(o.Nsig, 0, false, true)
 	copy(s.Sig, σ)
 	return
 }
@@ -107,11 +107,13 @@ func (o *HyperElast1) Update(s *State, ε, dummy []float64, eid, ipid int) (err 
 	if eno > o.EnoMin {
 		for i := 0; i < o.Nsig; i++ {
 			s.Sig[i] = s.Sig0[i] - p*tsr.Im[i] + tsr.SQ2by3*q*o.e[i]/eno
+			s.EpsE[i] = ε[i] // must update elastic strains for D modulus computation
 		}
 		return
 	}
 	for i := 0; i < o.Nsig; i++ {
 		s.Sig[i] = s.Sig0[i] - p*tsr.Im[i]
+		s.EpsE[i] = ε[i] // must update elastic strains for D modulus computation
 	}
 	return
 }
