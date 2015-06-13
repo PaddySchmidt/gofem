@@ -56,7 +56,7 @@ func (o *Path) SetIsoCompS(ndim, nincs, niout int, P []float64) (err error) {
 	}
 
 	// set additional information
-	return o.init(ndim)
+	return o.Init(ndim)
 }
 
 // SetPQstrain sets a p-q path with w=1 (compression); but given in terms of strains
@@ -86,7 +86,7 @@ func (o *Path) SetPQstrain(ndim, nincs, niout int, K, G, p0 float64, DP, DQ []fl
 	}
 
 	// set additional information
-	return o.init(ndim)
+	return o.Init(ndim)
 }
 
 // ReadJson reads json file
@@ -105,7 +105,7 @@ func (o *Path) ReadJson(ndim int, fname string) (err error) {
 	}
 
 	// set additional information
-	return o.init(ndim)
+	return o.Init(ndim)
 }
 
 // ReadTable loads path from datafile in table format
@@ -163,11 +163,11 @@ func (o *Path) ReadTable(ndim, nincs, niout int, fname string, n int, mσ, mε f
 	}
 
 	// set additional information
-	return o.init(ndim)
+	return o.Init(ndim)
 }
 
-// init initialises states variables after {Sx, Sy, Sz} or {Ex, Ey, Ez} have been set
-func (o *Path) init(ndim int) (err error) {
+// Init initialises states variables after {Sx, Sy, Sz} or {Ex, Ey, Ez} have been set
+func (o *Path) Init(ndim int) (err error) {
 
 	// constants
 	o.ndim = ndim
