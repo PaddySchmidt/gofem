@@ -509,7 +509,6 @@ func (o *Plotter) Plot_p_q(x, y []float64, res []*State, sts [][]float64, last b
 		if o.SMPon {
 			x[i], y[i], _ = tsr.M_pq_smp(res[i].Sig, o.SMPa, o.SMPb, o.SMPβ, o.SMPϵ)
 		}
-		io.Pfcyan("p=%v q=%v\n", x[i], y[i])
 	}
 	plt.Plot(x, y, io.Sf("'r.', ls='%s', clip_on=0, color='%s', marker='%s', label=r'%s'", o.Ls, o.Clr, o.Mrk, o.Lbl))
 	plt.PlotOne(x[0], y[0], io.Sf("'bo', clip_on=0, color='%s', marker='%s', ms=%d", o.SpClr, o.SpMrk, o.SpMs))
@@ -579,8 +578,6 @@ func (o *Plotter) Plot_p_q(x, y []float64, res []*State, sts [][]float64, last b
 			q = tsr.M_q(o.PreCor[i-1])
 			pnew = tsr.M_p(o.PreCor[i])
 			qnew = tsr.M_q(o.PreCor[i])
-			io.Pforan("\np=%v q=%v\n", p, q)
-			io.Pfpink("pnew=%v qnew=%v\n", pnew, qnew)
 			if o.UseOct {
 				p *= tsr.SQ3
 				pnew *= tsr.SQ3
