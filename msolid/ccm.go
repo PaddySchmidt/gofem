@@ -61,8 +61,6 @@ func (o *CamClayMod) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 	var pt float64
 	for _, p := range prms {
 		switch p.N {
-		case "pt":
-			pt = p.V
 		case "c":
 			pt = p.V / o.CS.Tanφ
 		case "lam":

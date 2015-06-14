@@ -20,7 +20,7 @@ func Test_ccm01(tst *testing.T) {
 		}
 	}()
 
-	verbose()
+	//verbose()
 	chk.PrintTitle("ccm01")
 
 	E, ν := 1500.0, 0.25
@@ -44,7 +44,7 @@ func Test_ccm01(tst *testing.T) {
 		&fun.Prm{N: "kapb", V: 0.01},
 		&fun.Prm{N: "G0", V: G},
 		&fun.Prm{N: "pr", V: pr},
-		&fun.Prm{N: "le", V: 1},
+		&fun.Prm{N: "le", V: 0},
 		&fun.Prm{N: "K0", V: K},
 	})
 	drv.CheckD = true
@@ -77,9 +77,9 @@ func Test_ccm01(tst *testing.T) {
 		pth.Sx = []float64{-1}
 		pth.Sy = []float64{-2}
 		pth.Sz = []float64{-1}
-		pth.Ex = []float64{0, 0}
-		pth.Ey = []float64{0, -0.005}
-		pth.Ez = []float64{0, 0}
+		pth.Ex = []float64{0, 0, 0.001, -0.004}  //, -0.005}
+		pth.Ey = []float64{0, -0.005, 0, -0.002} //, -0.005}
+		pth.Ez = []float64{0, 0, 0.001, -0.004}  //, -0.005}
 		//pth.Ex = []float64{0, -0.0033333333333333335, -0.0028333333333333335}
 		//pth.Ey = []float64{0, -0.0033333333333333335, -0.0028333333333333335}
 		//pth.Ez = []float64{0, -0.0033333333333333335, -0.005333333333333334}
@@ -96,8 +96,8 @@ func Test_ccm01(tst *testing.T) {
 	}
 
 	// plot
-	if true {
-		//if false {
+	//if true {
+	if false {
 		var plr Plotter
 		plr.Pr = pr
 		prop := 2.0

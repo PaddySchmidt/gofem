@@ -126,7 +126,8 @@ func (o *HyperElast1) CalcEps0(s *State) {
 		nls.SetTols(1e-10, 1e-10, 1e-14, num.EPS)
 		//nls.ChkConv = false
 		//nls.CheckJ(x, 1e-6, true, false)
-		err := nls.Solve(x, false)
+		silent := true
+		err := nls.Solve(x, silent)
 		if err != nil {
 			chk.Panic("HyperElast1: CalcEps0: non-linear solver failed:\n%v", err)
 		}
