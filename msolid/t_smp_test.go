@@ -74,8 +74,8 @@ func Test_smp01(tst *testing.T) {
 	niout := 1
 	noise := 0.0
 	var pth Path
-	//if true {
-	if false {
+	if true {
+		//if false {
 		err = pth.SetPQstrain(ndim, nincs, niout, K, G, p0, DP, DQ, noise)
 		if err != nil {
 			tst.Errorf("test failed: %v\n", err)
