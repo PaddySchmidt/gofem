@@ -10,8 +10,7 @@ import "github.com/cpmech/gosl/la"
 type State struct {
 
 	// essential
-	Sig  []float64 // σ: current Cauchy stress tensor (effective) [nsig]
-	Eps0 []float64 // ε0: initial strains
+	Sig []float64 // σ: current Cauchy stress tensor (effective) [nsig]
 
 	// for plasticity (if len(α) > 0)
 	EpsE       []float64 // elastic strain
@@ -33,7 +32,6 @@ func NewState(nsig, nalp int, large, nle bool) *State {
 	// essential
 	var state State
 	state.Sig = make([]float64, nsig)
-	state.Eps0 = make([]float64, nsig)
 
 	// for plasticity
 	if nalp > 0 {
@@ -60,7 +58,6 @@ func (o *State) Set(other *State) {
 
 	// essential
 	copy(o.Sig, other.Sig)
-	copy(o.Eps0, other.Eps0)
 
 	// for plasticity
 	if len(o.Alp) > 0 {

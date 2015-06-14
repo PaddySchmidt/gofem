@@ -9,6 +9,7 @@ import (
 
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
+	"github.com/cpmech/gosl/num"
 	"github.com/cpmech/gosl/tsr"
 )
 
@@ -95,23 +96,50 @@ func (o *HyperElast1) GetPrms() fun.Prms {
 }
 
 // CalcEps0 computes initial strains from stresses (s.Sig)
+//  Note: initial strains are elastic strains => εe_ini := ε0
 func (o *HyperElast1) CalcEps0(s *State) {
-	if !o.le {
-		chk.Panic("HyperElast1: CalcEps0: non-linear elastic model is not implemented yet")
-	}
 	s0 := make([]float64, o.Nsig)
 	s0no, p0, q0 := tsr.M_devσ(s0, s.Sig)
 	ev0 := -p0 / o.K0
 	ed0 := q0 / (3.0 * o.G0)
-	defer func() { copy(s.EpsE, s.Eps0) }() // initial strains are elastic strains
+	if !o.le {
+		var nls num.NlSolver
+		nls.Init(2, func(fx, x []float64) error { // ev=x[0], ed=x[1]
+			εv, εd := x[0], x[1]
+			p, q := o.Calc_pq(εv, εd)
+			fx[0] = p - p0
+			fx[1] = q - q0
+			return nil
+		}, nil, func(J [][]float64, x []float64) (err error) {
+			εv, εd := x[0], x[1]
+			pv := o.pa * math.Exp(-o.a*εv)
+			Dvv := o.a * (1.0 + 1.5*o.a*o.κb*εd*εd) * pv
+			Dvd := -3.0 * o.a * o.κb * εd * pv
+			Ddd := 3.0 * (o.G0 + o.κb*pv)
+			J[0][0] = -Dvv
+			J[0][1] = -Dvd
+			J[1][0] = Dvd
+			J[1][1] = Ddd
+			return nil
+		}, true, false, map[string]float64{"lSearch": 0})
+		x := []float64{ev0, ed0}
+		nls.SetTols(1e-10, 1e-10, 1e-14, num.EPS)
+		//nls.ChkConv = false
+		//nls.CheckJ(x, 1e-6, true, false)
+		err := nls.Solve(x, false)
+		if err != nil {
+			chk.Panic("HyperElast1: CalcEps0: non-linear solver failed:\n%v", err)
+		}
+		ev0, ed0 = x[0], x[1]
+	}
 	if s0no > 0 {
 		for i := 0; i < o.Nsig; i++ {
-			s.Eps0[i] = ev0*tsr.Im[i]/3.0 + tsr.SQ3by2*ed0*(s0[i]/s0no)
+			s.EpsE[i] = ev0*tsr.Im[i]/3.0 + tsr.SQ3by2*ed0*(s0[i]/s0no)
 		}
 		return
 	}
 	for i := 0; i < o.Nsig; i++ {
-		s.Eps0[i] = ev0 * tsr.Im[i] / 3.0
+		s.EpsE[i] = ev0 * tsr.Im[i] / 3.0
 	}
 }
 
@@ -125,10 +153,7 @@ func (o *HyperElast1) InitIntVars(σ []float64) (s *State, err error) {
 
 // Update updates stresses for given strains
 func (o *HyperElast1) Update(s *State, ε, dummy []float64, eid, ipid int) (err error) {
-	for i := 0; i < o.Nsig; i++ {
-		s.EpsE[i] = s.Eps0[i] + ε[i] // must save elastic strains here for D modulus computation
-	}
-	eno, εv, εd := tsr.M_devε(o.e, s.EpsE)
+	eno, εv, εd := tsr.M_devε(o.e, ε)
 	p, q := o.Calc_pq(εv, εd)
 	if eno > o.EnoMin {
 		for i := 0; i < o.Nsig; i++ {
@@ -210,8 +235,6 @@ func (o *HyperElast1) L_CalcD(D [][]float64, ε []float64) {
 		return
 	}
 
-	chk.Panic("HyperElast1: L_CalcD: not here")
-
 	// invariants of strain and normalised deviatoric direction
 	eno, εv, εd := tsr.M_devε(o.e, ε)
 	if eno > o.EnoMin {
@@ -225,7 +248,7 @@ func (o *HyperElast1) L_CalcD(D [][]float64, ε []float64) {
 	}
 
 	// Dvv = ∂²ψ/(∂εve ∂εve)
-	// Dvd = (∂²ψ/(∂εve ∂εde)) * sqrt(2/3)
+	// DvdS = (∂²ψ/(∂εve ∂εde)) * sqrt(2/3)
 	// Ddd2 = (∂²ψ/(∂εde ∂εde)) * 2 / 3
 	pv := o.pa * math.Exp(-o.a*εv)
 	Dvv := o.a * (1.0 + 1.5*o.a*o.κb*εd*εd) * pv

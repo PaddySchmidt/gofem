@@ -41,7 +41,7 @@ func Test_ccm01(tst *testing.T) {
 		&fun.Prm{N: "lam", V: 0.1},
 		&fun.Prm{N: "ocr", V: 1},
 		&fun.Prm{N: "kap", V: 0.05},
-		&fun.Prm{N: "kapb", V: 0},
+		&fun.Prm{N: "kapb", V: 0.01},
 		&fun.Prm{N: "G0", V: G},
 		&fun.Prm{N: "pr", V: pr},
 		&fun.Prm{N: "le", V: 1},
