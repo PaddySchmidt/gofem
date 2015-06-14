@@ -20,7 +20,7 @@ func Test_ccm01(tst *testing.T) {
 		}
 	}()
 
-	//verbose()
+	verbose()
 	chk.PrintTitle("ccm01")
 
 	E, ν := 1500.0, 0.25

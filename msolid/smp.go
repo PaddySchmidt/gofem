@@ -213,8 +213,11 @@ func (o *SmpInvs) Set_bsmp(b float64) {
 
 // L_YieldFunc computes the yield function value for given principal stresses (σ)
 func (o *SmpInvs) L_YieldFunc(σ, α []float64) float64 {
-	chk.Panic("SmpInvs: L_YieldFunc is not implemented yet")
-	return 0
+	res, err := o.Isof.Fp(σ, α)
+	if err != nil {
+		chk.Panic("cannot compute isotropic function Fa: %v", err)
+	}
+	return res
 }
 
 // YieldFuncs computes yield function values
