@@ -77,8 +77,8 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 
 	// constants
 	//o.Pert = tsr.EV_PERT
-	//o.Pert = 1e-5
-	o.Pert = 1e-9
+	o.Pert = 1e-5
+	//o.Pert = 1e-9
 	o.EvTol = tsr.EV_EVTOL
 	o.Zero = tsr.EV_ZERO
 	o.Fzero = 1e-9
