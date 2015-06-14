@@ -124,6 +124,9 @@ func (o *CamClayMod) InitIntVars(σ []float64) (s *State, err error) {
 	s = NewState(o.Nsig, nalp, false, true)
 	copy(s.Sig, σ)
 	s.Alp[0] = α0 * o.ocr
+
+	// compute initial strains
+	o.HE.CalcEps0(s)
 	return
 }
 

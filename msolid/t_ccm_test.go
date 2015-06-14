@@ -44,11 +44,11 @@ func Test_ccm01(tst *testing.T) {
 		&fun.Prm{N: "kapb", V: 0},
 		&fun.Prm{N: "G0", V: G},
 		&fun.Prm{N: "pr", V: pr},
-		&fun.Prm{N: "le", V: 0},
+		&fun.Prm{N: "le", V: 1},
 		&fun.Prm{N: "K0", V: K},
 	})
-	//drv.CheckD = true
-	drv.CheckD = false
+	drv.CheckD = true
+	//drv.CheckD = false
 	drv.TolD = 1e-4
 	drv.VerD = io.Verbose // verbose
 	if err != nil {
@@ -77,9 +77,9 @@ func Test_ccm01(tst *testing.T) {
 		pth.Sx = []float64{-1}
 		pth.Sy = []float64{-2}
 		pth.Sz = []float64{-1}
-		pth.Ex = []float64{0, -1e-7}
+		pth.Ex = []float64{0, 0}
 		pth.Ey = []float64{0, -0.005}
-		pth.Ez = []float64{0, -1e-7}
+		pth.Ez = []float64{0, 0}
 		//pth.Ex = []float64{0, -0.0033333333333333335, -0.0028333333333333335}
 		//pth.Ey = []float64{0, -0.0033333333333333335, -0.0028333333333333335}
 		//pth.Ez = []float64{0, -0.0033333333333333335, -0.005333333333333334}
