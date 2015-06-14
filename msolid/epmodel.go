@@ -20,6 +20,9 @@ type EPmodel interface {
 	Get_bsmp() float64  // gets b coefficient if using SMP invariants
 	Set_bsmp(b float64) // sets b coefficient if using SMP invariants
 
+	// L_YieldFunc computes the yield function value for given principal stresses (σ)
+	L_YieldFunc(σ, α []float64) float64
+
 	// E_CalcSig computes principal stresses for given principal elastic strains
 	E_CalcSig(σ, εe []float64)
 

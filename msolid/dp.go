@@ -234,6 +234,12 @@ func (o DruckerPrager) Get_bsmp() float64 { return 0 }
 // Set_bsmp sets b coefficient if using SMP invariants
 func (o *DruckerPrager) Set_bsmp(b float64) {}
 
+// L_YieldFunc computes the yield function value for given principal stresses (σ)
+func (o *DruckerPrager) L_YieldFunc(σ, α []float64) float64 {
+	chk.Panic("DruckerPrager: L_YieldFunc is not implemented yet")
+	return 0
+}
+
 // YieldFs computes the yield functions
 func (o DruckerPrager) YieldFuncs(s *State) []float64 {
 	p, q := tsr.M_p(s.Sig), tsr.M_q(s.Sig)

@@ -159,6 +159,15 @@ func (o CamClayMod) Get_bsmp() float64 { return 0 }
 // Set_bsmp sets b coefficient if using SMP invariants
 func (o *CamClayMod) Set_bsmp(b float64) {}
 
+// L_YieldFunc computes the yield function value for given principal stresses (σ)
+func (o *CamClayMod) L_YieldFunc(σ, α []float64) float64 {
+	p, q, w := tsr.M_pqw(σ)
+	M := o.CS.M(w)
+	pt := o.HE.pt
+	n0 := (p + pt) * (p - α[0])
+	return q*q + M*M*n0
+}
+
 // YieldFuncs computes yield function values
 func (o CamClayMod) YieldFuncs(s *State) []float64 {
 	p, q, w := tsr.M_pqw(s.Sig)

@@ -185,6 +185,12 @@ func (o VonMises) Get_bsmp() float64 { return 0 }
 // Set_bsmp sets b coefficient if using SMP invariants
 func (o *VonMises) Set_bsmp(b float64) {}
 
+// L_YieldFunc computes the yield function value for given principal stresses (σ)
+func (o *VonMises) L_YieldFunc(σ, α []float64) float64 {
+	chk.Panic("VonMises: L_YieldFunc is not implemented yet")
+	return 0
+}
+
 // YieldFs computes the yield functions
 func (o VonMises) YieldFuncs(s *State) []float64 {
 	q := tsr.M_q(s.Sig)

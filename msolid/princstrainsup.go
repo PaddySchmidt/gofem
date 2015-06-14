@@ -156,22 +156,6 @@ func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int) (er
 	}
 	copy(s.EpsTr, s.EpsE)
 
-	// trial stresses
-	o.Mdl.ElastUpdate(s, s.EpsTr)
-
-	// debugging
-	if o.DbgOn {
-		defer o.dbg_end(s, ε, eid, ipid)()
-	}
-
-	// check loading condition
-	ftr := o.Mdl.YieldFuncs(s)[0]
-	if ftr <= o.Fzero {
-		s.Dgam = 0
-		s.Loading = false
-		return
-	}
-
 	// eigenvalues/projectors of trial elastic strain
 	// Note: EpsTr is modified
 	_, err = tsr.M_FixZeroOrRepeated(o.Lεetr, s.EpsTr, o.Pert, o.EvTol, o.Zero)
@@ -180,6 +164,25 @@ func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int) (er
 	}
 	err = tsr.M_EigenValsProjsNum(o.P, o.Lεetr, s.EpsTr)
 	if err != nil {
+		return
+	}
+
+	// trial stresses
+	o.Mdl.E_CalcSig(o.Lσ, o.Lεetr)
+
+	// debugging
+	if o.DbgOn {
+		defer o.dbg_end(s, ε, eid, ipid)() // TODO: fix this
+	}
+
+	// check loading condition => elastic update?
+	ftr := o.Mdl.L_YieldFunc(o.Lσ, s.Alp)
+	if ftr <= o.Fzero {
+		s.Dgam = 0
+		s.Loading = false
+		for i := 0; i < o.Nsig; i++ {
+			s.Sig[i] = o.Lσ[0]*o.P[0][i] + o.Lσ[1]*o.P[1][i] + o.Lσ[2]*o.P[2][i]
+		}
 		return
 	}
 
