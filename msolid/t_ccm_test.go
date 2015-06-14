@@ -44,12 +44,11 @@ func Test_ccm01(tst *testing.T) {
 		&fun.Prm{N: "kapb", V: 0},
 		&fun.Prm{N: "G0", V: G},
 		&fun.Prm{N: "pr", V: pr},
-		&fun.Prm{N: "p0", V: 0.0},
-		&fun.Prm{N: "ev0", V: 0.0},
 		&fun.Prm{N: "le", V: 0},
 		&fun.Prm{N: "K0", V: K},
 	})
-	drv.CheckD = true
+	//drv.CheckD = true
+	drv.CheckD = false
 	drv.TolD = 1e-4
 	drv.VerD = io.Verbose // verbose
 	if err != nil {
@@ -97,8 +96,8 @@ func Test_ccm01(tst *testing.T) {
 	}
 
 	// plot
-	//if true {
-	if false {
+	if true {
+		//if false {
 		var plr Plotter
 		plr.Pr = pr
 		prop := 2.0

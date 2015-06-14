@@ -83,7 +83,7 @@ func (o *HyperElast1) Set_pt(pt float64) {
 }
 
 // GetPrms gets (an example) of parameters
-func (o HyperElast1) GetPrms() fun.Prms {
+func (o *HyperElast1) GetPrms() fun.Prms {
 	return []*fun.Prm{
 		&fun.Prm{N: "kap", V: 0.05},
 		&fun.Prm{N: "kapb", V: 0.001},
@@ -93,10 +93,15 @@ func (o HyperElast1) GetPrms() fun.Prms {
 	}
 }
 
+// CalcEps0 computes initial strains
+func (o *HyperElast1) CalcEps0(s *State, σ0 []float64) {
+}
+
 // InitIntVars initialises internal (secondary) variables
-func (o HyperElast1) InitIntVars(σ []float64) (s *State, err error) {
+func (o *HyperElast1) InitIntVars(σ []float64) (s *State, err error) {
 	s = NewState(o.Nsig, 0, false, true)
 	copy(s.Sig, σ)
+	o.CalcEps0(s, σ)
 	return
 }
 
@@ -106,13 +111,13 @@ func (o *HyperElast1) Update(s *State, ε, dummy []float64, eid, ipid int) (err 
 	p, q := o.Calc_pq(εv, εd)
 	if eno > o.EnoMin {
 		for i := 0; i < o.Nsig; i++ {
-			s.Sig[i] = s.Sig0[i] - p*tsr.Im[i] + tsr.SQ2by3*q*o.e[i]/eno
+			s.Sig[i] = -p*tsr.Im[i] + tsr.SQ2by3*q*o.e[i]/eno
 			s.EpsE[i] = ε[i] // must update elastic strains for D modulus computation
 		}
 		return
 	}
 	for i := 0; i < o.Nsig; i++ {
-		s.Sig[i] = s.Sig0[i] - p*tsr.Im[i]
+		s.Sig[i] = -p * tsr.Im[i]
 		s.EpsE[i] = ε[i] // must update elastic strains for D modulus computation
 	}
 	return
@@ -133,7 +138,7 @@ func (o *HyperElast1) ContD(D [][]float64, s *State) (err error) {
 // principal strains /////////////////////////////////////////////////////////////////////////////
 
 // Calc_pq computes p and q for given elastic εv and εd
-func (o HyperElast1) Calc_pq(εv, εd float64) (p, q float64) {
+func (o *HyperElast1) Calc_pq(εv, εd float64) (p, q float64) {
 	if o.le {
 		p = -o.K0 * εv
 		q = 3.0 * o.G0 * εd
@@ -167,7 +172,7 @@ func (o *HyperElast1) L_update(σ, ε []float64) (p, q float64) {
 //
 //  Note: this method works also for non-principal components
 //
-func (o HyperElast1) L_CalcD(D [][]float64, ε []float64) {
+func (o *HyperElast1) L_CalcD(D [][]float64, ε []float64) {
 
 	// number of components
 	ncp := len(ε)

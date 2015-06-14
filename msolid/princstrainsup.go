@@ -237,7 +237,7 @@ func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int) (er
 	εe, α, Δγ := o.x[:3], o.x[3:3+o.Nalp], o.x[3+o.Nalp]
 	o.Mdl.E_CalcSig(o.Lσ, εe)
 	for i := 0; i < o.Nsig; i++ {
-		s.Sig[i] = s.Sig0[i] + o.Lσ[0]*o.P[0][i] + o.Lσ[1]*o.P[1][i] + o.Lσ[2]*o.P[2][i]
+		s.Sig[i] = o.Lσ[0]*o.P[0][i] + o.Lσ[1]*o.P[1][i] + o.Lσ[2]*o.P[2][i]
 		s.EpsE[i] = εe[0]*o.P[0][i] + εe[1]*o.P[1][i] + εe[2]*o.P[2][i]
 	}
 	copy(s.Alp, α)

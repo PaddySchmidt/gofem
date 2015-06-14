@@ -91,7 +91,7 @@ func (o *CamClayMod) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 }
 
 // GetPrms gets (an example) of parameters
-func (o CamClayMod) GetPrms() fun.Prms {
+func (o *CamClayMod) GetPrms() fun.Prms {
 	return []*fun.Prm{
 		&fun.Prm{N: "phi", V: 25},
 		&fun.Prm{N: "Mfix", V: 1},
@@ -106,7 +106,7 @@ func (o CamClayMod) GetPrms() fun.Prms {
 }
 
 // InitIntVars initialises internal (secondary) variables
-func (o CamClayMod) InitIntVars(σ []float64) (s *State, err error) {
+func (o *CamClayMod) InitIntVars(σ []float64) (s *State, err error) {
 
 	// compute α0
 	p, q, w := tsr.M_pqw(σ)
@@ -146,15 +146,15 @@ func (o *CamClayMod) ContD(D [][]float64, s *State) (err error) {
 // EPmodel ///////////////////////////////////////////////////////////////////////////////////////////
 
 // Info returns some information and data from this model
-func (o CamClayMod) Info() (nalp, nsurf int) {
+func (o *CamClayMod) Info() (nalp, nsurf int) {
 	return 1, 1
 }
 
 // Get_phi gets φ or returns 0
-func (o CamClayMod) Get_phi() float64 { return 0 }
+func (o *CamClayMod) Get_phi() float64 { return 0 }
 
 // Get_bsmp gets b coefficient if using SMP invariants
-func (o CamClayMod) Get_bsmp() float64 { return 0 }
+func (o *CamClayMod) Get_bsmp() float64 { return 0 }
 
 // Set_bsmp sets b coefficient if using SMP invariants
 func (o *CamClayMod) Set_bsmp(b float64) {}
@@ -169,7 +169,7 @@ func (o *CamClayMod) L_YieldFunc(σ, α []float64) float64 {
 }
 
 // YieldFuncs computes yield function values
-func (o CamClayMod) YieldFuncs(s *State) []float64 {
+func (o *CamClayMod) YieldFuncs(s *State) []float64 {
 	p, q, w := tsr.M_pqw(s.Sig)
 	M := o.CS.M(w)
 	pt := o.HE.pt
@@ -179,27 +179,27 @@ func (o CamClayMod) YieldFuncs(s *State) []float64 {
 }
 
 // ElastUpdate updates state with an elastic response
-func (o CamClayMod) ElastUpdate(s *State, ε []float64) {
+func (o *CamClayMod) ElastUpdate(s *State, ε []float64) {
 	o.HE.Update(s, ε, nil, 0, 0)
 }
 
 // ElastD returns continuum elastic D
-func (o CamClayMod) ElastD(D [][]float64, s *State) {
+func (o *CamClayMod) ElastD(D [][]float64, s *State) {
 	o.HE.CalcD(D, s, false)
 }
 
 // E_CalcSig computes principal stresses for given principal elastic strains
-func (o CamClayMod) E_CalcSig(σ, εe []float64) {
+func (o *CamClayMod) E_CalcSig(σ, εe []float64) {
 	o.HE.L_update(σ, εe)
 }
 
 // E_CalcDe computes elastic modulus in principal components
-func (o CamClayMod) E_CalcDe(De [][]float64, εe []float64) {
+func (o *CamClayMod) E_CalcDe(De [][]float64, εe []float64) {
 	o.HE.L_CalcD(De, εe)
 }
 
 // L_FlowHard computes model variabes for given principal values
-func (o CamClayMod) L_FlowHard(Nb, h, σ, α []float64) (f float64, err error) {
+func (o *CamClayMod) L_FlowHard(Nb, h, σ, α []float64) (f float64, err error) {
 	p, q, w := tsr.M_pqws(o.s, σ)
 	M := o.CS.M(w)
 	pt := o.HE.pt
@@ -224,7 +224,7 @@ func (o CamClayMod) L_FlowHard(Nb, h, σ, α []float64) (f float64, err error) {
 //  a_i  -- ∂Nb/∂α_i  [nalp][nsig]
 //  b_i  -- ∂h_i/∂εe  [nalp][nsig]
 //  c_ij -- ∂h_i/∂α_j [nalp][nalp]
-func (o CamClayMod) L_SecondDerivs(N, Nb, A, h []float64, Mb, a, b, c [][]float64, σ, α []float64) (err error) {
+func (o *CamClayMod) L_SecondDerivs(N, Nb, A, h []float64, Mb, a, b, c [][]float64, σ, α []float64) (err error) {
 	p, _, w := tsr.M_pqws(o.s, σ)
 	M := o.CS.M(w)
 	pt := o.HE.pt

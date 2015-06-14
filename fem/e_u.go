@@ -460,7 +460,6 @@ func (o *ElemU) SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) {
 		if LogErr(err, "SetIniIvs") {
 			return
 		}
-		copy(o.States[i].Sig0, σ)
 		o.StatesBkp[i] = o.States[i].GetCopy()
 		o.StatesAux[i] = o.States[i].GetCopy()
 	}
