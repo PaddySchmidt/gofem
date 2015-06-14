@@ -85,10 +85,10 @@ func (o *Driver) Run(pth *Path) (err error) {
 	epm := o.model.(EPmodel)
 
 	// initial stresses
-	σ := make([]float64, o.nsig)
-	σ[0] = pth.MultS * pth.Sx[0]
-	σ[1] = pth.MultS * pth.Sy[0]
-	σ[2] = pth.MultS * pth.Sz[0]
+	σ0 := make([]float64, o.nsig)
+	σ0[0] = pth.MultS * pth.Sx[0]
+	σ0[1] = pth.MultS * pth.Sy[0]
+	σ0[2] = pth.MultS * pth.Sz[0]
 
 	// allocate results arrays
 	nr := 1 + (pth.Size()-1)*pth.Nincs
@@ -98,11 +98,14 @@ func (o *Driver) Run(pth *Path) (err error) {
 	o.Res = make([]*State, nr)
 	o.Eps = la.MatAlloc(nr, o.nsig)
 	for i := 0; i < nr; i++ {
-		o.Res[i], err = o.model.InitIntVars(σ)
+		o.Res[i], err = o.model.InitIntVars(σ0)
 		if err != nil {
 			return
 		}
 	}
+
+	// put initial stress in predictor-corrector array
+	o.PreCor = [][]float64{o.Res[0].Sig}
 
 	// auxiliary variables
 	Δσ := make([]float64, o.nsig)
@@ -117,7 +120,7 @@ func (o *Driver) Run(pth *Path) (err error) {
 		εold = make([]float64, o.nsig)
 		εnew = make([]float64, o.nsig)
 		Δεtmp = make([]float64, o.nsig)
-		stmp, err = o.model.InitIntVars(σ)
+		stmp, err = o.model.InitIntVars(σ0)
 		if err != nil {
 			return
 		}
@@ -177,6 +180,9 @@ func (o *Driver) Run(pth *Path) (err error) {
 				}
 				if epm != nil {
 					tmp := o.Res[k-1].GetCopy()
+					//s0 := make([]float64, o.nsig)
+					//_, p0, q0 := tsr.M_devσ(s0, o.Res[k-1].Sig)
+					//io.Pfblue2("p=%v q=%v\n", p0, q0)
 					epm.ElastUpdate(tmp, o.Eps[k])
 					o.PreCor = append(o.PreCor, tmp.Sig, o.Res[k].Sig)
 				}
