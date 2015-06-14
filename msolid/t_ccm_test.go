@@ -20,7 +20,7 @@ func Test_ccm01(tst *testing.T) {
 		}
 	}()
 
-	//verbose()
+	verbose()
 	chk.PrintTitle("ccm01")
 
 	E, ν := 1500.0, 0.25
@@ -68,10 +68,25 @@ func Test_ccm01(tst *testing.T) {
 	niout := 1
 	noise := 0.0
 	var pth Path
-	err = pth.SetPQstrain(ndim, nincs, niout, K, G, p0, DP, DQ, noise)
-	if err != nil {
-		tst.Errorf("test failed: %v\n", err)
-		return
+	if false {
+		err = pth.SetPQstrain(ndim, nincs, niout, K, G, p0, DP, DQ, noise)
+		if err != nil {
+			tst.Errorf("test failed: %v\n", err)
+			return
+		}
+	} else {
+		pth.Sx = []float64{-1}
+		pth.Sy = []float64{-2}
+		pth.Sz = []float64{-1}
+		pth.Ex = []float64{0, -1e-7}
+		pth.Ey = []float64{0, -0.005}
+		pth.Ez = []float64{0, -1e-7}
+		//pth.Ex = []float64{0, -0.0033333333333333335, -0.0028333333333333335}
+		//pth.Ey = []float64{0, -0.0033333333333333335, -0.0028333333333333335}
+		//pth.Ez = []float64{0, -0.0033333333333333335, -0.005333333333333334}
+		pth.UseS = []int{0, 0}
+		pth.UseE = []int{0, 1}
+		pth.Init(ndim)
 	}
 
 	// run
