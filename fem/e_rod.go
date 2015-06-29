@@ -395,6 +395,16 @@ func (o Rod) Decode(dec Decoder) (ok bool) {
 
 // OutIpsData returns data from all integration points for output
 func (o Rod) OutIpsData() (data []*OutIpData) {
+	for idx, ip := range o.IpsElem {
+		s := o.States[idx]
+		x := o.Shp.IpRealCoords(o.X, ip)
+		calc := func(sol *Solution) (vals map[string]float64) {
+			vals = make(map[string]float64)
+			vals["sig"] = s.Sig
+			return
+		}
+		data = append(data, &OutIpData{o.Id(), x, calc})
+	}
 	return
 }
 
