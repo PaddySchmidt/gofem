@@ -126,6 +126,9 @@ func (o P) Locate() (res Points) {
 			for _, c := range cells {
 				cid := c.Id
 				idx := o[i][1]
+				if idx >= len(Cid2ips[cid]) {
+					continue
+				}
 				ipid := Cid2ips[cid][idx]
 				q := get_ip_point(ipid, A)
 				if q != nil {
@@ -138,6 +141,9 @@ func (o P) Locate() (res Points) {
 		} else {
 			cid := idortag
 			idx := o[i][1]
+			if idx >= len(Cid2ips[cid]) {
+				continue
+			}
 			ipid := Cid2ips[cid][idx]
 			q := get_ip_point(ipid, A)
 			if q != nil {
