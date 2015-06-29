@@ -26,13 +26,14 @@ type PltEntity struct {
 
 // SplotDat stores all data for one subplot
 type SplotDat struct {
-	Title  string       // title of subplot
-	Topts  string       // title options
-	Xscale float64      // x-axis scale
-	Yscale float64      // y-axis scale
-	Xlbl   string       // x-axis label (formatted; e.g. "$t$")
-	Ylbl   string       // y-axis label (formatted; e.g. "$p_{\ell}$")
-	Data   []*PltEntity // data and styles to be plotted
+	Title   string       // title of subplot
+	Topts   string       // title options
+	Xscale  float64      // x-axis scale
+	Yscale  float64      // y-axis scale
+	Xlbl    string       // x-axis label (formatted; e.g. "$t$")
+	Ylbl    string       // y-axis label (formatted; e.g. "$p_{\ell}$")
+	GllArgs string       // extra arguments for Gll such as leg_out
+	Data    []*PltEntity // data and styles to be plotted
 }
 
 // Splot activates a new subplot window
@@ -128,7 +129,7 @@ func Draw(dirout, fname string, show bool, extra ExtraPlt) {
 				}
 				plt.Plot(x, y, d.Style.GetArgs("clip_on=0"))
 			}
-			plt.Gll(Splots[k].Xlbl, Splots[k].Ylbl, "")
+			plt.Gll(Splots[k].Xlbl, Splots[k].Ylbl, Splots[k].GllArgs)
 			if eps {
 				savefig(dirout, fnk, ext, k)
 				plt.Clf()
