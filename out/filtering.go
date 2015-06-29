@@ -28,6 +28,8 @@ type N []int
 
 // P implements [element][integrationPoint] locator
 // Pairs of ids or tags of cells and integration points indices can be stored in Cells
+//  Note: 1) negative element ids means element tags
+//        2) negative integration poitns ids means all integration points of element
 type P [][]int
 
 // Along implements locator along line => LineLocator
@@ -139,12 +141,24 @@ func (o P) Locate() (res Points) {
 			for _, c := range cells {
 				cid := c.Id
 				idx := o[i][1]
-				append_to_res(cid, idx)
+				if idx < 0 {
+					for j := 0; j < len(Cid2ips[cid]); j++ {
+						append_to_res(cid, j)
+					}
+				} else {
+					append_to_res(cid, idx)
+				}
 			}
 		} else {
 			cid := idortag
 			idx := o[i][1]
-			append_to_res(cid, idx)
+			if idx < 0 {
+				for j := 0; j < len(Cid2ips[cid]); j++ {
+					append_to_res(cid, j)
+				}
+			} else {
+				append_to_res(cid, idx)
+			}
 		}
 	}
 	if len(res) < len(o) {
