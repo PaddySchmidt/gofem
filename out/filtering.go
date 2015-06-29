@@ -114,6 +114,16 @@ func (o N) Locate() (res Points) {
 // Locate finds points
 func (o P) Locate() (res Points) {
 	var A []float64 // reference point
+	append_to_res := func(cid, idx int) {
+		ipid := Cid2ips[cid][idx]
+		q := get_ip_point(ipid, A)
+		if q != nil {
+			res = append(res, q)
+			if A == nil {
+				A = q.X
+			}
+		}
+	}
 	ncells := len(o)
 	for i := 0; i < ncells; i++ {
 		if len(o[i]) != 2 {
@@ -129,14 +139,7 @@ func (o P) Locate() (res Points) {
 				if idx >= len(Cid2ips[cid]) {
 					continue
 				}
-				ipid := Cid2ips[cid][idx]
-				q := get_ip_point(ipid, A)
-				if q != nil {
-					res = append(res, q)
-					if A == nil {
-						A = q.X
-					}
-				}
+				append_to_res(cid, idx)
 			}
 		} else {
 			cid := idortag
@@ -144,14 +147,7 @@ func (o P) Locate() (res Points) {
 			if idx >= len(Cid2ips[cid]) {
 				continue
 			}
-			ipid := Cid2ips[cid][idx]
-			q := get_ip_point(ipid, A)
-			if q != nil {
-				res = append(res, q)
-				if A == nil {
-					A = q.X
-				}
-			}
+			append_to_res(cid, idx)
 		}
 	}
 	if len(res) < len(o) {
