@@ -11,12 +11,31 @@ import (
 	"github.com/cpmech/gofem/out"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/plt"
+	"github.com/cpmech/gosl/utl"
 )
 
-func main() {
-
-	// finalise analysis process and catch errors
+func read_summary(simfn string) (*utl.DblSlist, string) {
+	if simfn == "" {
+		return nil, ""
+	}
+	if io.FnExt(simfn) == "" {
+		simfn += ".sim"
+	}
 	defer out.End()
+	out.Start(simfn, 0, 0)
+	return &out.Sum.Resids, io.FnKey(simfn)
+}
+
+func count_iters(resid *utl.DblSlist) (N []float64) {
+	P := resid.Ptrs
+	for i := 0; i < len(P)-1; i++ {
+		n := P[i+1] - P[i]
+		N = append(N, float64(n-1))
+	}
+	return
+}
+
+func main() {
 
 	// input data
 	simfnA := "o2elastCO"
@@ -33,21 +52,6 @@ func main() {
 		simfnB = flag.Arg(2)
 	}
 
-	// check extension
-	if io.FnExt(simfnA) == "" {
-		simfnA += ".sim"
-	}
-	fnkA := io.FnKey(simfnA)
-
-	// B file
-	var fnkB string
-	if simfnB != "" {
-		if io.FnExt(simfnB) == "" {
-			simfnB += ".sim"
-		}
-		fnkB = io.FnKey(simfnB)
-	}
-
 	// print input data
 	io.Pf("\nInput data\n")
 	io.Pf("==========\n")
@@ -56,28 +60,45 @@ func main() {
 	io.Pf("  simfnB = %30s // simulation filename for comparison\n", simfnB)
 	io.Pf("\n")
 
-	// start analysis process
-	out.Start(simfnA, 0, 0)
+	// read residuals
+	residA, fnkA := read_summary(simfnA)
+	residB, fnkB := read_summary(simfnB)
 
 	// residuals: it => residuals
-	io.Pf("\nResiduals\n")
-	io.Pf("==========\n")
-	R := out.Sum.Resids.Vals
-	P := out.Sum.Resids.Ptrs
-	out.Sum.Resids.Print("%10.2e")
+	io.Pf("\nResiduals A\n")
+	io.Pf("============\n")
+	residA.Print("%10.2e")
+	if simfnB != "" {
+		io.Pf("\nResiduals B\n")
+		io.Pf("============\n")
+		residB.Print("%10.2e")
+	}
+	io.Pf("\n")
 
 	// plot convergence curves
-	plot_conv_curve(fnkA, skip, R, P)
+	plot_conv_curve(fnkA, skip, residA)
 	if simfnB != "" {
-		plot_conv_curve(fnkB, skip, R, P)
+		plot_conv_curve(fnkB, skip, residB)
 	}
 
-	// plot histrogram
+	// plot histogram
+	io.Pf("\n")
+	X := [][]float64{count_iters(residA)}
+	labels := []string{fnkA}
+	if simfnB != "" {
+		X = append(X, count_iters(residB))
+		labels = append(labels, fnkB)
+	}
 	plt.Reset()
-
+	plt.SetForEps(0.75, 300)
+	plt.Hist(X, labels, "")
+	plt.Gll("number of iterations", "counts", "")
+	plt.SaveD("/tmp", "gofem_residplot_"+fnkA+"_"+fnkB+"_hist.eps")
 }
 
-func plot_conv_curve(fnk string, skip int, R []float64, P []int) {
+func plot_conv_curve(fnk string, skip int, resid *utl.DblSlist) {
+	R := resid.Vals
+	P := resid.Ptrs
 	plt.Reset()
 	plt.SetForEps(0.75, 250)
 	for i := 0; i < len(P)-1; i++ {
