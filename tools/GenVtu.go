@@ -318,6 +318,9 @@ func topology(buf *bytes.Buffer, ips, lbb bool) {
 		for _, e := range elems {
 			cell := cells[e.Id()]
 			_, nverts := get_cell_info(cell.Type, lbb)
+			if cell.Type == "joint" {
+				nverts = len(cell.Verts)
+			}
 			for j := 0; j < nverts; j++ {
 				io.Ff(buf, "%d ", cell.Verts[j])
 			}
@@ -336,6 +339,9 @@ func topology(buf *bytes.Buffer, ips, lbb bool) {
 		for _, e := range elems {
 			cell := cells[e.Id()]
 			_, nverts := get_cell_info(cell.Type, lbb)
+			if cell.Type == "joint" {
+				nverts = len(cell.Verts)
+			}
 			offset += nverts
 			io.Ff(buf, "%d ", offset)
 		}
@@ -352,6 +358,9 @@ func topology(buf *bytes.Buffer, ips, lbb bool) {
 			cell := cells[e.Id()]
 			ctype, _ := get_cell_info(cell.Type, lbb)
 			vtk := shp.GetVtkCode(ctype)
+			if ctype == "joint" {
+				vtk = shp.VTK_POLY_VERTEX
+			}
 			if vtk < 0 {
 				chk.Panic("cannot handle cell type %q", cell.Type)
 			}
