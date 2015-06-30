@@ -373,7 +373,7 @@ func run_iterations(t, Δt float64, d *Domain, sum *Summary) (diverging, ok bool
 
 		// save residual
 		if Global.Stat {
-			sum.Resids.Append(it, largFb)
+			sum.Resids.Append(it == 0, largFb)
 		}
 
 		// check largFb value
