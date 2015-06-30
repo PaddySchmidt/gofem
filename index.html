@@ -62,7 +62,11 @@
 
 <p>After installing Go (golang) and <a href="https://github.com/cpmech/gosl">Gosl</a>, type (don't forget the three dots):</p>
 
-<pre><code>go get github.com/cpmech/gofem/...
+<pre><code>mkdir -p $GOPATH/src/github.com/cpmech
+cd $GOPATH/src/github.com/cpmech
+git clone https://github.com/cpmech/gofem.git
+cd gofem
+./all.bash
 </code></pre>
 
 <h3>
@@ -104,7 +108,7 @@
     <div id="footer_wrap" class="outer">
       <footer class="inner">
         <p class="copyright">Gofem maintained by <a href="https://github.com/cpmech">cpmech</a></p>
-        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
       </footer>
     </div>
 
