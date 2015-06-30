@@ -125,6 +125,9 @@ func init() {
 		var o Rjoint
 		o.Edat = edat
 		o.Cid = cid
+		if s_ncns, found := io.Keycode(edat.Extra, "ncns"); found {
+			o.Ncns = io.Atob(s_ncns)
+		}
 		return &o
 	}
 }

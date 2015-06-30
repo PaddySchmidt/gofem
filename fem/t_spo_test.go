@@ -193,7 +193,7 @@ func Test_spo751b(tst *testing.T) {
 func Test_spo751re(tst *testing.T) {
 
 	//verbose()
-	chk.PrintTitle("spo751re (Richardson estrapolation)")
+	chk.PrintTitle("spo751re (Richardson extrapolation)")
 
 	// run simulation
 	if !Start("data/spo751re.sim", true, chk.Verbose) {
