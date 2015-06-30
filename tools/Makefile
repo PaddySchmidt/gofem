@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-all: GenVtu ConvertGofemMat MatTable PlotLrm LocCmDriver
-.PHONY: GenVtu ConvertGofemMat MatTable PlotLrm LocCmDriver
+all: GenVtu ConvertGofemMat MatTable PlotLrm LocCmDriver ResidPlot
+.PHONY: GenVtu ConvertGofemMat MatTable PlotLrm LocCmDriver ResidPlot
 
 ConvertGofemMat: ConvertGofemMat.go
 	go build -o /tmp/gofem/ConvertGofemMat ConvertGofemMat.go && mv /tmp/gofem/ConvertGofemMat $(GOPATH)/bin/
@@ -19,3 +19,6 @@ PlotLrm: PlotLrm.go
 
 LocCmDriver: LocCmDriver.go
 	go build -o /tmp/gofem/LocCmDriver LocCmDriver.go && mv /tmp/gofem/LocCmDriver $(GOPATH)/bin/
+
+ResidPlot: ResidPlot.go
+	go build -o /tmp/gofem/ResidPlot ResidPlot.go && mv /tmp/gofem/ResidPlot $(GOPATH)/bin/
