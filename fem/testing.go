@@ -384,6 +384,69 @@ func up_DebugKb(o *testKb) (resetDebugKb func()) {
 	return
 }
 
+// rjoint_DebugKb defines a global function to debug Kb for rjoint-elements
+//  Note: it returns a function to reset the global function
+func rjoint_DebugKb(o *testKb) (resetDebugKb func()) {
+
+	// define reset function
+	resetDebugKb = func() {
+		Global.DebugKb = nil
+	}
+
+	// define debug function
+	Global.DebugKb = func(d *Domain, it int) {
+
+		elem := d.Elems[o.eid]
+		if e, ok := elem.(*Rjoint); ok {
+
+			// skip?
+			o.it = it
+			o.t = d.Sol.T
+			if o.skip() {
+				return
+			}
+
+			// copy states and solution
+			nip := len(e.Rod.IpsElem)
+			states := make([]*msolid.OnedState, nip)
+			statesBkp := make([]*msolid.OnedState, nip)
+			for i := 0; i < nip; i++ {
+				states[i] = e.States[i].GetCopy()
+				statesBkp[i] = e.StatesBkp[i].GetCopy()
+			}
+			o.aux_arrays(d)
+
+			// make sure to restore states and solution
+			defer func() {
+				for i := 0; i < nip; i++ {
+					e.States[i].Set(states[i])
+					e.StatesBkp[i].Set(statesBkp[i])
+				}
+				copy(d.Sol.ΔY, o.ΔYbkp)
+			}()
+
+			// define restore function
+			restore := func() {
+				if it == 0 {
+					for k := 0; k < nip; k++ {
+						e.States[k].Set(states[k])
+					}
+					return
+				}
+				for k := 0; k < nip; k++ {
+					e.States[k].Set(statesBkp[k])
+				}
+			}
+
+			// check
+			o.check("Krr", d, e, e.Rod.Umap, e.Rod.Umap, e.Krr, restore)
+		} else {
+			io.Pfred("warning: eid=%d does not correspond to Rjoint element\n", o.eid)
+		}
+	}
+	return
+}
+
 // skip skips test based on it and/or t
 func (o testKb) skip() bool {
 	if o.itmin >= 0 {
@@ -428,19 +491,28 @@ func (o *testKb) aux_arrays(d *Domain) {
 // check performs the checking of Kb using numerical derivatives
 func (o *testKb) check(label string, d *Domain, e Elem, Imap, Jmap []int, Kana [][]float64, restore func()) {
 	var imap, jmap []int
-	if o.ni <= len(Imap) {
-		imap = Imap[:o.ni]
+	if o.ni < 0 {
+		imap = Imap
+	} else {
+		if o.ni <= len(Imap) {
+			imap = Imap[:o.ni]
+		}
 	}
-	if o.nj <= len(Jmap) {
-		jmap = Jmap[:o.nj]
+	if o.nj < 0 {
+		jmap = Jmap
+	} else {
+		if o.nj <= len(Jmap) {
+			jmap = Jmap[:o.nj]
+		}
 	}
-	//derivfcn := num.DerivFwd
-	//derivfcn := num.DerivBwd
-	derivfcn := num.DerivCen
+	step := 1e-6
+	//derivfcn := num.DerivForward
+	//derivfcn := num.DerivBackward
+	derivfcn := num.DerivCentral
 	var tmp float64
 	for i, I := range imap {
 		for j, J := range jmap {
-			dnum := derivfcn(func(x float64, args ...interface{}) (res float64) {
+			dnum, _ := derivfcn(func(x float64, args ...interface{}) (res float64) {
 				tmp, d.Sol.Y[J] = d.Sol.Y[J], x
 				for k := 0; k < d.Ny; k++ {
 					o.Fbtmp[k] = 0
@@ -452,7 +524,7 @@ func (o *testKb) check(label string, d *Domain, e Elem, Imap, Jmap []int, Kana [
 				res = -o.Fbtmp[I]
 				d.Sol.Y[J] = tmp
 				return res
-			}, d.Sol.Y[J])
+			}, d.Sol.Y[J], step)
 			chk.AnaNum(o.tst, io.Sf(label+"%3d%3d", i, j), o.tol, Kana[i][j], dnum, o.verb)
 		}
 	}

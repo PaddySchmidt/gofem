@@ -272,8 +272,8 @@ func Test_up01b(tst *testing.T) {
 	// for debugging Kb
 	if true {
 		defer up_DebugKb(&testKb{
-			tst: tst, eid: 3, tol: 1e-10, verb: chk.Verbose,
-			ni: 1, nj: 1, itmin: 0, itmax: -1, tmin: 1000, tmax: 1000,
+			tst: tst, eid: 3, tol: 1e-8, verb: chk.Verbose,
+			ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 800, tmax: 1000,
 		})()
 	}
 

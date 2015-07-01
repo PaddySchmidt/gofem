@@ -186,8 +186,8 @@ func Test_p02_(tst *testing.T) {
 	// for debugging Kb
 	if true {
 		defer p_DebugKb(&testKb{
-			tst: tst, eid: 3, tol: 1e-4, verb: chk.Verbose,
-			ni: 1, nj: 1, itmin: 0, itmax: -1, tmin: 5000, tmax: 5000,
+			tst: tst, eid: 3, tol: 1e-6, verb: chk.Verbose,
+			ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 1000, tmax: 5000,
 		})()
 	}
 
