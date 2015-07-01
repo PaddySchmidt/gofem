@@ -440,6 +440,9 @@ func rjoint_DebugKb(o *testKb) (resetDebugKb func()) {
 
 			// check
 			o.check("Krr", d, e, e.Rod.Umap, e.Rod.Umap, e.Krr, restore)
+			o.check("Krs", d, e, e.Rod.Umap, e.Sld.Umap, e.Krs, restore)
+			o.check("Ksr", d, e, e.Sld.Umap, e.Rod.Umap, e.Ksr, restore)
+			o.check("Kss", d, e, e.Sld.Umap, e.Sld.Umap, e.Kss, restore)
 		} else {
 			io.Pfred("warning: eid=%d does not correspond to Rjoint element\n", o.eid)
 		}
