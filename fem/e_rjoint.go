@@ -78,7 +78,6 @@ type Rjoint struct {
 	σIp     []float64   // [nsig] σ at ips of rod
 	t1      []float64   // [ndim] traction vectors for σc
 	t2      []float64   // [ndim] traction vectors for σc
-	DσDun   [][]float64 // [nsig][ndim] ∂σIp/∂us : derivatives of σ @ ip of solid w.r.t displacements of solid
 
 	// corotational system aligned with rod element
 	e0 [][]float64 // [rodNp][ndim] local directions at each integration point of rod
@@ -218,7 +217,6 @@ func (o *Rjoint) Connect(cid2elem []Elem, c *inp.Cell) (nnzK int, ok bool) {
 		o.σIp = make([]float64, nsig)
 		o.t1 = make([]float64, ndim)
 		o.t2 = make([]float64, ndim)
-		o.DσDun = la.MatAlloc(nsig, ndim)
 
 		// extrapolator matrix
 		if LogErr(sldH.Extrapolator(o.Emat, o.Sld.IpsElem), "Extrapolator of solid failed") {
