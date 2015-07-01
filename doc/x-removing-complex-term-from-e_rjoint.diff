@@ -1,0 +1,191 @@
+diff --git a/fem/e_rjoint.go b/fem/e_rjoint.go
+index 2b2b083..c249ab7 100644
+--- a/fem/e_rjoint.go
++++ b/fem/e_rjoint.go
+@@ -12,7 +12,6 @@ import (
+ 	"github.com/cpmech/gosl/io"
+ 	"github.com/cpmech/gosl/la"
+ 	"github.com/cpmech/gosl/tsr"
+-	"github.com/cpmech/gosl/utl"
+ )
+ 
+ // Rjoint implements the rod-joint (interface/link) element for reinforced solids.
+@@ -67,25 +66,19 @@ type Rjoint struct {
+ 	k1 float64 // lateral stiffness; Eq (37)
+ 	k2 float64 // lateral stiffness; Eq (37)
+ 
+-	// optional data
+-	Ncns bool // use non-consistent model
+-
+ 	// shape functions evaluations and extrapolator matrices
+ 	Nmat [][]float64 // [sldNn][rodNn] shape functions of solids @ [N]odes of rod element
+ 	Pmat [][]float64 // [sldNn][rodNp] shape functions of solids @ integration [P]oints of rod element (for Coulomb model)
+ 	Emat [][]float64 // [sldNn][sldNp] solid's extrapolation matrix (for Coulomb model)
+ 
+ 	// variables for Coulomb model
+-	Coulomb bool            // use Coulomb model
+-	rodRp   [][]float64     // [rodNp][ndim] natural coordinates of ips of rod w.r.t. solid's system
+-	σNo     [][]float64     // [nneSld][nsig] σ at nodes of solid
+-	σIp     []float64       // [nsig] σ at ips of rod
+-	t1      []float64       // [ndim] traction vectors for σc
+-	t2      []float64       // [ndim] traction vectors for σc
+-	T1      [][]float64     // [rodNp][nsig] tensor (e1 dy e1)
+-	T2      [][]float64     // [rodNp][nsig] tensor (e2 dy e2)
+-	DσNoDu  [][][][]float64 // [sldNn][nsig][sldNn][ndim] ∂σSldNod/∂uSldNod : derivatives of σ @ nodes of solid w.r.t displacements of solid
+-	DσDun   [][]float64     // [nsig][ndim] ∂σIp/∂us : derivatives of σ @ ip of solid w.r.t displacements of solid
++	Coulomb bool        // use Coulomb model
++	rodRp   [][]float64 // [rodNp][ndim] natural coordinates of ips of rod w.r.t. solid's system
++	σNo     [][]float64 // [nneSld][nsig] σ at nodes of solid
++	σIp     []float64   // [nsig] σ at ips of rod
++	t1      []float64   // [ndim] traction vectors for σc
++	t2      []float64   // [ndim] traction vectors for σc
++	DσDun   [][]float64 // [nsig][ndim] ∂σIp/∂us : derivatives of σ @ ip of solid w.r.t displacements of solid
+ 
+ 	// corotational system aligned with rod element
+ 	e0 [][]float64 // [rodNp][ndim] local directions at each integration point of rod
+@@ -125,9 +118,6 @@ func init() {
+ 		var o Rjoint
+ 		o.Edat = edat
+ 		o.Cid = cid
+-		if s_ncns, found := io.Keycode(edat.Extra, "ncns"); found {
+-			o.Ncns = io.Atob(s_ncns)
+-		}
+ 		return &o
+ 	}
+ }
+@@ -228,9 +218,6 @@ func (o *Rjoint) Connect(cid2elem []Elem, c *inp.Cell) (nnzK int, ok bool) {
+ 		o.σIp = make([]float64, nsig)
+ 		o.t1 = make([]float64, ndim)
+ 		o.t2 = make([]float64, ndim)
+-		o.T1 = la.MatAlloc(rodNp, nsig)
+-		o.T2 = la.MatAlloc(rodNp, nsig)
+-		o.DσNoDu = utl.Deep4alloc(sldNn, nsig, sldNn, ndim)
+ 		o.DσDun = la.MatAlloc(nsig, ndim)
+ 
+ 		// extrapolator matrix
+@@ -301,8 +288,6 @@ func (o *Rjoint) Connect(cid2elem []Elem, c *inp.Cell) (nnzK int, ok bool) {
+ 					e2_dy_e2[i][j] = e2[i] * e2[j]
+ 				}
+ 			}
+-			tsr.Ten2Man(o.T1[idx], e1_dy_e1)
+-			tsr.Ten2Man(o.T2[idx], e2_dy_e2)
+ 		}
+ 	}
+ 
+@@ -408,52 +393,12 @@ func (o *Rjoint) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool)
+ 
+ 	// auxiliary
+ 	ndim := Global.Ndim
+-	nsig := 2 * ndim
+ 	rodH := o.Rod.Shp
+ 	rodS := rodH.S
+ 	rodNn := rodH.Nverts
+ 	sldH := o.Sld.Shp
+ 	sldNn := sldH.Nverts
+ 
+-	// compute DσNoDu
+-	if o.Coulomb {
+-
+-		// clear deep4 structure
+-		utl.Deep4set(o.DσNoDu, 0)
+-
+-		// loop over solid's integration points
+-		for idx, ip := range o.Sld.IpsElem {
+-
+-			// interpolation functions, gradients and variables @ ip
+-			if LogErr(sldH.CalcAtIp(o.Sld.X, ip, true), "AddToKb") {
+-				return
+-			}
+-
+-			// consistent tangent model matrix
+-			if LogErr(o.Sld.MdlSmall.CalcD(o.Sld.D, o.Sld.States[idx], firstIt), "AddToKb") {
+-				return
+-			}
+-
+-			// extrapolate derivatives
+-			for n := 0; n < sldNn; n++ {
+-				DerivSig(o.DσDun, n, ndim, sldH.G, o.Sld.D)
+-				for m := 0; m < sldNn; m++ {
+-					for i := 0; i < nsig; i++ {
+-						for j := 0; j < ndim; j++ {
+-							o.DσNoDu[m][i][n][j] += o.Emat[m][idx] * o.DσDun[i][j]
+-						}
+-					}
+-				}
+-			}
+-		}
+-	}
+-
+-	// debugging
+-	//if true {
+-	if false {
+-		utl.PrintDeep4("DσNoDu", o.DσNoDu, "%20.10f")
+-	}
+-
+ 	// zero K matrices
+ 	for i, _ := range o.Rod.Umap {
+ 		for j, _ := range o.Rod.Umap {
+@@ -468,8 +413,7 @@ func (o *Rjoint) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool)
+ 
+ 	// auxiliary
+ 	var coef float64
+-	var DτDω, DτDσc, DσcDu_nj float64
+-	var Dp1Du_nj, Dp2Du_nj float64
++	var DτDω float64
+ 	var Dwb0Du_nj, Dwb1Du_nj, Dwb2Du_nj float64
+ 	var DτDu_nj, DqbDu_nij float64
+ 	var Dwb0Dur_nj, Dwb1Dur_nj, Dwb2Dur_nj float64
+@@ -489,7 +433,7 @@ func (o *Rjoint) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool)
+ 		coef = ip.W * rodH.J
+ 
+ 		// model derivatives
+-		DτDω, DτDσc, err = o.Mdl.CalcD(o.States[idx], firstIt)
++		DτDω, _, err = o.Mdl.CalcD(o.States[idx], firstIt)
+ 		if LogErr(err, "AddToKb") {
+ 			return
+ 		}
+@@ -531,21 +475,6 @@ func (o *Rjoint) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool)
+ 			// Krs and Kss
+ 			for n := 0; n < sldNn; n++ {
+ 
+-				// ∂σc/∂us_nj
+-				DσcDu_nj = 0
+-				if o.Coulomb {
+-
+-					// Eqs (A.10) (A.11) and (A.12)
+-					Dp1Du_nj, Dp2Du_nj = 0, 0
+-					for m := 0; m < sldNn; m++ {
+-						for i := 0; i < nsig; i++ {
+-							Dp1Du_nj += o.Pmat[m][idx] * o.T1[idx][i] * o.DσNoDu[m][i][n][j]
+-							Dp2Du_nj += o.Pmat[m][idx] * o.T2[idx][i] * o.DσNoDu[m][i][n][j]
+-						}
+-					}
+-					DσcDu_nj = (Dp1Du_nj + Dp2Du_nj) / 2.0
+-				}
+-
+ 				// ∂wb/∂us Eq (A.5)
+ 				Dwb0Du_nj, Dwb1Du_nj, Dwb2Du_nj = 0, 0, 0
+ 				for m := 0; m < rodNn; m++ {
+@@ -555,10 +484,7 @@ func (o *Rjoint) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool)
+ 				}
+ 
+ 				// ∂τ/∂us_nj hightlighted term in Eq (A.3)
+-				DτDu_nj = DτDω*Dwb0Du_nj + DτDσc*DσcDu_nj
+-				if o.Ncns {
+-					DτDu_nj = DτDω * Dwb0Du_nj
+-				}
++				DτDu_nj = DτDω * Dwb0Du_nj
+ 
+ 				// compute ∂■/∂us derivatives
+ 				c := j + n*ndim
+@@ -836,10 +762,6 @@ func (o Rjoint) debug_print_init() {
+ 	la.PrintMat("e1", o.e1, "%20.13f", false)
+ 	io.Pf("\n")
+ 	la.PrintMat("e2", o.e2, "%20.13f", false)
+-	io.Pf("\n")
+-	la.PrintMat("T1", o.T1, "%20.13f", false)
+-	io.Pf("\n")
+-	la.PrintMat("T2", o.T2, "%20.13f", false)
+ }
+ 
+ func (o Rjoint) debug_print_K() {
