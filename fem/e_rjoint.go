@@ -431,7 +431,7 @@ func (o *Rjoint) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) 
 		coef = ip.W * rodH.J
 
 		// model derivatives
-		DτDω, _, err = o.Mdl.CalcD(o.States[idx], firstIt)
+		DτDω, err = o.Mdl.CalcD(o.States[idx], firstIt)
 		if LogErr(err, "AddToKb") {
 			return
 		}

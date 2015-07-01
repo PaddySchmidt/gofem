@@ -83,16 +83,14 @@ func (o *RjointM1) Update(s *OnedState, σcNew, Δω float64) (err error) {
 }
 
 // CalcD computes D = dσ_new/dε_new consistent with StressUpdate
-func (o *RjointM1) CalcD(s *OnedState, firstIt bool) (DτDω, DτDσc float64, err error) {
+func (o *RjointM1) CalcD(s *OnedState, firstIt bool) (DτDω float64, err error) {
 
 	// elastic
 	if !s.Loading {
-		return o.ks, 0, nil
+		return o.ks, nil
 	}
 
 	// plastic
-	τ := s.Sig
 	DτDω = o.ks * o.kh / (o.ks + o.kh)
-	DτDσc = o.ks * o.μ * fun.Sign(τ) / (o.ks + o.kh)
 	return
 }
