@@ -5,6 +5,7 @@
 package out
 
 import (
+	"math"
 	"sort"
 
 	"github.com/cpmech/gosl/chk"
@@ -44,6 +45,11 @@ type AlongY []float64
 
 // AlongZ implements LineLocator with []float64{x_cte, y_cte}
 type AlongZ []float64
+
+// OnZplane implements locator for nodes/ips on plane perpendicular to z-axis
+//  Note: slice must contain at least one value; e.g. []float64{z_cte}
+//        a second value is used as tolerance; e.g. []float64{z_cte, z_tolerance}
+type OnZplane []float64
 
 // Locate finds points
 func (o At) Locate() Points {
@@ -222,6 +228,19 @@ func (o AlongZ) Locate() (res Points) {
 	return Along{{x_cte, y_cte, 0}, {x_cte, y_cte, 1}}.Locate()
 }
 
+// Locate finds points on z-plane. TODO: use bins to optimise search
+func (o OnZplane) Locate() (res Points) {
+	if len(o) < 1 {
+		return
+	}
+	z_cte := o[0]
+	z_tol := TolC
+	if len(o) == 2 {
+		z_tol = o[1]
+	}
+	return locateonplane(2, z_cte, z_tol)
+}
+
 // AllIps returns all cell/ip indices
 func AllIps() P {
 	var p [][]int
@@ -233,10 +252,35 @@ func AllIps() P {
 	return p
 }
 
+// AllNodes returns all nodes
 func AllNodes() N {
 	var res []int
 	for _, nod := range Dom.Nodes {
 		res = append(res, nod.Vert.Id)
 	}
 	return res
+}
+
+func locateonplane(idim int, cte, tol float64) (res Points) {
+
+	// node quantities
+	for _, nod := range Dom.Nodes {
+		if math.Abs(nod.Vert.C[idim]-cte) < tol {
+			q := get_nod_point(nod.Vert.Id, []float64{0, 0, 0})
+			if q != nil {
+				res = append(res, q)
+			}
+		}
+	}
+
+	// integration point quantitites
+	for ipid, ip := range Ipoints {
+		if math.Abs(ip.X[idim]-cte) < tol {
+			q := get_ip_point(ipid, []float64{0, 0, 0})
+			if q != nil {
+				res = append(res, q)
+			}
+		}
+	}
+	return
 }

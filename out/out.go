@@ -26,12 +26,14 @@ var (
 	// data set by Start
 	Sum       *fem.Summary     // summary
 	Dom       *fem.Domain      // FE domain
-	Ipoints   []*fem.OutIpData // all integration points
+	Ipoints   []*fem.OutIpData // all integration points. ipid == index in Ipoints
 	Cid2ips   [][]int          // [ncells][nip] maps cell id to index in Ipoints
 	Ipkey2ips map[string][]int // maps ip keys to indices in Ipoints
 	Ipkeys    map[string]bool  // all ip keys
 	NodBins   gm.Bins          // bins for nodes
 	IpsBins   gm.Bins          // bins for integration points
+	IpsMin    []float64        // [ndim] {x,y,z}_min among all ips
+	IpsMax    []float64        // [ndim] {x,y,z}_max among all ips
 
 	// results loaded by LoadResults
 	R ResultsMap // maps labels => points
@@ -115,6 +117,12 @@ func Start(simfnpath string, stageIdx, regionIdx int) {
 		}
 	}
 
+	// to find limits
+	ndim := Dom.Msh.Ndim
+	IpsMin = make([]float64, ndim)
+	IpsMax = make([]float64, ndim)
+	first := true
+
 	// add integration points to slice of ips and to bins
 	for cid, ele := range Dom.Cid2elem {
 		if ele == nil {
@@ -124,17 +132,35 @@ func Start(simfnpath string, stageIdx, regionIdx int) {
 		nip := len(dat)
 		ids := make([]int, nip)
 		for i, d := range dat {
-			id := len(Ipoints)
-			ids[i] = id
+
+			// add to bins
+			ipid := len(Ipoints)
+			ids[i] = ipid
 			Ipoints = append(Ipoints, d)
-			err = IpsBins.Append(d.X, id)
+			err = IpsBins.Append(d.X, ipid)
 			if err != nil {
 				chk.Panic("cannot append to bins of integration points: %v", err)
 			}
+
+			// set auxiliary map
 			vals := d.Calc(Dom.Sol)
 			for key, _ := range vals {
-				utl.StrIntsMapAppend(&Ipkey2ips, key, id)
+				utl.StrIntsMapAppend(&Ipkey2ips, key, ipid)
 				Ipkeys[key] = true
+			}
+
+			// limits
+			if first {
+				for j := 0; j < ndim; j++ {
+					IpsMin[j] = d.X[j]
+					IpsMax[j] = d.X[j]
+				}
+				first = false
+			} else {
+				for j := 0; j < ndim; j++ {
+					IpsMin[j] = min(IpsMin[j], d.X[j])
+					IpsMax[j] = max(IpsMax[j], d.X[j])
+				}
 			}
 		}
 		Cid2ips[cid] = ids
