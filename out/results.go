@@ -72,6 +72,9 @@ func LoadResults(times []float64) {
 		if !Dom.In(Sum, tidx, true) {
 			chk.Panic("cannot load results into domain; please check log file")
 		}
+		if Dom.Ny != len(Dom.Sol.Y) {
+			chk.Panic("inconsistency of results detected: summary and simulation file might be different")
+		}
 
 		// extrapolation
 		if Extrap != nil {

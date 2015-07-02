@@ -70,6 +70,8 @@ func (o *Data) PostProcess(dir, fn string, erasefiles bool) {
 		chk.Panic("cannot create directory for output results (%s): %v", o.DirOut, err)
 	}
 	if erasefiles {
+		io.RemoveAll(io.Sf("%s/%s_*.vtu", o.DirOut, o.FnameKey))
+		io.RemoveAll(io.Sf("%s/%s_*.log", o.DirOut, o.FnameKey))
 		io.RemoveAll(io.Sf("%s/%s_*.gob", o.DirOut, o.FnameKey))
 		io.RemoveAll(io.Sf("%s/%s_*.json", o.DirOut, o.FnameKey))
 	}
