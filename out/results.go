@@ -75,7 +75,7 @@ func LoadResults(times []float64) {
 
 		// extrapolation
 		if Extrap != nil {
-			compute_extrapolated_values()
+			ComputeExtrapolatedValues(Extrap)
 		}
 
 		// for each point

@@ -11,7 +11,7 @@ import (
 	"github.com/cpmech/gosl/la"
 )
 
-func compute_extrapolated_values() {
+func ComputeExtrapolatedValues(extrapKeys []string) {
 
 	// auxiliary
 	verts := Dom.Msh.Verts
@@ -44,7 +44,8 @@ func compute_extrapolated_values() {
 			ips = e.U.IpsElem
 		}
 		if sha == nil {
-			chk.Panic("cannot get shape structure from element")
+			return // cannot extrapolate; e.g. rjoint, beams
+			//chk.Panic("cannot get shape structure from element")
 		}
 
 		// compute Extrapolator matrix
@@ -61,7 +62,7 @@ func compute_extrapolated_values() {
 		cell := cells[ele.Id()]
 		for j := 0; j < len(ips); j++ {
 			vals := dat[j].Calc(Dom.Sol)
-			for _, key := range Extrap {
+			for _, key := range extrapKeys {
 				if val, ok := vals[key]; ok {
 					for i := 0; i < sha.Nverts; i++ {
 						v := cell.Verts[i]
@@ -76,7 +77,7 @@ func compute_extrapolated_values() {
 		// increment counter
 		for i := 0; i < sha.Nverts; i++ {
 			v := cell.Verts[i]
-			for _, key := range Extrap {
+			for _, key := range extrapKeys {
 				counts[v][key] += 1
 			}
 		}
