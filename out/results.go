@@ -12,9 +12,6 @@ import (
 	"github.com/cpmech/gosl/utl"
 )
 
-// ResultsMap maps aliases to points
-type ResultsMap map[string]Points
-
 // Define defines aliases
 //  alias -- an alias to a group of points, an individual point, or to a set of points.
 //           Example: "A", "left-column" or "a b c". If the number of points found is different
@@ -28,6 +25,14 @@ func Define(alias string, loc Locator) {
 		chk.Panic("alias must have at least one character. %q is invalid", alias)
 	}
 
+	// set planes map
+	if plane, ok := loc.(*PlaneData); ok {
+		Planes[alias] = plane
+		defer func() {
+			plane.ConnectResults(alias)
+		}()
+	}
+
 	// locate points
 	pts := loc.Locate()
 	if len(pts) < 1 {
@@ -36,17 +41,17 @@ func Define(alias string, loc Locator) {
 
 	// set results map
 	if alias[0] == '!' {
-		R[alias[1:]] = pts
+		Results[alias[1:]] = pts
 		return
 	}
 	lbls := strings.Fields(alias)
 	if len(lbls) == len(pts) {
 		for i, l := range lbls {
-			R[l] = []*Point{pts[i]}
+			Results[l] = []*Point{pts[i]}
 		}
 		return
 	}
-	R[alias] = pts
+	Results[alias] = pts
 }
 
 // LoadResults loads all results after points are defined
@@ -58,10 +63,10 @@ func LoadResults(times []float64) {
 	if times == nil {
 		times = Sum.OutTimes
 	}
-	I, T = utl.GetITout(Sum.OutTimes, times, TolT)
+	TimeInds, Times = utl.GetITout(Sum.OutTimes, times, TolT)
 
 	// for each selected output time
-	for _, tidx := range I {
+	for _, tidx := range TimeInds {
 
 		// input results into domain
 		if !Dom.In(Sum, tidx, true) {
@@ -74,7 +79,7 @@ func LoadResults(times []float64) {
 		}
 
 		// for each point
-		for _, pts := range R {
+		for _, pts := range Results {
 			for _, p := range pts {
 
 				// node or integration point id
@@ -115,13 +120,13 @@ func LoadResults(times []float64) {
 
 // GetRes gets results as a time or space series corresponding to a given alias
 // for a single point or set of points.
-//  idxI -- index in I slice corresponding to selected output time; use -1 for the last item.
+//  idxI -- index in TimeInds slice corresponding to selected output time; use -1 for the last item.
 //          If alias defines a single point, the whole time series is returned and idxI is ignored.
 func GetRes(key, alias string, idxI int) []float64 {
 	if idxI < 0 {
-		idxI = len(I) - 1
+		idxI = len(TimeInds) - 1
 	}
-	if pts, ok := R[alias]; ok {
+	if pts, ok := Results[alias]; ok {
 		if len(pts) == 1 {
 			for k, v := range pts[0].Vals {
 				if k == key {
@@ -146,7 +151,7 @@ func GetRes(key, alias string, idxI int) []float64 {
 
 // GetIds return the ids corresponding to alias
 func GetIds(alias string) (vids, ipids []int) {
-	if pts, ok := R[alias]; ok {
+	if pts, ok := Results[alias]; ok {
 		for _, p := range pts {
 			if p.Vid >= 0 {
 				vids = append(vids, p.Vid)
@@ -161,7 +166,7 @@ func GetIds(alias string) (vids, ipids []int) {
 
 // GetCoords returns the coordinates of a single point
 func GetCoords(alias string) []float64 {
-	if pts, ok := R[alias]; ok {
+	if pts, ok := Results[alias]; ok {
 		if len(pts) == 1 {
 			return pts[0].X
 		}
@@ -175,7 +180,7 @@ func GetCoords(alias string) []float64 {
 //  key -- use any to get coordinates of points with any key such as "ux", "pl", etc.
 func GetDist(key, alias string) (dist []float64) {
 	any := key == "any"
-	if pts, ok := R[alias]; ok {
+	if pts, ok := Results[alias]; ok {
 		for _, p := range pts {
 			for k, _ := range p.Vals {
 				if k == key || any {
@@ -194,7 +199,7 @@ func GetDist(key, alias string) (dist []float64) {
 //  key -- use any to get coordinates of points with any key such as "ux", "pl", etc.
 func GetXYZ(key, alias string) (x, y, z []float64) {
 	any := key == "any"
-	if pts, ok := R[alias]; ok {
+	if pts, ok := Results[alias]; ok {
 		for _, p := range pts {
 			for k, _ := range p.Vals {
 				if k == key || any {
@@ -214,11 +219,11 @@ func GetXYZ(key, alias string) (x, y, z []float64) {
 }
 
 // Integrate integrates key along direction "x", "y", or "z"
-//  idxI -- index in I slice corresponding to selected output time; use -1 for the last item.
+//  idxI -- index in TimeInds slice corresponding to selected output time; use -1 for the last item.
 //          If alias defines a single point, the whole time series is returned and idxI is ignored.
 func Integrate(key, alias, along string, idxI int) float64 {
 	if idxI < 0 {
-		idxI = len(I) - 1
+		idxI = len(TimeInds) - 1
 	}
 	y := GetRes(key, alias, idxI)
 	var x []float64
@@ -236,4 +241,44 @@ func Integrate(key, alias, along string, idxI int) float64 {
 		chk.Panic("%q: cannot integrate %q along %q:\n%v\n", alias, key, along, err)
 	}
 	return num.Trapz(x, y)
+}
+
+// IntegOnPlane integrates the results of nodes located on a plane perpedicular to either {x,y,z}
+// The mesh on the plane must be structured and with rectangle elements in order to build
+// an {u,v} coordinates system
+// Input:
+//   key   -- node variable; e.g. "uz", "ex_sz"
+//   alias -- alias of plane; e.g. "surf"
+// Output:
+//   res -- the result of the integration res = ∫_u ∫_v f(u,v) du dv for all output times
+func IntegOnPlane(key, alias string) (res []float64) {
+
+	// get plane
+	plane, ok := Planes[alias]
+	if !ok {
+		chk.Panic("cannot get plane with alias=%q", alias)
+	}
+
+	// compute integral
+	res = make([]float64, len(TimeInds))
+	u := make([]float64, 2)
+	for idxI, k := range TimeInds {
+		for j := 0; j < plane.Nu[1]; j++ {
+			u[1] = plane.Umin[1] + float64(j)*plane.Du[1]
+			for i := 0; i < plane.Nu[0]; i++ {
+				u[0] = plane.Umin[0] + float64(i)*plane.Du[0]
+				id := plane.Ubins.Find(u)
+				if id < 0 {
+					chk.Panic("IntegOnPlane with key=%q and alias=%q\nError: cannot find {u,v} coordinate in any bin. u=%v vid/ipid=%d", key, alias, u, id)
+				}
+				vals, ok := plane.id2pt[id].Vals[key]
+				if !ok {
+					chk.Panic("cannot find results with key=%q for plane with alias=%q", key, alias)
+				}
+				plane.F[i][j] = vals[idxI]
+			}
+		}
+		res[k] = num.Simps2D(plane.Du[0], plane.Du[1], plane.F)
+	}
+	return
 }

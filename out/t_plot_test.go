@@ -58,10 +58,10 @@ func Test_plot01(tst *testing.T) {
 	Plot("pl", "y", "left", plt.Fmt{C: "g", M: "o"}, -1)
 
 	Splot("")
-	io.Pforan("T = %v\n", T)
-	last := len(T) - 1
-	Plot("y", "pl", "left", plt.Fmt{C: "b", M: "o", L: io.Sf("t=%g", T[0])}, 0)
-	Plot("y", "pl", "left", plt.Fmt{C: "m", M: "*", Lw: 2, L: io.Sf("t=%g", T[last])}, -1)
+	io.Pforan("T = %v\n", Times)
+	last := len(Times) - 1
+	Plot("y", "pl", "left", plt.Fmt{C: "b", M: "o", L: io.Sf("t=%g", Times[0])}, 0)
+	Plot("y", "pl", "left", plt.Fmt{C: "m", M: "*", Lw: 2, L: io.Sf("t=%g", Times[last])}, -1)
 
 	//Draw("", "", true, nil)
 	Draw("", "", false, nil)

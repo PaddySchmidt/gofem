@@ -46,7 +46,7 @@ func Test_out01(tst *testing.T) {
 	Define("A B C D", N{0, 1, 2, 3})
 	Define("a b c d", P{{0, 0}, {0, 1}, {-1, 2}, {-1, 3}})
 	Define("!right side", Along{{1, 0}, {1, 1}})
-	io.Pfcyan("Entities = %v\n", R)
+	io.Pfcyan("Entities = %v\n", Results)
 
 	// check slices
 	nnod := 4
@@ -67,24 +67,24 @@ func Test_out01(tst *testing.T) {
 	// check points
 	nlabels := []string{"A", "B", "C", "D"}
 	for _, l := range nlabels {
-		if _, ok := R[l]; !ok {
+		if _, ok := Results[l]; !ok {
 			chk.Panic("1: %q alias in Entities is not available", l)
 		}
 	}
 	plabels := []string{"a", "b", "c", "d"}
 	for _, l := range plabels {
-		if _, ok := R[l]; !ok {
+		if _, ok := Results[l]; !ok {
 			chk.Panic("2: %q alias in Entities is not available", l)
 		}
 	}
-	if _, ok := R["right side"]; !ok {
+	if _, ok := Results["right side"]; !ok {
 		chk.Panic("3: %q alias in Entities is not available", "right side")
 	}
 
 	// check u-keys
 	ukeys := []string{"ux", "uy"}
 	for _, l := range nlabels {
-		for _, p := range R[l] {
+		for _, p := range Results[l] {
 			//io.Pfyel("p = %v\n", p)
 			if p == nil {
 				chk.Panic("1: p is nil")
@@ -100,7 +100,7 @@ func Test_out01(tst *testing.T) {
 	// check s-keys
 	skeys := fem.StressKeys()
 	for _, l := range plabels {
-		for _, p := range R[l] {
+		for _, p := range Results[l] {
 			//io.Pfgreen("q = %v\n", p)
 			if p == nil {
 				chk.Panic("2: p is nil")
@@ -136,7 +136,7 @@ func Test_out01(tst *testing.T) {
 		ux := GetRes("ux", l, 0)
 		uy := GetRes("uy", l, 0)
 		io.Pforan("ux=%v uy=%v\n", ux, uy)
-		for j, t := range T {
+		for j, t := range Times {
 			io.Pfyel("t=%g\n", t)
 			sol.CheckDispl(tst, t, []float64{ux[j], uy[j]}, x, tolu)
 		}
@@ -150,7 +150,7 @@ func Test_out01(tst *testing.T) {
 		sy := GetRes("sy", l, 0)
 		sz := GetRes("sz", l, 0)
 		sxy := GetRes("sxy", l, 0)
-		for j, t := range T {
+		for j, t := range Times {
 			io.Pfyel("t=%g\n", t)
 			sol.CheckStress(tst, t, []float64{sx[j], sy[j], sz[j], sxy[j]}, x, tolσ)
 		}
@@ -208,7 +208,7 @@ func Test_out02(tst *testing.T) {
 	ux := GetRes("ux", "A", 0)
 	uy := GetRes("uy", "A", 0)
 	io.Pforan("ux=%v uy=%v\n", ux, uy)
-	for j, t := range T {
+	for j, t := range Times {
 		io.Pfyel("t=%g\n", t)
 		sol.CheckDispl(tst, t, []float64{ux[j], uy[j]}, x, tolu)
 	}

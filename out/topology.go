@@ -15,10 +15,6 @@ import (
 
 const DIST_TOL = 1e-6 // tolerance to compare distances or proximity between points
 
-// PlaneIteratorFcn implements an iterator function for looping over {u,v} coordinates
-// This function will then fill in F[nu][nv] with values specified by key ("ux", "ex_sz", etc.)
-type PlaneIteratorFcn func(key string)
-
 // PlaneData holds data for handling planes described by {u,v}-coordinates
 type PlaneData struct {
 	Plane int          // Plane indicator: {0,1,2} == {x-pane, y-plane, z-plane}. plane perpendicular to {x,y,z}

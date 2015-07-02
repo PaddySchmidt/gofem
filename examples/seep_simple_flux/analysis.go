@@ -45,13 +45,13 @@ func main() {
 	io.PfYel("Q = %g m³/s [answer: 0.0003]\n", Q)
 
 	// plot
-	kt := len(out.T) - 1
+	kt := len(out.Times) - 1
 	out.Splot("")
 	out.Plot("pl", "y", "section-A", plt.Fmt{L: "t=0"}, 0)
-	out.Plot("pl", "y", "section-A", plt.Fmt{L: io.Sf("t=%g", out.T[kt])}, kt)
+	out.Plot("pl", "y", "section-A", plt.Fmt{L: io.Sf("t=%g", out.Times[kt])}, kt)
 	out.Splot("")
 	out.Plot("x", "pl", "section-B", plt.Fmt{L: "t=0"}, 0)
-	out.Plot("x", "pl", "section-B", plt.Fmt{L: io.Sf("t=%g", out.T[kt])}, kt)
+	out.Plot("x", "pl", "section-B", plt.Fmt{L: io.Sf("t=%g", out.Times[kt])}, kt)
 	out.Splot("")
 	out.Plot("t", nwlx_TM, "top-middle", plt.Fmt{}, -1)
 	out.Csplot.Ylbl = "$n_{\\ell}\\cdot w_{\\ell x}$"

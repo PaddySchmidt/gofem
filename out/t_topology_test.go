@@ -9,14 +9,13 @@ import (
 
 	"github.com/cpmech/gofem/fem"
 	"github.com/cpmech/gosl/chk"
-	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/plt"
 )
 
 func Test_topol01(tst *testing.T) {
 
 	// test title
-	verbose()
+	//verbose()
 	chk.PrintTitle("topol01")
 
 	// constants
@@ -65,14 +64,16 @@ func Test_topol01(tst *testing.T) {
 	Extrap = []string{"sz"}
 	LoadResults(nil)
 
+	// displacements
+	Splot("displacements")
+	Plot("t", "uz", "A", plt.Fmt{C: "b", M: "o"}, -1)
+
 	// stresses on surface
 	V := IntegOnPlane("ex_sz", "surf")
-	io.Pforan("V = %v\n", V)
-
-	return
-
-	// plot
-	Plot("t", "uz", "A", plt.Fmt{C: "b", M: "o"}, -1)
+	Splot("integral of stresses")
+	Plot(Times, V, "surf", plt.Fmt{C: "r", M: "o"}, -1)
+	Csplot.Xlbl = "time"
+	Csplot.Ylbl = "integ(sz)"
 
 	//Draw("", "", true, nil)
 	Draw("", "", false, nil)

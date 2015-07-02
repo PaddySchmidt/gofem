@@ -20,6 +20,9 @@ var (
 	Ndiv = 20   // bins n-division
 )
 
+// ResultsMap maps aliases to points
+type ResultsMap map[string]Points
+
 // Global variables
 var (
 
@@ -35,10 +38,11 @@ var (
 	IpsMin    []float64        // [ndim] {x,y,z}_min among all ips
 	IpsMax    []float64        // [ndim] {x,y,z}_max among all ips
 
-	// results loaded by LoadResults
-	R ResultsMap // maps labels => points
-	I []int      // selected output indices
-	T []float64  // selected output times
+	// defined entities and results loaded by LoadResults
+	Planes   map[string]*PlaneData // for points defined on planes. maps aliases to data
+	Results  ResultsMap            // maps labels => points
+	TimeInds []int                 // selected output indices
+	Times    []float64             // selected output times
 
 	// extrapolated values
 	Extrap []string             // keys to be extrapolated; e.g. []string{"nwlx", "nwly"}
@@ -87,9 +91,10 @@ func Start(simfnpath string, stageIdx, regionIdx int) {
 	Cid2ips = make([][]int, len(Dom.Msh.Cells))
 	Ipkey2ips = make(map[string][]int)
 	Ipkeys = make(map[string]bool)
-	R = make(map[string]Points)
-	I = make([]int, 0)
-	T = make([]float64, 0)
+	Planes = make(map[string]*PlaneData)
+	Results = make(map[string]Points)
+	TimeInds = make([]int, 0)
+	Times = make([]float64, 0)
 	Splots = make([]*SplotDat, 0)
 
 	// bins

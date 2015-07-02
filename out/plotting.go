@@ -170,7 +170,7 @@ func get_vals_and_labels(handle, otherHandle interface{}, alias string, idxI int
 	case string:
 		switch hnd {
 		case "t":
-			return T, "t"
+			return Times, "t"
 		case "x":
 			xcoords, _, _ := GetXYZ(otherKey, alias)
 			return xcoords, "x"
