@@ -1,0 +1,29 @@
+{
+  "data" : {
+    "desc" : "elastic solid: consistent operators",
+    "matfile" : "materials.mat",
+    "steady" : true,
+    "showR" : true,
+    "stat" : true
+  },
+  "functions" : [
+    { "name":"disp", "type":"cte", "prms":[{"n":"c", "v":-0.8}] }
+  ],
+  "regions" : [
+    {
+      "mshfile" : "box.msh",
+      "elemsdata" : [
+        { "tag":-1, "mat":"elastic", "type":"u" }
+      ]
+    }
+  ],
+  "stages" : [
+    {
+      "desc" : "apply displacement",
+      "facebcs" : [
+        { "tag":-30, "keys":["ux","uy","uz"], "funcs":["zero","zero","zero"] },
+        { "tag":-31, "keys":["uz"], "funcs":["disp"] }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "functions" : [],
+  "materials" : [
+    {
+      "name"  : "elastic",
+      "model" : "lin-elast",
+      "prms"  : [
+        {"n":"E",   "v":100 },
+        {"n":"nu",  "v":0.25},
+        {"n":"rho", "v":1   }
+      ]
+    }
+  ]
+}

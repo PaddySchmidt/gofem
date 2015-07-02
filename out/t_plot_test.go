@@ -7,6 +7,7 @@ package out
 import (
 	"testing"
 
+	"github.com/cpmech/gofem/fem"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/plt"
@@ -18,9 +19,21 @@ func Test_plot01(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("plot01")
 
-	// start analysis process
+	// constants
 	datadir := "$GOPATH/src/github.com/cpmech/gofem/fem/data/"
-	Start(datadir+"p02.sim", 0, 0)
+	simfn := "p02.sim"
+
+	// run FE simulation
+	defer fem.End()
+	if !fem.Start(datadir+simfn, true, chk.Verbose) {
+		chk.Panic("cannot start FE simulation")
+	}
+	if !fem.Run() {
+		chk.Panic("cannot run FE simulation")
+	}
+
+	// start post-processing
+	Start(datadir+simfn, 0, 0)
 
 	// define entities
 	Define("A", N{1})
