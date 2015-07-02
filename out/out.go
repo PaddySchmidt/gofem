@@ -99,11 +99,12 @@ func Start(simfnpath string, stageIdx, regionIdx int) {
 
 	// bins
 	m := Dom.Msh
-	xi := []float64{m.Xmin, m.Ymin}
-	xf := []float64{m.Xmax, m.Ymax}
+	δ := TolC * 2
+	xi := []float64{m.Xmin - δ, m.Ymin - δ}
+	xf := []float64{m.Xmax + δ, m.Ymax + δ}
 	if m.Ndim == 3 {
-		xi = append(xi, m.Zmin)
-		xf = append(xf, m.Zmax)
+		xi = append(xi, m.Zmin-δ)
+		xf = append(xf, m.Zmax+δ)
 	}
 	err := NodBins.Init(xi, xf, Ndiv)
 	if err != nil {
