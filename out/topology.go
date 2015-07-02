@@ -10,29 +10,73 @@ import (
 	"github.com/cpmech/gofem/shp"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/gm"
-	"github.com/cpmech/gosl/io"
+	"github.com/cpmech/gosl/la"
 )
 
 const DIST_TOL = 1e-6 // tolerance to compare distances or proximity between points
 
-type PlaneIteratorFcn func() // Iterator function for looping over {u,v} coordinates
+// PlaneIteratorFcn implements an iterator function for looping over {u,v} coordinates
+// This function will then fill in F[nu][nv] with values specified by key ("ux", "ex_sz", etc.)
+type PlaneIteratorFcn func(key string)
 
-// UVplaneData holds data for handling planes described by {u,v}-coordinates
+// PlaneData holds data for handling planes described by {u,v}-coordinates
 type PlaneData struct {
-	Plane int              // Plane indicator: {0,1,2} == {x-pane, y-plane, z-plane}. plane perpendicular to {x,y,z}
-	Vids  map[int]bool     // Ids in (Dom.Msh) of vertices on plane
-	Dx    []float64        // Increments between cells in global coordinates
-	Iu    []int            // Index of global coordinates corresponding to {u,v} plane
-	Du    []float64        // Increments between cells in {u,v} coordinates
-	Umin  []float64        // min {u,v} coordinates
-	Umax  []float64        // max {u,v} coordinates
-	Nu    []int            // number of divisions along {u,v}
-	Ubins gm.Bins          // bins to search points in {u,v} grid
-	Iter  PlaneIteratorFcn // Iterator function for looping over {u,v} coordinates
+	Plane int          // Plane indicator: {0,1,2} == {x-pane, y-plane, z-plane}. plane perpendicular to {x,y,z}
+	Ids   map[int]bool // Ids in Dom.Msh.Verts or Ipoints of notes/ips on plane
+	Dx    []float64    // Increments between cells in global coordinates
+	Iu    []int        // Index of global coordinates corresponding to {u,v} plane
+	Du    []float64    // Increments between cells in {u,v} coordinates
+	Umin  []float64    // min {u,v} coordinates
+	Umax  []float64    // max {u,v} coordinates
+	Nu    []int        // number of divisions along {u,v}
+	Ubins gm.Bins      // bins to search points in {u,v} grid
+	F     [][]float64  // [nu][nv] values of a function evaluated at the uv coords; i.e. f(u,v)
+
+	// derived (set by ConnectResults)
+	id2pt map[int]*Point // results: connects Ids to Points in Results structure
 }
 
-// PlaneIterator finds vertices located on {x,y,z} plane and returns an iterator
-// that can be used to extract results on the plane. An {u,v}-coordinates system is build
+// Locate finds points on plane => implement the Locator interface
+func (o PlaneData) Locate() (res Points) {
+	for id, _ := range o.Ids {
+		q := get_nod_point(id, nil) // nodes
+		if q != nil {
+			res = append(res, q)
+		} else {
+			q := get_ip_point(id, nil) // integration points
+			if q != nil {
+				res = append(res, q)
+			}
+		}
+	}
+	return
+}
+
+// ConnectResults connects Ids to Points in Results structure
+func (o *PlaneData) ConnectResults(alias string) {
+	pts, ok := Results[alias]
+	if !ok {
+		chk.Panic("cannot get points/results with alias=%q", alias)
+	}
+	o.id2pt = make(map[int]*Point)
+	for _, p := range pts {
+		if p.Vid >= 0 {
+			if !o.Ids[p.Vid] {
+				chk.Panic("Vertex with vid=%d in Results[%q] is not on plane", p.Vid, alias)
+			}
+			o.id2pt[p.Vid] = p
+		}
+		if p.IpId >= 0 {
+			if !o.Ids[p.IpId] {
+				chk.Panic("Integration point with ipid=%d in Results[%q] is not on plane", p.IpId, alias)
+			}
+			o.id2pt[p.IpId] = p
+		}
+	}
+}
+
+// NodesOnPlane finds vertices located on {x,y,z} plane and returns an iterator
+// that can be used to extract results on the plane. An {u,v}-coordinates system is built
 // on the plane.
 //  Input:
 //    ftag -- cells' face tag; e.g. -31
@@ -44,7 +88,7 @@ type PlaneData struct {
 //    3) middle nodes in "qua8" are disregarded in order to buidl an {u,v} grid
 //    4) the resulting mesh on plane must be equally spaced; i.e. Δx and Δy are constant;
 //       but not necessarily equal to each other
-func PlaneIterator(ftag int) *PlaneData {
+func NodesOnPlane(ftag int) *PlaneData {
 
 	// check
 	ndim := Dom.Msh.Ndim
@@ -55,7 +99,7 @@ func PlaneIterator(ftag int) *PlaneData {
 	// loop over cells on face with given face tag
 	var dat PlaneData
 	dat.Plane = -1
-	dat.Vids = make(map[int]bool)
+	dat.Ids = make(map[int]bool)
 	dat.Dx = make([]float64, ndim)
 	Δx := make([]float64, ndim)
 	first := true
@@ -79,7 +123,7 @@ func PlaneIterator(ftag int) *PlaneData {
 				}
 				for i := 0; i < nv; i++ {
 					vid := cell.C.Verts[flvids[i]]
-					dat.Vids[vid] = true
+					dat.Ids[vid] = true
 				}
 
 				// compute and check increments in global coordinates
@@ -147,7 +191,7 @@ func PlaneIterator(ftag int) *PlaneData {
 	dat.Umin = make([]float64, 2)
 	dat.Umax = make([]float64, 2)
 	first = true
-	for vid, _ := range dat.Vids {
+	for vid, _ := range dat.Ids {
 		x := Dom.Msh.Verts[vid].C
 		if first {
 			for j := 0; j < 2; j++ {
@@ -174,7 +218,7 @@ func PlaneIterator(ftag int) *PlaneData {
 	nb := 20
 	dat.Ubins.Init([]float64{dat.Umin[0] - dd, dat.Umin[1] - dd}, []float64{dat.Umax[0] + dd, dat.Umax[1] + dd}, nb)
 	u := []float64{0, 0}
-	for vid, _ := range dat.Vids {
+	for vid, _ := range dat.Ids {
 		x := Dom.Msh.Verts[vid].C
 		for j := 0; j < 2; j++ {
 			u[j] = x[dat.Iu[j]]
@@ -185,19 +229,7 @@ func PlaneIterator(ftag int) *PlaneData {
 		}
 	}
 
-	// iterator
-	dat.Iter = func() {
-		for j := 0; j < dat.Nu[1]; j++ {
-			u[1] = dat.Umin[1] + float64(j)*dat.Du[1]
-			for i := 0; i < dat.Nu[0]; i++ {
-				u[0] = dat.Umin[0] + float64(i)*dat.Du[0]
-				vid := dat.Ubins.Find(u)
-				if vid < 0 {
-					chk.Panic("cannot find {u,v} coordinate in any bin. u=%v", u)
-				}
-				io.Pforan("u=%10.6f, v=%10.6f, vid=%3d\n", u[0], u[1], vid)
-			}
-		}
-	}
+	// allocate F
+	dat.F = la.MatAlloc(dat.Nu[0], dat.Nu[1])
 	return &dat
 }
