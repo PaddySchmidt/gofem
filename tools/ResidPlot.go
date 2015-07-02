@@ -43,6 +43,8 @@ func main() {
 	simfnA := "o2elastCO"
 	skip := 0
 	simfnB := ""
+	labelA := ""
+	labelB := ""
 	flag.Parse()
 	if len(flag.Args()) > 0 {
 		simfnA = flag.Arg(0)
@@ -53,6 +55,12 @@ func main() {
 	if len(flag.Args()) > 2 {
 		simfnB = flag.Arg(2)
 	}
+	if len(flag.Args()) > 3 {
+		labelA = flag.Arg(3)
+	}
+	if len(flag.Args()) > 4 {
+		labelB = flag.Arg(4)
+	}
 
 	// print input data
 	io.Pf("\nInput data\n")
@@ -60,6 +68,8 @@ func main() {
 	io.Pf("  simfnA = %30s // simulation filename\n", simfnA)
 	io.Pf("  skip   = %30d // number of initial increments to skip\n", skip)
 	io.Pf("  simfnB = %30s // simulation filename for comparison\n", simfnB)
+	io.Pf("  labelA = %30s // label for histogram\n", labelA)
+	io.Pf("  labelB = %30s // label for histogram\n", labelB)
 	io.Pf("\n")
 
 	// read residuals
@@ -87,9 +97,15 @@ func main() {
 	io.Pf("\n")
 	X := [][]float64{count_iters(residA)}
 	labels := []string{fnkA}
+	if labelA != "" {
+		labels[0] = labelA
+	}
 	if simfnB != "" {
 		X = append(X, count_iters(residB))
 		labels = append(labels, fnkB)
+		if labelB != "" {
+			labels[1] = labelB
+		}
 	}
 	plt.Reset()
 	plt.SetForEps(0.75, 300)
