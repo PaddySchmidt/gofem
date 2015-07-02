@@ -564,7 +564,7 @@ func compute_extrapolated_values() {
 			ips = e.U.IpsElem
 		}
 		if sha == nil {
-			chk.Panic("cannot get shape structrue from element")
+			chk.Panic("cannot get shape structure from element")
 		}
 
 		// compute Extrapolator matrix
