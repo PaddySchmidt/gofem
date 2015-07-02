@@ -65,7 +65,7 @@ func compute_extrapolated_values() {
 				if val, ok := vals[key]; ok {
 					for i := 0; i < sha.Nverts; i++ {
 						v := cell.Verts[i]
-						ExVals[v][key] += Emat[i][j] * val
+						ExVals[v]["ex_"+key] += Emat[i][j] * val
 					}
 				} else {
 					chk.Panic("ip does not have key = %s", key)
@@ -85,7 +85,7 @@ func compute_extrapolated_values() {
 	// compute average
 	for i := 0; i < nverts; i++ {
 		for key, cnt := range counts[i] {
-			ExVals[i][key] /= cnt
+			ExVals[i]["ex_"+key] /= cnt
 		}
 	}
 }

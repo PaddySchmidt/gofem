@@ -95,7 +95,7 @@ func LoadResults(times []float64) {
 					// add extrapolated values to results map
 					if ExVals != nil {
 						for key, val := range ExVals[vid] {
-							utl.StrDblsMapAppend(&p.Vals, "ex_"+key, val)
+							utl.StrDblsMapAppend(&p.Vals, key, val)
 						}
 					}
 				}
