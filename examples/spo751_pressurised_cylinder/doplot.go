@@ -15,7 +15,7 @@ func main() {
 
 	// finalise analysis process and catch errors
 	defer out.End()
-	var sol ana.Hill
+	var sol ana.PressCylin
 	sol.Init(fun.Prms{
 		&fun.Prm{N: "a", V: 100},
 		&fun.Prm{N: "b", V: 200},
