@@ -1,0 +1,21 @@
+{
+  "data" : {
+    "desc"    : "testing level-set solver",
+    "matfile" : "phi.mat"
+  },
+  "functions" : [
+  ],
+  "regions" : [
+    {
+      "mshfile" : "square.msh",
+      "elemsdata" : [
+        { "tag":-1, "mat":"mat", "type":"phi" }
+      ]
+    }
+  ],
+  "stages" : [
+    {
+      "desc" : "do nothing"
+    }
+  ]
+}
