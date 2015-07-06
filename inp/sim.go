@@ -291,6 +291,12 @@ type IniStressData struct {
 	Nu  float64 `json:"nu"`  // Psa => Poisson's coefficient for plane-strain state
 }
 
+// InitialData holds data for setting initial solution values such as Y, dYdt and d2Ydt2
+type InitialData struct {
+	Fcn  string `json:"fcn"`  // function F(t, x) is given; from functions database
+	File string `json:"file"` // file with values at each node is given; filename with path is provided
+}
+
 // ImportRes holds definitions for importing results from a previous simulation
 type ImportRes struct {
 	Dir    string `json:"dir"`    // output directory with previous simulation files
@@ -315,6 +321,7 @@ type Stage struct {
 	IniStress *IniStressData `json:"inistress"` // initial stress data
 	GeoSt     *GeoStData     `json:"geost"`     // initial geostatic state data (hydrostatic as well)
 	Import    *ImportRes     `json:"import"`    // import results from another previous simulation
+	Initial   *InitialData   `json:"initial"`   // set initial solution values such as Y, dYdt and d2Ydt2
 
 	// conditions
 	EleConds []*EleCond `json:"eleconds"` // element conditions. ex: gravity or beam distributed loads

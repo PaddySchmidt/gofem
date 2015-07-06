@@ -143,7 +143,7 @@ func Test_phi01(tst *testing.T) {
 
 func Test_phi02(tst *testing.T) {
 
-	verbose()
+	//verbose()
 	chk.PrintTitle("phi01b")
 
 	// make sure to flush log
