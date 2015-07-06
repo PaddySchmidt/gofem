@@ -30,6 +30,9 @@ type ElemPhi struct {
 	// local starred variables
 	ψs []float64 // [nip] ψ* = β1.φ + β2.dφdt
 
+	// scratchpad. computed @ each ip
+	K [][]float64 // [nu][nu] consistent tangent matrix
+
 	// problem variables
 	Umap []int // assembly map (location array/element equations)
 }
@@ -69,6 +72,9 @@ func init() {
 		nip := len(o.IpsElem)
 		o.ψs = make([]float64, nip)
 
+		// scratchpad. computed @ each ip
+		o.K = la.MatAlloc(o.Nu, o.Nu)
+
 		// return new element
 		return &o
 	}
@@ -102,7 +108,7 @@ func (o *ElemPhi) InterpStarVars(sol *Solution) (ok bool) {
 	for idx, ip := range o.IpsElem {
 
 		// interpolation functions and gradients
-		if LogErr(o.Shp.CalcAtIp(o.X, ip, true), "InterpStarVars") {
+		if LogErr(o.Shp.CalcAtIp(o.X, ip, false), "InterpStarVars") {
 			return
 		}
 
@@ -117,11 +123,77 @@ func (o *ElemPhi) InterpStarVars(sol *Solution) (ok bool) {
 
 // AddToRhs adds -R to global residual vector fb
 func (o *ElemPhi) AddToRhs(fb []float64, sol *Solution) (ok bool) {
+
+	// auxiliary
+	β1 := Global.DynCoefs.β1
+	ndim := Global.Ndim
+	nverts := o.Shp.Nverts
+
+	v := []float64{1, 0, 0} // TODO: find a way to input the velocity
+
+	// for each integration point
+	for _, ip := range o.IpsElem {
+
+		// interpolation functions and gradients
+		if LogErr(o.Shp.CalcAtIp(o.X, ip, true), "InterpStarVars") {
+			return
+		}
+
+		// auxiliary variables
+		coef := o.Shp.J * ip.W
+		S := o.Shp.S
+		G := o.Shp.G
+
+		// add to right hand side vector
+		for m := 0; m < nverts; m++ {
+			r := o.Umap[m] // row in the global vector
+			for n := 0; n < nverts; n++ {
+				fb[r] -= coef * S[m] * S[n] * β1 * sol.Y[o.Umap[n]]
+				for j := 0; j < ndim; j++ {
+					fb[r] += coef * v[j] * G[m][j] * S[n]
+				}
+			}
+		}
+	}
 	return true
 }
 
 // AddToKb adds element K to global Jacobian matrix Kb
 func (o *ElemPhi) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) {
+
+	// auxiliary
+	β1 := Global.DynCoefs.β1
+	nverts := o.Shp.Nverts
+
+	// zero K matrix
+	la.MatFill(o.K, 0)
+
+	// for each integration point
+	for _, ip := range o.IpsElem {
+
+		// interpolation functions and gradients
+		if LogErr(o.Shp.CalcAtIp(o.X, ip, true), "InterpStarVars") {
+			return
+		}
+
+		// auxiliary variables
+		coef := o.Shp.J * ip.W
+		S := o.Shp.S
+
+		// add to right hand side vector
+		for m := 0; m < nverts; m++ {
+			for n := 0; n < nverts; n++ {
+				o.K[m][n] += coef * S[m] * S[n] * β1
+			}
+		}
+	}
+
+	// add K to sparse matrix Kb
+	for i, I := range o.Umap {
+		for j, J := range o.Umap {
+			Kb.Put(I, J, o.K[i][j])
+		}
+	}
 	return true
 }
 
@@ -129,6 +201,8 @@ func (o *ElemPhi) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool)
 func (o *ElemPhi) Update(sol *Solution) (ok bool) {
 	return true
 }
+
+// writer ///////////////////////////////////////////////////////////////////////////////////////////
 
 // Encode encodes internal variables
 func (o *ElemPhi) Encode(enc Encoder) (ok bool) {
@@ -142,5 +216,39 @@ func (o *ElemPhi) Decode(dec Decoder) (ok bool) {
 
 // OutIpsData returns data from all integration points for output
 func (o *ElemPhi) OutIpsData() (data []*OutIpData) {
+
+	// for each integration point
+	ndim := Global.Ndim
+	Gphi := make([]float64, ndim)
+	for _, ip := range o.IpsElem {
+
+		// interpolation functions and gradients
+		if LogErr(o.Shp.CalcAtIp(o.X, ip, true), "InterpStarVars") {
+			return
+		}
+		G := o.Shp.G
+
+		// calculate function
+		calc := func(sol *Solution) (vals map[string]float64) {
+			for i := 0; i < ndim; i++ {
+				Gphi[i] = 0
+				for m := 0; m < o.Nu; m++ {
+					Gphi[i] += G[m][i] * sol.Y[o.Umap[m]]
+				}
+			}
+			vals = map[string]float64{
+				"Gphix": Gphi[0],
+				"Gphiy": Gphi[1],
+			}
+			if ndim == 3 {
+				vals["Gphiz"] = Gphi[2]
+			}
+			return
+		}
+
+		// results
+		x := o.Shp.IpRealCoords(o.X, ip)
+		data = append(data, &OutIpData{o.Id(), x, calc})
+	}
 	return
 }
