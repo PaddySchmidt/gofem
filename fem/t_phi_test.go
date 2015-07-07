@@ -5,29 +5,28 @@
 package fem
 
 import (
-	"testing"
-
 	"github.com/cpmech/gosl/chk"
+	"testing"
 )
 
-func test_phi01(tst *testing.T) {
+func Test_phi01(tst *testing.T) {
 
-	/*     Nodes                           Equations: TODO
-	 *                 7                                7
-	 *     6 o----o----o----o----o 8        6 o----o----o----o----o 8
-	 *       |   13    |   14    |            |   13    |   14    |
+	/*     Nodes                           Equations:
+	 *                 7                                15
+	 *     6 o----o----o----o----o 8       16 o----o----o----o----o 21
+	 *       |   13    |   14    |            |   18    |   23    |
 	 *       |         |         |            |         |         |
-	 *    18 o   [2]   o19 [3]   o 20      18 o    o    o19  o    o 20
-	 *       |   23    |   24    |            |   23    |   24    |
+	 *    18 o   [2]   o19 [3]   o 20      19 o    o    o17  o    o 22
+	 *       |   23    |   24    |            |   20    |   24    |
 	 *       |         |         |            |         |         |
-	 *     3 o----o----o----o----o 5        3 o----o----o----o----o 5
-	 *       |   11   4|   12    |            |    6   2|   12    |
+	 *     3 o----o----o----o----o 5        3 o----o----o----o----o 10
+	 *       |   11   4|   12    |            |    6   2|   13    |
 	 *       |         |         |            |         |         |
-	 *    15 o   [0]   o16 [1]   o 17       7 o    o    o5   o    o 17
-	 *       |   21    |   22    |            |    8    |   22    |
+	 *    15 o   [0]   o16 [1]   o 17       7 o    o    o5   o    o 12
+	 *       |   21    |   22    |            |    8    |   14    |
 	 *       |         |         |            |         |         |
-	 *     0 o----o----o----o----o 2        0 o----o----o----o----o 2
-	 *            9    1    10                     4    1    10
+	 *     0 o----o----o----o----o 2        0 o----o----o----o----o 9
+	 *            9    1    10                     4    1    11
 	 */
 
 	//verbose()
@@ -57,7 +56,7 @@ func test_phi01(tst *testing.T) {
 	}
 
 	// nodes and elements
-	chk.IntAssert(len(dom.Nodes), 27)
+	chk.IntAssert(len(dom.Nodes), 25)
 	chk.IntAssert(len(dom.Elems), 4)
 
 	// check dofs
@@ -65,13 +64,14 @@ func test_phi01(tst *testing.T) {
 		chk.IntAssert(len(nod.Dofs), 1)
 		chk.StrAssert(nod.Dofs[0].Key, "h")
 	}
-
 	// check equations
 	nids, eqs := get_nids_eqs(dom)
+	tst.Log(eqs)
+
 	chk.Ints(tst, "nids", nids, []int{
-		0, 1, 3, 2,
+		0, 1, 4, 3, 9, 16, 11, 15, 21, 2, 5, 10, 17, 12, 22, 7, 6, 19, 13, 18, 23, 8, 20, 14, 24,
 	})
-	chk.Ints(tst, "eqs", eqs, []int{0, 1, 2, 3})
+	chk.Ints(tst, "eqs", eqs, []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24})
 
 	/*
 		// check pmap
@@ -129,7 +129,7 @@ func test_phi01(tst *testing.T) {
 	*/
 }
 
-func test_phi02(tst *testing.T) {
+func Test_phi02(tst *testing.T) {
 
 	//verbose()
 	chk.PrintTitle("phi01b")

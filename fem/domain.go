@@ -241,7 +241,6 @@ func (o *Domain) SetStage(idxstg int, stg *inp.Stage, distr bool) (setstageisok 
 		if info == nil {
 			return
 		}
-
 		// for non-joint elements, add new DOFs
 		if !c.IsJoint {
 			chk.IntAssert(len(info.Dofs), len(c.Verts))

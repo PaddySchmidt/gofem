@@ -48,6 +48,16 @@ func init() {
 		// new info
 		var info Info
 
+		nverts := shp.GetNverts(cellType)
+		ykeys := []string{"h"}
+
+		info.Dofs = make([][]string, nverts)
+		for m := 0; m < nverts; m++ {
+			info.Dofs[m] = ykeys
+		}
+
+		info.T2vars = ykeys
+
 		// return information
 		return &info
 	}
