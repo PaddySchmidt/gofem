@@ -10,7 +10,7 @@ import (
 	"github.com/cpmech/gosl/chk"
 )
 
-func Test_phi01(tst *testing.T) {
+func test_phi01(tst *testing.T) {
 
 	/*     Nodes                           Equations: TODO
 	 *                 7                                7
@@ -129,7 +129,7 @@ func Test_phi01(tst *testing.T) {
 	*/
 }
 
-func Test_phi02(tst *testing.T) {
+func test_phi02(tst *testing.T) {
 
 	//verbose()
 	chk.PrintTitle("phi01b")

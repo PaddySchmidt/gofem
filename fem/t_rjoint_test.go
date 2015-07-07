@@ -39,8 +39,8 @@ func Test_rjoint01(tst *testing.T) {
 	}
 
 	// plot
-	doplot := false
-	if doplot {
+	//if true {
+	if false {
 
 		// allocate domain
 		sum := ReadSum(Global.Dirout, Global.Fnkey)
