@@ -66,12 +66,13 @@ func Test_phi01(tst *testing.T) {
 	}
 	// check equations
 	nids, eqs := get_nids_eqs(dom)
-	tst.Log(eqs)
 
 	chk.Ints(tst, "nids", nids, []int{
 		0, 1, 4, 3, 9, 16, 11, 15, 21, 2, 5, 10, 17, 12, 22, 7, 6, 19, 13, 18, 23, 8, 20, 14, 24,
 	})
-	chk.Ints(tst, "eqs", eqs, []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24})
+	chk.Ints(tst, "eqs", eqs, []int{
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+	})
 
 	/*
 		// check pmap
