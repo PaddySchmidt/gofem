@@ -130,7 +130,7 @@ func Test_phi01(tst *testing.T) {
 	*/
 }
 
-func Test_phi02(tst *testing.T) {
+func test_phi02(tst *testing.T) {
 
 	//verbose()
 	chk.PrintTitle("phi01b")

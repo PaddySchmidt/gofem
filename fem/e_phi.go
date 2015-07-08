@@ -56,7 +56,7 @@ func init() {
 			info.Dofs[m] = ykeys
 		}
 
-		info.T2vars = ykeys
+		info.T1vars = ykeys
 
 		// return information
 		return &info
