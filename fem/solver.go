@@ -116,8 +116,12 @@ func Start(simfilepath string, erasefiles, verbose bool) (startisok bool) {
 func Run() (runisok bool) {
 
 	// plot functions
-	if Global.Sim.PlotF != nil && Global.Root {
-		Global.Sim.Functions.PlotAll(Global.Sim.PlotF, Global.Dirout, Global.Fnkey)
+	if Global.Sim.PlotF != nil {
+		if Global.Root {
+			Global.Sim.Functions.PlotAll(Global.Sim.PlotF, Global.Dirout, Global.Fnkey)
+		}
+		io.PfRed("\nfunctions plotted => simulation not ran\n")
+		return
 	}
 
 	// alloc domains

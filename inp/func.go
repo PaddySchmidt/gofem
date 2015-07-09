@@ -57,16 +57,14 @@ func (o FuncsData) PlotAll(pd *PlotFdata, dirout, fnkey string) {
 	if pd.Eps {
 		ext = "eps"
 	}
-	fn := io.Sf("functions-%s.%s", fnkey, ext)
-	plt.Reset()
-	for k, f := range o {
+	for _, f := range o {
 		if utl.StrIndexSmall(pd.Skip, f.Name) >= 0 {
 			continue
 		}
-		save := (k == len(o)-1)
 		args := io.Sf("label='%s', clip_on=0", f.Name)
 		ff := o.Get(f.Name)
 		if ff != nil {
+			plt.Reset()
 			if pd.WithTxt {
 				x := pd.Ti
 				y := ff.F(x, nil)
@@ -75,7 +73,8 @@ func (o FuncsData) PlotAll(pd *PlotFdata, dirout, fnkey string) {
 				y = ff.F(x, nil)
 				plt.Text(x, y, io.Sf("%g", y), "fontsize=8, ha='right'")
 			}
-			fun.PlotT(ff, dirout, fn, pd.Ti, pd.Tf, nil, pd.Np, args, pd.WithG, pd.WithH, save, false, nil)
+			fn := io.Sf("functions-%s-%s.%s", fnkey, f.Name, ext)
+			fun.PlotT(ff, dirout, fn, pd.Ti, pd.Tf, nil, pd.Np, args, pd.WithG, pd.WithH, true, false, nil)
 		}
 	}
 }
