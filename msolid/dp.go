@@ -7,7 +7,6 @@ package msolid
 import (
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
-	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/tsr"
 )
 
@@ -34,6 +33,8 @@ func (o *DruckerPrager) Init(ndim int, pstress bool, prms fun.Prms) (err error) 
 	if err != nil {
 		return
 	}
+	var c, φ float64
+	var typ int
 	for _, p := range prms {
 		switch p.N {
 		case "M":
@@ -44,13 +45,31 @@ func (o *DruckerPrager) Init(ndim int, pstress bool, prms fun.Prms) (err error) 
 			o.qy0 = p.V
 		case "H":
 			o.H = p.V
+		case "c":
+			c = p.V
+		case "phi":
+			φ = p.V
+		case "typ":
+			typ = int(p.V)
 		case "E", "nu", "l", "G", "K", "rho":
-		case "c", "phi", "typ":
-			io.Pfred("dp: warning: handling of 'c', 'phi' and 'typ' parameters is not implemented yet\n")
 		default:
 			return chk.Err("dp: parameter named %q is incorrect\n", p.N)
 		}
 	}
+
+	// compute M from φ
+	//  typ == 0 : compression cone (outer)
+	//      == 1 : extension cone (inner)
+	//      == 2 : plane-strain
+	if φ > 0 {
+		o.M, o.qy0, err = Mmatch(c, φ, typ)
+		if err != nil {
+			return
+		}
+		o.Mb = o.M
+	}
+	//io.Pforan("E=%v nu=%v\n", o.E, o.Nu)
+	//io.Pforan("c=%v phi=%v M=%v qy0=%v\n", c, φ, o.M, o.qy0)
 
 	// auxiliary structures
 	o.ten = make([]float64, o.Nsig)

@@ -4,7 +4,41 @@
 
 package msolid
 
-import "github.com/cpmech/gosl/tsr"
+import (
+	"math"
+
+	"github.com/cpmech/gosl/chk"
+	"github.com/cpmech/gosl/tsr"
+)
+
+// Mmatch computes M=q/p and qy0 from c and φ corresponding to the strength that would
+// be modelled by the Mohr-Coulomb model matching one of the following cones:
+//  typ == 0 : compression cone (outer)
+//      == 1 : extension cone (inner)
+//      == 2 : plane-strain
+func Mmatch(c, φ float64, typ int) (M, qy0 float64, err error) {
+	φr := φ * math.Pi / 180.0
+	si := math.Sin(φr)
+	co := math.Cos(φr)
+	var ξ float64
+	switch typ {
+	case 0: // compression cone (outer)
+		M = 6.0 * si / (3.0 - si)
+		ξ = 6.0 * co / (3.0 - si)
+	case 1: // extension cone (inner)
+		M = 6.0 * si / (3.0 + si)
+		ξ = 6.0 * co / (3.0 + si)
+	case 2: // plane-strain
+		t := si / co
+		d := math.Sqrt(3.0 + 4.0*t*t)
+		M = 3.0 * t / d
+		ξ = 3.0 / d
+	default:
+		return 0, 0, chk.Err("typ=%d is invalid", typ)
+	}
+	qy0 = ξ * c
+	return
+}
 
 // max returns the max between two floats
 func max(a, b float64) float64 {
