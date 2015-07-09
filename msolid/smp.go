@@ -27,7 +27,7 @@ type SmpInvs struct {
 	RM   fun.RefDecSp1  // reference model for smoothing
 
 	// auxiliary parameters
-	c, φ, a, b, β, ϵ, βrm, shift float64 // parameters
+	c, φ, b, eps1, eps2, βrm, shift float64 // parameters
 
 	// parameters
 	rtyp int     // rounding type
@@ -47,7 +47,7 @@ func init() {
 
 func (o *SmpInvs) calc_auxiliary() {
 
-	o.M = tsr.SmpCalcμ(o.φ, o.a, o.b, o.β, o.ϵ)
+	o.M = tsr.SmpCalcμ(o.φ, -1, o.b, o.eps1, o.eps2)
 	α := math.Atan(o.M)
 	o.sα = math.Sin(α)
 	o.cα = math.Cos(α)
@@ -93,6 +93,11 @@ func (o *SmpInvs) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 	// basic data
 	o.Nsig = 2 * ndim
 
+	// default values
+	o.b = 0.0
+	o.eps1 = 1e-3
+	o.eps2 = 1e-3
+
 	// parameters
 	o.βrm = 20.0 // β_{reference-model}
 	for _, p := range prms {
@@ -105,14 +110,12 @@ func (o *SmpInvs) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 			o.φ = p.V
 
 		// SMP invariants
-		case "a":
-			o.a = p.V
 		case "b":
 			o.b = p.V
-		case "bet":
-			o.β = p.V
-		case "eps":
-			o.ϵ = p.V
+		case "eps1":
+			o.eps1 = p.V
+		case "eps2":
+			o.eps2 = p.V
 
 		// rounding
 		case "rtyp":
@@ -140,7 +143,7 @@ func (o *SmpInvs) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 	o.PU.Init(ndim, prms, o)
 
 	// set isotropic function
-	o.Isof.Init(o.a, o.b, o.β, o.ϵ, o.shift, o.Nsig, o.ffcn, o.gfcn, o.hfcn)
+	o.Isof.Init(-1, o.b, o.eps1, o.eps2, o.shift, o.Nsig, o.ffcn, o.gfcn, o.hfcn)
 	return
 }
 
@@ -151,8 +154,8 @@ func (o SmpInvs) GetPrms() fun.Prms {
 		&fun.Prm{N: "phi", V: 20},
 		&fun.Prm{N: "a", V: -1},
 		&fun.Prm{N: "b", V: 0},
-		&fun.Prm{N: "bet", V: 1},
-		&fun.Prm{N: "eps", V: 1e-3},
+		&fun.Prm{N: "eps1", V: 1e-3},
+		&fun.Prm{N: "eps2", V: 1e-3},
 		&fun.Prm{N: "le", V: 1},
 		&fun.Prm{N: "pr", V: 1.0},
 		&fun.Prm{N: "G0", V: 600},
@@ -208,7 +211,7 @@ func (o SmpInvs) Get_bsmp() float64 {
 func (o *SmpInvs) Set_bsmp(b float64) {
 	o.b = b
 	o.calc_auxiliary()
-	o.Isof.SetPrms(o.a, o.b, o.β, o.ϵ, o.shift, o.ffcn, o.gfcn, o.hfcn)
+	o.Isof.SetPrms(-1, o.b, o.eps1, o.eps2, o.shift, o.ffcn, o.gfcn, o.hfcn)
 }
 
 // L_YieldFunc computes the yield function value for given principal stresses (σ)
@@ -256,7 +259,7 @@ func (o SmpInvs) L_FlowHard(Nb, h, σ, α []float64) (f float64, err error) {
 		return
 	}
 	for i := 0; i < 3; i++ {
-		Nb[i] = o.Isof.Dfdλ[i]
+		Nb[i] = o.Isof.DfdL[i]
 	}
 	// no hardening yet
 	return
@@ -281,10 +284,10 @@ func (o SmpInvs) L_SecondDerivs(N, Nb, A, h []float64, Mb, a, b, c [][]float64, 
 		return
 	}
 	for i := 0; i < 3; i++ {
-		N[i] = o.Isof.Dfdλ[i]
+		N[i] = o.Isof.DfdL[i]
 		Nb[i] = N[i]
 		for j := 0; j < 3; j++ {
-			Mb[i][j] = o.Isof.Dgdλ[i][j]
+			Mb[i][j] = o.Isof.DgdL[i][j]
 		}
 	}
 	// no hardening yet

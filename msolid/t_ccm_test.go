@@ -14,12 +14,6 @@ import (
 
 func Test_ccm01(tst *testing.T) {
 
-	defer func() {
-		if err := recover(); err != nil {
-			io.Pfred("error = %v\n", err)
-		}
-	}()
-
 	//verbose()
 	chk.PrintTitle("ccm01")
 
@@ -77,9 +71,9 @@ func Test_ccm01(tst *testing.T) {
 		pth.Sx = []float64{-1}
 		pth.Sy = []float64{-2}
 		pth.Sz = []float64{-1}
-		pth.Ex = []float64{0, 0, 0.001, -0.004}  //, -0.005}
-		pth.Ey = []float64{0, -0.005, 0, -0.002} //, -0.005}
-		pth.Ez = []float64{0, 0, 0.001, -0.004}  //, -0.005}
+		pth.Ex = []float64{0, 0, 0.001, -0.004}  //, -0.0045}
+		pth.Ey = []float64{0, -0.005, 0, -0.002} //, -0.0045}
+		pth.Ez = []float64{0, 0, 0.001, -0.004}  //, -0.0045}
 		//pth.Ex = []float64{0, -0.0033333333333333335, -0.0028333333333333335}
 		//pth.Ey = []float64{0, -0.0033333333333333335, -0.0028333333333333335}
 		//pth.Ez = []float64{0, -0.0033333333333333335, -0.005333333333333334}

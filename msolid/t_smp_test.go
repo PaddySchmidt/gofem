@@ -14,12 +14,6 @@ import (
 
 func Test_smp01(tst *testing.T) {
 
-	defer func() {
-		if err := recover(); err != nil {
-			io.Pfred("error = %v\n", err)
-		}
-	}()
-
 	//verbose()
 	chk.PrintTitle("smp01")
 
@@ -55,6 +49,7 @@ func Test_smp01(tst *testing.T) {
 	drv.CheckD = true
 	//drv.CheckD = false
 	drv.TolD = 1e-3
+	//drv.TolD = 10.0
 	drv.VerD = io.Verbose // verbose
 	if err != nil {
 		tst.Errorf("test failed: %v\n", err)
@@ -74,8 +69,8 @@ func Test_smp01(tst *testing.T) {
 	niout := 1
 	noise := 0.0
 	var pth Path
-	if true {
-		//if false {
+	//if true {
+	if false {
 		err = pth.SetPQstrain(ndim, nincs, niout, K, G, p0, DP, DQ, noise)
 		if err != nil {
 			tst.Errorf("test failed: %v\n", err)
@@ -83,10 +78,10 @@ func Test_smp01(tst *testing.T) {
 		}
 	} else {
 		pth.Sx = []float64{-1}
-		pth.Sy = []float64{-2}
+		pth.Sy = []float64{-1}
 		pth.Sz = []float64{-1}
 		pth.Ex = []float64{0, 0, 0.001, -0.004}
-		pth.Ey = []float64{0, -0.006, 0, -0.002}
+		pth.Ey = []float64{0, -0.007, 0, -0.002}
 		pth.Ez = []float64{0, 0, 0.001, -0.004}
 		//pth.Ex = []float64{0, -0.0033333333333333335, -0.0028333333333333335}
 		//pth.Ey = []float64{0, -0.0033333333333333335, -0.0028333333333333335}

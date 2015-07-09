@@ -17,9 +17,6 @@ import (
 type PrincStrainsUp struct {
 
 	// constants
-	Pert  float64 // perturbation values
-	EvTol float64 // tolerance to detect repeated eigenvalues
-	Zero  float64 // minimum λ to be considered zero
 	Fzero float64 // zero yield function value
 	Nsig  int     // number of stress components
 
@@ -76,11 +73,6 @@ type PrincStrainsUp struct {
 func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) {
 
 	// constants
-	//o.Pert = tsr.EV_PERT
-	o.Pert = 1e-5
-	//o.Pert = 1e-9
-	o.EvTol = tsr.EV_EVTOL
-	o.Zero = tsr.EV_ZERO
 	o.Fzero = 1e-9
 	o.Nsig = 2 * ndim
 
@@ -158,11 +150,6 @@ func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int) (er
 	copy(s.EpsTr, s.EpsE)
 
 	// eigenvalues/projectors of trial elastic strain
-	// Note: EpsTr is modified
-	_, err = tsr.M_FixZeroOrRepeated(o.Lεetr, s.EpsTr, o.Pert, o.EvTol, o.Zero)
-	if err != nil {
-		return
-	}
 	err = tsr.M_EigenValsProjsNum(o.P, o.Lεetr, s.EpsTr)
 	if err != nil {
 		return
@@ -257,19 +244,17 @@ func (o PrincStrainsUp) CalcD(D [][]float64, s *State) (err error) {
 	}
 
 	// eigenvalues/projectors of trial elastic strain
-	// Note: EpsTr is modified
-	_, err = tsr.M_FixZeroOrRepeated(o.Lεetr, s.EpsTr, o.Pert, o.EvTol, o.Zero)
-	if err != nil {
-		return
-	}
 	err = tsr.M_EigenValsProjsNum(o.P, o.Lεetr, s.EpsTr)
 	if err != nil {
 		return
 	}
 
 	// derivatives of eigenprojectors w.r.t trial elastic strains
-	err = tsr.M_EigenProjsDeriv(o.dPdT, s.EpsTr, o.Lεetr, o.P, o.Zero)
+	err = tsr.M_EigenProjsDerivAuto(o.dPdT, s.EpsTr, o.Lεetr, o.P)
 	if err != nil {
+		io.Pforan("EpsTr = %v\n", s.EpsTr)
+		io.Pforan("Lεetr = %v\n", o.Lεetr)
+		la.PrintMat("P", o.P, "%10g", false)
 		return
 	}
 
