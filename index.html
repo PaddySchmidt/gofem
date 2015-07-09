@@ -38,6 +38,8 @@
 
 <ul>
 <li>
+<strong>ana</strong>      analytical solutions</li>
+<li>
 <strong>shp</strong>      shape structures and quadrature points</li>
 <li>
 <strong>inp</strong>      input data structures. simulation, materials, meshes</li>
@@ -55,14 +57,19 @@
 <strong>out</strong>      results analyses and plotting</li>
 </ul>
 
-<p>Gofem is developed in/for Debian systems at the moment. It depends on <a href="https://github.com/cpmech/gosl">Gosl that is available here</a>. See also <a href="http://cpmech.github.io/gosl">http://cpmech.github.io/gosl</a></p>
-
 <h3>
 <a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h3>
 
-<p>After installing Go (golang) and <a href="https://github.com/cpmech/gosl">Gosl</a>, type (don't forget the three dots):</p>
+<p>Gofem is developed in/for Debian systems at the moment. It depends on <a href="https://github.com/cpmech/gosl">Gosl that is available here</a>. See also <a href="http://cpmech.github.io/gosl">http://cpmech.github.io/gosl</a></p>
 
-<pre><code>go get github.com/cpmech/gofem/...
+<p>After installing Go (golang) and <a href="https://github.com/cpmech/gosl">Gosl</a>, use the type the following commands</p>
+
+<pre><code>
+mkdir -p $GOPATH/src/github.com/cpmech
+cd $GOPATH/src/github.com/cpmech
+git clone https://github.com/cpmech/gofem.git
+cd gofem
+./all.bash
 </code></pre>
 
 <h3>
