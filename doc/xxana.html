@@ -51,6 +51,9 @@ package ana implements analytical solutions
 <p>
 package ana implements analytical solutions
 </p>
+<p>
+package ana implements analytical solutions
+</p>
 
 			</div>
 		</div>
@@ -68,6 +71,9 @@ package ana implements analytical solutions
 			<dl>
 			
 			
+			
+				
+				<dd><a href="#PolarStresses">func PolarStresses(x, y, sx, sy, sxy float64) (r, sr, st, srt float64)</a></dd>
 			
 			
 				
@@ -88,17 +94,29 @@ package ana implements analytical solutions
 				
 			
 				
-				<dd><a href="#Hill">type Hill</a></dd>
+				<dd><a href="#PressCylin">type PressCylin</a></dd>
 				
 				
 					
-					<dd>&nbsp; &nbsp; <a href="#Hill.Getc">func (o Hill) Getc() float64</a></dd>
+					<dd>&nbsp; &nbsp; <a href="#PressCylin.CalcPressDisp">func (o PressCylin) CalcPressDisp(np int) (P, Ub []float64)</a></dd>
 				
 					
-					<dd>&nbsp; &nbsp; <a href="#Hill.Init">func (o *Hill) Init(prms fun.Prms)</a></dd>
+					<dd>&nbsp; &nbsp; <a href="#PressCylin.CalcStresses">func (o PressCylin) CalcStresses(Pvals []float64, nr int) (R []float64, Sr, St [][]float64)</a></dd>
 				
 					
-					<dd>&nbsp; &nbsp; <a href="#Hill.Sig">func (o Hill) Sig(c float64, R, SR, ST []float64)</a></dd>
+					<dd>&nbsp; &nbsp; <a href="#PressCylin.Calc_c">func (o *PressCylin) Calc_c(P float64) float64</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#PressCylin.ElastOuterU">func (o PressCylin) ElastOuterU(P float64) (ub float64)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#PressCylin.Init">func (o *PressCylin) Init(prms fun.Prms)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#PressCylin.Plastic">func (o PressCylin) Plastic(c float64) (P, ub float64)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#PressCylin.Stresses">func (o PressCylin) Stresses(c, r float64) (sr, st float64)</a></dd>
 				
 			
 			
@@ -113,6 +131,8 @@ package ana implements analytical solutions
 			<span style="font-size:90%">
 			
 				<a href="/src/github.com/cpmech/gofem/ana/constantstress.go">constantstress.go</a>
+			
+				<a href="/src/github.com/cpmech/gofem/ana/polar_stresses.go">polar_stresses.go</a>
 			
 				<a href="/src/github.com/cpmech/gofem/ana/pressurised_cylinder.go">pressurised_cylinder.go</a>
 			
@@ -161,6 +181,19 @@ package ana implements analytical solutions
 
 		
 		
+		
+			
+			
+			<h2 id="PolarStresses">func <a href="https://github.com/cpmech/gofem/blob/master/ana/polar_stresses.go?s=350:420#L2">PolarStresses</a></h2>
+			<pre>func PolarStresses(x, y, sx, sy, sxy <a href="/pkg/builtin/#float64">float64</a>) (r, sr, st, srt <a href="/pkg/builtin/#float64">float64</a>)</pre>
+			<p>
+PolarStresses computes stress components w.r.t polar system from given
+Cartesian components
+</p>
+
+			
+			
+
 		
 		
 			
@@ -245,18 +278,35 @@ Solution computes solution
 		
 			
 			
-			<h2 id="Hill">type <a href="https://github.com/cpmech/gofem/blob/master/ana/pressurised_cylinder.go?s=782:1104#L20">Hill</a></h2>
-			<pre>type Hill struct {
+			<h2 id="PressCylin">type <a href="https://github.com/cpmech/gofem/blob/master/ana/pressurised_cylinder.go?s=855:1299#L21">PressCylin</a></h2>
+			<pre>type PressCylin struct {
     E <a href="/pkg/builtin/#float64">float64</a> <span class="comment">// Young&#39;s modulus</span>
 
-    P <a href="/pkg/builtin/#float64">float64</a> <span class="comment">// Pressure prescribed on the inner surface</span>
+    Y    <a href="/pkg/builtin/#float64">float64</a> <span class="comment">// TODO</span>
+    P0   <a href="/pkg/builtin/#float64">float64</a> <span class="comment">// Pressure at the elastic/plastic transition (TODO: check this)</span>
+    Plim <a href="/pkg/builtin/#float64">float64</a> <span class="comment">// limiting pressure</span>
 
-    Y    <a href="/pkg/builtin/#float64">float64</a>
-    P0   <a href="/pkg/builtin/#float64">float64</a>
-    Plim <a href="/pkg/builtin/#float64">float64</a>
+    <span class="comment">// auxiliary</span>
+    P_fx <a href="/pkg/builtin/#float64">float64</a> <span class="comment">// P value to be passed to fx function</span>
     <span class="comment">// contains filtered or unexported fields</span>
 }</pre>
-			
+			<p>
+PressCylin implements the constant-stress solution to a simple
+linear elastic plane-strain problem -- Hill&#39;s solution
+</p>
+<pre>        , - - ,
+    , &#39;         &#39; ,
+  ,                 ,
+ ,      .-&#39;&#39;&#39;-.      ,
+,      / ↖ ↑ ↗ \      ,
+,     |  ← P →  |     ,
+,      \ ↙ ↓ ↘ /      ,
+ ,      `-...-&#39;      ,
+  ,                 ,
+    ,            , &#39;
+      &#39; - , ,  &#39;
+</pre>
+
 
 			
 
@@ -270,16 +320,52 @@ Solution computes solution
 
 			
 				
-				<h3 id="Hill.Getc">func (Hill) <a href="https://github.com/cpmech/gofem/blob/master/ana/pressurised_cylinder.go?s=2231:2259#L88">Getc</a></h3>
-				<pre>func (o <a href="#Hill">Hill</a>) Getc() <a href="/pkg/builtin/#float64">float64</a></pre>
+				<h3 id="PressCylin.CalcPressDisp">func (PressCylin) <a href="https://github.com/cpmech/gofem/blob/master/ana/pressurised_cylinder.go?s=3345:3404#L117">CalcPressDisp</a></h3>
+				<pre>func (o <a href="#PressCylin">PressCylin</a>) CalcPressDisp(np <a href="/pkg/builtin/#int">int</a>) (P, Ub []<a href="/pkg/builtin/#float64">float64</a>)</pre>
+				<p>
+CalcLoadDisp returns the internal pressure and outer displacements for
+plotting the load-displacement graph
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="PressCylin.CalcStresses">func (PressCylin) <a href="https://github.com/cpmech/gofem/blob/master/ana/pressurised_cylinder.go?s=3726:3817#L137">CalcStresses</a></h3>
+				<pre>func (o <a href="#PressCylin">PressCylin</a>) CalcStresses(Pvals []<a href="/pkg/builtin/#float64">float64</a>, nr <a href="/pkg/builtin/#int">int</a>) (R []<a href="/pkg/builtin/#float64">float64</a>, Sr, St [][]<a href="/pkg/builtin/#float64">float64</a>)</pre>
 				
 				
 				
 				
 			
 				
-				<h3 id="Hill.Init">func (*Hill) <a href="https://github.com/cpmech/gofem/blob/master/ana/pressurised_cylinder.go?s=1141:1175#L37">Init</a></h3>
-				<pre>func (o *<a href="#Hill">Hill</a>) Init(prms <a href="/pkg/github.com/cpmech/gosl/fun/">fun</a>.<a href="/pkg/github.com/cpmech/gosl/fun/#Prms">Prms</a>)</pre>
+				<h3 id="PressCylin.Calc_c">func (*PressCylin) <a href="https://github.com/cpmech/gofem/blob/master/ana/pressurised_cylinder.go?s=2497:2543#L90">Calc_c</a></h3>
+				<pre>func (o *<a href="#PressCylin">PressCylin</a>) Calc_c(P <a href="/pkg/builtin/#float64">float64</a>) <a href="/pkg/builtin/#float64">float64</a></pre>
+				<p>
+Calc_c computes the elastic/plastic transition zone
+TODO: check what&#39;s &#39;c&#39; exactly
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="PressCylin.ElastOuterU">func (PressCylin) <a href="https://github.com/cpmech/gofem/blob/master/ana/pressurised_cylinder.go?s=2278:2333#L83">ElastOuterU</a></h3>
+				<pre>func (o <a href="#PressCylin">PressCylin</a>) ElastOuterU(P <a href="/pkg/builtin/#float64">float64</a>) (ub <a href="/pkg/builtin/#float64">float64</a>)</pre>
+				<p>
+ElastOuterU computes the elastic solution for the radial displacement
+at the outer surface
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="PressCylin.Init">func (*PressCylin) <a href="https://github.com/cpmech/gofem/blob/master/ana/pressurised_cylinder.go?s=1336:1376#L41">Init</a></h3>
+				<pre>func (o *<a href="#PressCylin">PressCylin</a>) Init(prms <a href="/pkg/github.com/cpmech/gosl/fun/">fun</a>.<a href="/pkg/github.com/cpmech/gosl/fun/#Prms">Prms</a>)</pre>
 				<p>
 Init initialises this structure
 </p>
@@ -289,9 +375,24 @@ Init initialises this structure
 				
 			
 				
-				<h3 id="Hill.Sig">func (Hill) <a href="https://github.com/cpmech/gofem/blob/master/ana/pressurised_cylinder.go?s=3113:3162#L126">Sig</a></h3>
-				<pre>func (o <a href="#Hill">Hill</a>) Sig(c <a href="/pkg/builtin/#float64">float64</a>, R, SR, ST []<a href="/pkg/builtin/#float64">float64</a>)</pre>
+				<h3 id="PressCylin.Plastic">func (PressCylin) <a href="https://github.com/cpmech/gofem/blob/master/ana/pressurised_cylinder.go?s=2006:2060#L75">Plastic</a></h3>
+				<pre>func (o <a href="#PressCylin">PressCylin</a>) Plastic(c <a href="/pkg/builtin/#float64">float64</a>) (P, ub <a href="/pkg/builtin/#float64">float64</a>)</pre>
+				<p>
+Plastic computes the pressure corresponding to c and the radial displacment
+at the outer surface
+</p>
+
 				
+				
+				
+			
+				
+				<h3 id="PressCylin.Stresses">func (PressCylin) <a href="https://github.com/cpmech/gofem/blob/master/ana/pressurised_cylinder.go?s=2807:2866#L101">Stresses</a></h3>
+				<pre>func (o <a href="#PressCylin">PressCylin</a>) Stresses(c, r <a href="/pkg/builtin/#float64">float64</a>) (sr, st <a href="/pkg/builtin/#float64">float64</a>)</pre>
+				<p>
+Stresses compute the radial and tangential stresses
+</p>
+
 				
 				
 				

@@ -318,18 +318,29 @@ LogModels prints to log information on existent and allocated Models
 		
 			
 			
-			<h2 id="Plot">func <a href="https://github.com/cpmech/gofem/blob/master/mreten/plot.go?s=294:387#L3">Plot</a></h2>
+			<h2 id="Plot">func <a href="https://github.com/cpmech/gofem/blob/master/mreten/plot.go?s=584:677#L8">Plot</a></h2>
 			<pre>func Plot(mdl <a href="#Model">Model</a>, pc0, sl0, pcf <a href="/pkg/builtin/#float64">float64</a>, npts <a href="/pkg/builtin/#int">int</a>, args1, args2, label <a href="/pkg/builtin/#string">string</a>) (err <a href="/pkg/builtin/#error">error</a>)</pre>
-			
+			<p>
+Plot plots retention model
+</p>
+<pre>args1 -- arguments for model computed by solving differential equation; e.g. &#34;&#39;b*-&#39;&#34;
+         if args1 == &#34;&#34;, plot is skiped
+args2 -- arguments for model computed by directly calling sl(pc), if available
+         if args2 == &#34;&#34;, plot is skiped
+</pre>
+
 			
 			
 
 		
 			
 			
-			<h2 id="PlotEnd">func <a href="https://github.com/cpmech/gofem/blob/master/mreten/plot.go?s=947:970#L29">PlotEnd</a></h2>
+			<h2 id="PlotEnd">func <a href="https://github.com/cpmech/gofem/blob/master/mreten/plot.go?s=1347:1370#L39">PlotEnd</a></h2>
 			<pre>func PlotEnd(show <a href="/pkg/builtin/#bool">bool</a>)</pre>
-			
+			<p>
+PlotEnd ends plot and show figure, if show==true
+</p>
+
 			
 			
 
