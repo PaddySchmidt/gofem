@@ -5,8 +5,9 @@
 package fem
 
 import (
-	"github.com/cpmech/gosl/chk"
 	"testing"
+
+	"github.com/cpmech/gosl/chk"
 )
 
 func Test_phi01(tst *testing.T) {
