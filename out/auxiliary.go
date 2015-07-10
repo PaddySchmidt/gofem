@@ -4,6 +4,22 @@
 
 package out
 
+import "github.com/cpmech/gosl/utl"
+
+// CombineEidIps combines eids and ips(ids)
+func CombineEidIps(eids, ips []int) (eids_ips [][]int) {
+	eids_ips = utl.IntsAlloc(len(eids)*len(ips), 2)
+	k := 0
+	for _, eid := range eids {
+		for _, ip := range ips {
+			eids_ips[k][0] = eid
+			eids_ips[k][1] = ip
+			k++
+		}
+	}
+	return
+}
+
 // ParseKey parses key like "duxdt" returning "ux" and time derivative number
 //  Output: {key, number-of-time-derivatives}
 //  Examples:  "ux"      => "ux", 0

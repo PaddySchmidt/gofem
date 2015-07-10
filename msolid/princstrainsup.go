@@ -25,6 +25,7 @@ type PrincStrainsUp struct {
 	LineS    float64 // use linesearch
 	DbgShowR bool    // show residuals during iterations (debugging only)
 	DbgOn    bool    // show debugging results
+	DbgPlot  bool    // plot debugging results
 	DbgEid   int     // debugging element Id
 	DbgIpId  int     // debugging integration point Id
 
@@ -76,27 +77,46 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 	o.Fzero = 1e-9
 	o.Nsig = 2 * ndim
 
+	// tolerances
+	atol, rtol, ftol := 1e-8, 1e-8, 1e-9
+
 	// flags
 	o.Fcoef = 1.0
 	o.ChkJacTol = 1e-4
+
+	// read parameters
 	for _, p := range prms {
 		switch p.N {
+
+		// tolerances
+		case "atol":
+			atol = p.V
+		case "rtol":
+			rtol = p.V
+		case "ftol":
+			ftol = p.V
+
+			// flags
 		case "fcoef":
 			o.Fcoef = p.V
 		case "lineS":
 			o.LineS = p.V
-		case "dbgShowR":
-			o.DbgShowR = p.V > 0
-		case "dbgOn":
-			o.DbgOn = p.V > 0
-		case "dbgEid":
-			o.DbgEid = int(p.V)
-		case "dbgIpid":
-			o.DbgIpId = int(p.V)
 		case "chkJac":
 			o.ChkJac = p.V > 0
 		case "chkSilent":
 			o.ChkSilent = p.V > 0
+
+			// debugging
+		case "dbgShowR":
+			o.DbgShowR = p.V > 0
+		case "dbgOn":
+			o.DbgOn = p.V > 0
+		case "dbgPlot":
+			o.DbgPlot = p.V > 0
+		case "dbgEid":
+			o.DbgEid = int(p.V)
+		case "dbgIpid":
+			o.DbgIpId = int(p.V)
 		}
 	}
 
@@ -130,7 +150,12 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 
 	// nonlinear solver
 	useDn, numJ := true, false
-	o.nls.Init(4+o.Nalp, o.ffcn, nil, o.JfcnD, useDn, numJ, map[string]float64{"lSearch": o.LineS})
+	o.nls.Init(4+o.Nalp, o.ffcn, nil, o.JfcnD, useDn, numJ, map[string]float64{
+		"lSearch": o.LineS,
+		"atol":    atol,
+		"rtol":    rtol,
+		"ftol":    ftol,
+	})
 	o.nls.ChkConv = false
 	return
 }
@@ -205,10 +230,14 @@ func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int) (er
 	}
 	err = o.nls.Solve(o.x, silent)
 	if err != nil {
-		//if o.DbgOn {
-		//o.dbg_plot(eid, ipid)
-		//}
+		if o.DbgOn {
+			o.dbg_plot(eid, ipid)
+		}
 		return
+	} else {
+		if o.DbgOn && o.DbgPlot {
+			o.dbg_plot(eid, ipid)
+		}
 	}
 
 	// check Jacobian again
@@ -328,6 +357,18 @@ func (o PrincStrainsUp) JfcnD(J [][]float64, x []float64) (err error) {
 	εe, α, Δγ := x[:3], x[3:3+o.Nalp], x[3+o.Nalp]
 	o.Mdl.E_CalcSig(o.Lσ, εe)
 	err = o.Mdl.L_SecondDerivs(o.N, o.Nb, o.A, o.h, o.Mb, o.a, o.b, o.c, o.Lσ, α)
+	/*
+		io.Pfcyan("\nN  = %v\n", o.N)
+		io.Pfcyan("Nb = %v\n", o.Nb)
+		io.Pfcyan("A  = %v\n", o.A)
+		io.Pfcyan("h  = %v\n", o.h)
+		io.Pfcyan("Mb = %v\n", o.Mb)
+		io.Pfcyan("a  = %v\n", o.a)
+		io.Pfcyan("b  = %v\n", o.b)
+		io.Pfcyan("c  = %v\n", o.c)
+		io.Pfcyan("Lσ = %v\n", o.Lσ)
+		io.Pfcyan("α  = %v\n", α)
+	*/
 	if err != nil {
 		return
 	}
@@ -354,6 +395,8 @@ func (o PrincStrainsUp) calcJafterDerivs(J [][]float64, εe, α []float64, Δγ 
 			}
 		}
 	}
+	//io.Pforan("Ne = %v\n", o.Ne)
+	//io.Pforan("Mbe = %v\n", o.Mbe)
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 3; j++ {
 			J[i][j] = tsr.IIm[i][j] + Δγ*o.Mbe[i][j]
@@ -365,6 +408,7 @@ func (o PrincStrainsUp) calcJafterDerivs(J [][]float64, εe, α []float64, Δγ 
 		J[i][3+o.Nalp] = o.Nb[i]
 		J[3+o.Nalp][i] = o.Ne[i] / o.Fcoef
 	}
+	//io.Pforan("Fcoef = %v\n", o.Fcoef)
 	for i := 0; i < o.Nalp; i++ {
 		for j := 0; j < o.Nalp; j++ {
 			J[3+i][3+j] = tsr.IIm[i][j] - Δγ*o.c[i][j]
@@ -413,6 +457,7 @@ func (o PrincStrainsUp) dbg_plot(eid, ipid int) {
 	if eid == o.DbgEid && ipid == o.DbgIpId {
 		var plr Plotter
 		plr.SetFig(false, false, 1.5, 400, "/tmp", io.Sf("fig_stress_eid%d_ipid%d", eid, ipid))
+		plr.SetModel(o.Mdl)
 		plr.PreCor = o.DbgPco
 		plr.Plot([]string{"p,q,ys", "oct,ys"}, o.DbgRes, o.DbgSts, true, true)
 	}
