@@ -38,9 +38,9 @@ type Model interface {
 
 // Small defines rate type solid models for small strain analyses
 type Small interface {
-	Update(s *State, ε, Δε []float64, eid, ipid int) error // updates stresses for given strains
-	CalcD(D [][]float64, s *State, firstIt bool) error     // computes D = dσ_new/dε_new consistent with StressUpdate
-	ContD(D [][]float64, s *State) error                   // computes D = dσ_new/dε_new continuous
+	Update(s *State, ε, Δε []float64, eid, ipid int, time float64) error // updates stresses for given strains
+	CalcD(D [][]float64, s *State, firstIt bool) error                   // computes D = dσ_new/dε_new consistent with StressUpdate
+	ContD(D [][]float64, s *State) error                                 // computes D = dσ_new/dε_new continuous
 }
 
 // Large defines rate type solid models for large deformation analyses

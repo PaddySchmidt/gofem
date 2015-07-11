@@ -419,7 +419,7 @@ func (o *ElemU) Update(sol *Solution) (ok bool) {
 		}
 
 		// call model update => update stresses
-		if LogErr(o.MdlSmall.Update(o.States[idx], o.ε, o.Δε, o.Id(), idx), io.Sf("Update (eid=%d, ip=%d)\nERROR: Update Δε=%v\nERROR: Update", o.Id(), idx, o.Δε)) {
+		if LogErr(o.MdlSmall.Update(o.States[idx], o.ε, o.Δε, o.Id(), idx, sol.T), io.Sf("Update (eid=%d, ip=%d)\nERROR: Update Δε=%v\nERROR: Update", o.Id(), idx, o.Δε)) {
 			return
 		}
 	}

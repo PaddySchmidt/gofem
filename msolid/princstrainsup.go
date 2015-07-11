@@ -5,6 +5,8 @@
 package msolid
 
 import (
+	"math"
+
 	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/la"
@@ -28,6 +30,7 @@ type PrincStrainsUp struct {
 	DbgPlot  bool    // plot debugging results
 	DbgEid   int     // debugging element Id
 	DbgIpId  int     // debugging integration point Id
+	DbgTime  float64 // -1 => all times
 
 	// model
 	Mdl   EPmodel // elastoplastic model
@@ -117,6 +120,8 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 			o.DbgEid = int(p.V)
 		case "dbgIpid":
 			o.DbgIpId = int(p.V)
+		case "dbgTime":
+			o.DbgTime = p.V
 		}
 	}
 
@@ -161,7 +166,7 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 }
 
 // Update updates state
-func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int) (err error) {
+func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int, time float64) (err error) {
 
 	// debugging
 	if o.DbgOn {
@@ -231,12 +236,12 @@ func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int) (er
 	err = o.nls.Solve(o.x, silent)
 	if err != nil {
 		if o.DbgOn {
-			o.dbg_plot(eid, ipid)
+			o.dbg_plot(eid, ipid, time)
 		}
 		return
 	} else {
 		if o.DbgOn && o.DbgPlot {
-			o.dbg_plot(eid, ipid)
+			o.dbg_plot(eid, ipid, time)
 		}
 	}
 
@@ -453,8 +458,27 @@ func (o *PrincStrainsUp) dbg_end(s *State, ε []float64, eid, ipid int) func() {
 	return func() {}
 }
 
-func (o PrincStrainsUp) dbg_plot(eid, ipid int) {
+func (o PrincStrainsUp) dbg_plot(eid, ipid int, time float64) {
 	if eid == o.DbgEid && ipid == o.DbgIpId {
+
+		// skip if not selected time
+		if o.DbgTime > -1 {
+			if math.Abs(time-o.DbgTime) > 1e-7 {
+				return
+			}
+		}
+
+		// check Jacobian
+		var cnd float64
+		io.PfYel("\nchecking Jacobian: eid=%d ipid=%d\n", eid, ipid)
+		cnd, err := o.nls.CheckJ(o.x, o.ChkJacTol, true, o.ChkSilent)
+		if err != nil {
+			io.PfRed("CheckJ failed:\n%v\n", err)
+		}
+		io.PfYel("after: cnd(J) = %v\n\n", cnd)
+		return
+
+		// plot
 		var plr Plotter
 		plr.SetFig(false, false, 1.5, 400, "/tmp", io.Sf("fig_stress_eid%d_ipid%d", eid, ipid))
 		plr.SetModel(o.Mdl)

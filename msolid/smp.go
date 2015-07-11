@@ -175,8 +175,8 @@ func (o SmpInvs) InitIntVars(σ []float64) (s *State, err error) {
 }
 
 // Update updates stresses for given strains
-func (o *SmpInvs) Update(s *State, ε, Δε []float64, eid, ipid int) (err error) {
-	return o.PU.Update(s, ε, Δε, eid, ipid)
+func (o *SmpInvs) Update(s *State, ε, Δε []float64, eid, ipid int, time float64) (err error) {
+	return o.PU.Update(s, ε, Δε, eid, ipid, time)
 }
 
 // CalcD computes D = dσ_new/dε_new consistent with StressUpdate
@@ -234,7 +234,7 @@ func (o SmpInvs) YieldFuncs(s *State) []float64 {
 
 // ElastUpdate updates state with an elastic response
 func (o SmpInvs) ElastUpdate(s *State, ε []float64) {
-	o.HE.Update(s, ε, nil, 0, 0)
+	o.HE.Update(s, ε, nil, 0, 0, 0)
 }
 
 // ElastD returns continuum elastic D

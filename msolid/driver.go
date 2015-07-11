@@ -171,7 +171,7 @@ func (o *Driver) Run(pth *Path) (err error) {
 
 				// update stresses
 				o.Res[k].Set(o.Res[k-1])
-				err = sml.Update(o.Res[k], o.Eps[k], Δε, 0, 0)
+				err = sml.Update(o.Res[k], o.Eps[k], Δε, 0, 0, 0)
 				if err != nil {
 					if !o.Silent {
 						io.Pfred(_driver_err02, err)
@@ -208,7 +208,7 @@ func (o *Driver) Run(pth *Path) (err error) {
 									Δεtmp[l] = εnew[l] - εold[l]
 								}
 								stmp.Set(o.Res[k-1])
-								err = sml.Update(stmp, εnew, Δεtmp, 0, 0)
+								err = sml.Update(stmp, εnew, Δεtmp, 0, 0, 0)
 								if err != nil {
 									chk.Panic("cannot run Update for numerical derivative: %v", err)
 								}
