@@ -8,12 +8,18 @@ import (
 	"log"
 	"math"
 
-	"github.com/cpmech/gosl/fun"
+	"github.com/cpmech/gofem/inp"
+	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/la"
 )
 
+// RichardsonExtrap solves FEM problem implicitely and with Richardson's extrapolation
 type RichardsonExtrap struct {
+
+	// input
+	Doms []*Domain // domains
+	Sum  *Summary  // summary
 
 	// variables after big step
 	Y_big []float64 // primary variables
@@ -36,10 +42,25 @@ type RichardsonExtrap struct {
 	Δtcpy float64 // copy of Δt for divergence control
 }
 
-func (o *RichardsonExtrap) Init(d *Domain, Dt fun.Func) {
+// set factory
+func init() {
+	solverallocators["rex"] = func(doms []*Domain, sum *Summary) FEsolver {
+		solver := new(RichardsonExtrap)
+		solver.Init(doms, sum)
+		return solver
+	}
+}
 
-	// backup variables
-	o.Y_big = make([]float64, d.Ny)
+func (o *RichardsonExtrap) Init(doms []*Domain, sum *Summary) {
+
+	// check
+	if len(doms) != 1 {
+		chk.Panic("RichardsonExtrap works with one domain only for now")
+	}
+
+	// input
+	o.Doms = doms
+	o.Sum = sum
 
 	// auxiliary variables
 	o.nsteps = 0
@@ -53,13 +74,9 @@ func (o *RichardsonExtrap) Init(d *Domain, Dt fun.Func) {
 	o.ndiverg = 0
 	o.prevdiv = false
 	o.diverging = false
-
-	// time loop
-	o.Δt = Dt.F(0, nil)
-	o.Δtcpy = o.Δt
 }
 
-func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *float64, tf, tout float64, tidx *int) (ok bool) {
+func (o *RichardsonExtrap) Run(stg *inp.Stage) (ok bool) {
 
 	// stat
 	defer func() {
@@ -78,9 +95,24 @@ func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *floa
 	mmax := Global.Sim.Solver.REmmax
 	mfac := Global.Sim.Solver.REmfac
 
+	// time control
+	t := Global.Time
+	tf := stg.Control.Tf
+	tout := Global.TimeOut
+	tidx := Global.TimeIdx
+	defer func() {
+		Global.Time = t
+		Global.TimeOut = tout
+		Global.TimeIdx = tidx
+	}()
+
+	// domain and variables
+	d := o.Doms[0]
+	o.Y_big = make([]float64, d.Ny)
+
 	// time loop
-	t := *time
-	defer func() { *time = t }()
+	o.Δt = stg.Control.DtFunc.F(t, nil)
+	o.Δtcpy = o.Δt
 	var ΔtOld, rerrOld float64
 	for t < tf {
 
@@ -110,7 +142,7 @@ func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *floa
 
 		// single step with Δt
 		d.Sol.T = t + o.Δt
-		o.diverging, ok = run_iterations(t+o.Δt, o.Δt, d, s)
+		o.diverging, ok = run_iterations(t+o.Δt, o.Δt, d, o.Sum)
 		if !ok {
 			return
 		}
@@ -130,7 +162,7 @@ func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *floa
 
 		// 1st halved step
 		d.Sol.T = t + o.Δt/2.0
-		o.diverging, ok = run_iterations(t+o.Δt/2.0, o.Δt/2.0, d, s)
+		o.diverging, ok = run_iterations(t+o.Δt/2.0, o.Δt/2.0, d, o.Sum)
 		if !ok {
 			break
 		}
@@ -142,7 +174,7 @@ func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *floa
 
 		// 2nd halved step
 		d.Sol.T = t + o.Δt
-		o.diverging, ok = run_iterations(t+o.Δt, o.Δt/2.0, d, s)
+		o.diverging, ok = run_iterations(t+o.Δt, o.Δt/2.0, d, o.Sum)
 		if !ok {
 			break
 		}
@@ -175,12 +207,12 @@ func (o *RichardsonExtrap) Run(d *Domain, s *Summary, DtOut fun.Func, time *floa
 			}
 			//if true {
 			if t >= tout || o.laststep {
-				s.OutTimes = append(s.OutTimes, t)
-				if !d.Out(*tidx) {
+				o.Sum.OutTimes = append(o.Sum.OutTimes, t)
+				if !d.Out(tidx) {
 					return
 				}
-				tout += DtOut.F(t, nil)
-				*tidx += 1
+				tout += stg.Control.DtoFunc.F(t, nil)
+				tidx += 1
 			}
 
 			// reached final time

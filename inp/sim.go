@@ -111,6 +111,12 @@ type SolverData struct {
 	// constants
 	Eps float64 // smallest number satisfying 1.0 + ϵ > 1.0
 
+	// nonlinear solver type. e.g.:
+	//  "imp" -- implicit
+	//  "exp" -- explicit
+	//  "rex" -- Richardson's extrapolation
+	Type string `json:"type"` // nonlinear solver type: {imp, exp, rex} => implicit, explicit, Richardson extrapolation
+
 	// nonlinear solver
 	NmaxIt  int     `json:"nmaxit"`  // number of max iterations
 	Atol    float64 `json:"atol"`    // absolute tolerance
@@ -121,7 +127,6 @@ type SolverData struct {
 	NdvgMax int     `json:"ndvgmax"` // max number of continued divergence
 
 	// Richardson's extrapolation
-	RE       bool    // Richardson extrapolation is active
 	REnogus  bool    // Richardson extrapolation: no Gustafsson's step control
 	REnssmax int     // Richardson extrapolation: max number of substeps
 	REatol   float64 // Richardson extrapolation: absolute tolerance
@@ -156,6 +161,7 @@ func (o *SolverData) SetDefault() {
 	o.Eps = 1e-16
 
 	// nonlinear solver
+	o.Type = "imp"
 	o.NmaxIt = 20
 	o.Atol = 1e-6
 	o.Rtol = 1e-6

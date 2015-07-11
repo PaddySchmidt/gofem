@@ -21,7 +21,7 @@
     }
   ],
   "solver" : {
-    "RE" : true
+    "type" : "rex"
   },
   "stages" : [
     {
