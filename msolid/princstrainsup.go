@@ -23,6 +23,7 @@ type PrincStrainsUp struct {
 	Nsig  int     // number of stress components
 
 	// flags
+	Nbsmp    int     // number of divisions for bsmp
 	Fcoef    float64 // coefficient to normalise yield function
 	LineS    float64 // use linesearch
 	DbgShowR bool    // show residuals during iterations (debugging only)
@@ -84,6 +85,7 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 	atol, rtol, ftol := 1e-8, 1e-8, 1e-9
 
 	// flags
+	o.Nbsmp = 5
 	o.Fcoef = 1.0
 	o.ChkJacTol = 1e-4
 
@@ -100,6 +102,8 @@ func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) 
 			ftol = p.V
 
 			// flags
+		case "nbsmp":
+			o.Nbsmp = int(p.V)
 		case "fcoef":
 			o.Fcoef = p.V
 		case "lineS":
@@ -222,26 +226,22 @@ func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int, tim
 	}
 
 	// modify b
-	//bsmp := o.Mdl.Get_bsmp()
-	//if bsmp > 0 {
-	//o.Mdl.Set_bsmp(0)
-	//defer func() { o.Mdl.Set_bsmp(bsmp) }()
-	//}
-
-	// solve
-	silent := true
-	if o.DbgOn {
-		silent = o.dbg_silent(eid, ipid)
-	}
-	err = o.nls.Solve(o.x, silent)
-	if err != nil {
-		if o.DbgOn {
-			o.dbg_plot(eid, ipid, time)
+	bsmp := o.Mdl.Get_bsmp()
+	if bsmp > 0 && o.Nbsmp > 1 {
+		o.Mdl.Set_bsmp(0)
+		defer func() { o.Mdl.Set_bsmp(bsmp) }()
+		δb := bsmp / float64(o.Nbsmp-1)
+		for i := 0; i < o.Nbsmp; i++ {
+			b := float64(i) * δb
+			err = o.do_solve(b, eid, ipid, time)
+			if err != nil {
+				return
+			}
 		}
-		return
 	} else {
-		if o.DbgOn && o.DbgPlot {
-			o.dbg_plot(eid, ipid, time)
+		err = o.do_solve(bsmp, eid, ipid, time)
+		if err != nil {
+			return
 		}
 	}
 
@@ -269,7 +269,7 @@ func (o *PrincStrainsUp) Update(s *State, ε, Δε []float64, eid, ipid int, tim
 }
 
 // CalcD computes algorithmic tangent operator
-func (o PrincStrainsUp) CalcD(D [][]float64, s *State) (err error) {
+func (o *PrincStrainsUp) CalcD(D [][]float64, s *State) (err error) {
 
 	// elastic response
 	if !s.Loading {
@@ -338,8 +338,32 @@ func (o PrincStrainsUp) CalcD(D [][]float64, s *State) (err error) {
 	return
 }
 
+// auxiliary /////////////////////////////////////////////////////////////////////////////////////
+
+// do_solve solve nonlinear problem
+func (o *PrincStrainsUp) do_solve(bsmp float64, eid, ipid int, time float64) (err error) {
+	silent := true
+	if o.DbgOn {
+		silent = o.dbg_silent(eid, ipid)
+		if !silent {
+			io.PfYel("\n\neid=%d ipid=%d time=%g: running with bsmp=%g\n", eid, ipid, time, bsmp)
+		}
+	}
+	err = o.nls.Solve(o.x, silent)
+	if err != nil {
+		if o.DbgOn {
+			o.dbg_plot(eid, ipid, time)
+		}
+		return
+	}
+	if o.DbgOn && o.DbgPlot {
+		o.dbg_plot(eid, ipid, time)
+	}
+	return
+}
+
 // ffcn is the nonlinear solver function
-func (o PrincStrainsUp) ffcn(fx, x []float64) error {
+func (o *PrincStrainsUp) ffcn(fx, x []float64) error {
 	εe, α, Δγ := x[:3], x[3:3+o.Nalp], x[3+o.Nalp]
 	εetr := o.Lεetr
 	o.Mdl.E_CalcSig(o.Lσ, εe)
@@ -358,7 +382,7 @@ func (o PrincStrainsUp) ffcn(fx, x []float64) error {
 }
 
 // JfcnD is the nonlinear solver Jacobian: J = dfdx
-func (o PrincStrainsUp) JfcnD(J [][]float64, x []float64) (err error) {
+func (o *PrincStrainsUp) JfcnD(J [][]float64, x []float64) (err error) {
 	εe, α, Δγ := x[:3], x[3:3+o.Nalp], x[3+o.Nalp]
 	o.Mdl.E_CalcSig(o.Lσ, εe)
 	err = o.Mdl.L_SecondDerivs(o.N, o.Nb, o.A, o.h, o.Mb, o.a, o.b, o.c, o.Lσ, α)
@@ -383,7 +407,7 @@ func (o PrincStrainsUp) JfcnD(J [][]float64, x []float64) (err error) {
 }
 
 // calcJafterDerivs computes J after all derivatives and De have been computed
-func (o PrincStrainsUp) calcJafterDerivs(J [][]float64, εe, α []float64, Δγ float64) {
+func (o *PrincStrainsUp) calcJafterDerivs(J [][]float64, εe, α []float64, Δγ float64) {
 	for i := 0; i < 3; i++ {
 		o.Ne[i] = 0
 		for m := 0; m < o.Nalp; m++ {
@@ -426,7 +450,7 @@ func (o PrincStrainsUp) calcJafterDerivs(J [][]float64, εe, α []float64, Δγ 
 
 // debugging /////////////////////////////////////////////////////////////////////////////////////
 
-func (o PrincStrainsUp) dbg_silent(eid, ipid int) bool {
+func (o *PrincStrainsUp) dbg_silent(eid, ipid int) bool {
 	if eid == o.DbgEid && ipid == o.DbgIpId {
 		if o.DbgShowR {
 			return false
@@ -458,7 +482,7 @@ func (o *PrincStrainsUp) dbg_end(s *State, ε []float64, eid, ipid int) func() {
 	return func() {}
 }
 
-func (o PrincStrainsUp) dbg_plot(eid, ipid int, time float64) {
+func (o *PrincStrainsUp) dbg_plot(eid, ipid int, time float64) {
 	if eid == o.DbgEid && ipid == o.DbgIpId {
 
 		// skip if not selected time
@@ -476,7 +500,18 @@ func (o PrincStrainsUp) dbg_plot(eid, ipid int, time float64) {
 			io.PfRed("CheckJ failed:\n%v\n", err)
 		}
 		io.PfYel("after: cnd(J) = %v\n\n", cnd)
-		return
+		io.Pfcyan("\nN  = %v\n", o.N)
+		io.Pfcyan("Nb = %v\n", o.Nb)
+		io.Pfcyan("A  = %v\n", o.A)
+		io.Pfcyan("h  = %v\n", o.h)
+		io.Pfcyan("Mb = %v\n", o.Mb)
+		io.Pfcyan("a  = %v\n", o.a)
+		io.Pfcyan("b  = %v\n", o.b)
+		io.Pfcyan("c  = %v\n", o.c)
+		io.Pfcyan("Lσ = %v\n", o.Lσ)
+		io.Pforan("Ne = %v\n", o.Ne)
+		io.Pforan("Mbe = %v\n", o.Mbe)
+		io.Pforan("Fcoef = %v\n\n", o.Fcoef)
 
 		// plot
 		var plr Plotter
