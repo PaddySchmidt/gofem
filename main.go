@@ -8,6 +8,7 @@ import (
 	"flag"
 
 	"github.com/cpmech/gofem/fem"
+	"github.com/cpmech/gofem/inp"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/mpi"
@@ -15,6 +16,10 @@ import (
 )
 
 func main() {
+
+	// in put data
+	erasefiles := true
+	verbose := true
 
 	// catch errors
 	defer func() {
@@ -24,9 +29,21 @@ func main() {
 				for i := 8; i > 3; i-- {
 					chk.CallerInfo(i)
 				}
+
+				// print log file
+				if verbose {
+					buf, err := io.ReadFile(inp.LogFile.Name())
+					if err != nil {
+						io.Pfred("cannot read log file:%v\n", err)
+					}
+					io.Pfyel("\n%v\n", string(buf))
+				}
+
 				io.PfRed("ERROR: %v\n", err)
 			}
 		}
+		// make sure to flush log
+		defer fem.End()
 		mpi.Stop(false)
 	}()
 	mpi.Start(false)
@@ -54,8 +71,6 @@ func main() {
 	}
 
 	// other options
-	erasefiles := true
-	verbose := true
 	if len(flag.Args()) > 1 {
 		erasefiles = io.Atob(flag.Arg(1))
 	}
@@ -71,9 +86,6 @@ func main() {
 		chk.Panic("Start failed\n")
 		return
 	}
-
-	// make sure to flush log
-	defer fem.End()
 
 	// run simulation
 	if !fem.Run() {
