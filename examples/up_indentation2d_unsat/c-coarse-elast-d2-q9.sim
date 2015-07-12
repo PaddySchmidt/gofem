@@ -4,7 +4,7 @@
     "matfile" : "nmepaper.mat",
     "showR"   : false
   },
-  "plotF" : { "ti":0, "tf":4000, "np":101, "skip":["grav", "qtoA", "qtoB", "qtoC"] },
+  "plotF_" : { "ti":0, "tf":4000, "np":101, "skip":["grav", "qtoA", "qtoB", "qtoC"] },
   "functions" : [
     { "name":"grav", "type":"cte", "prms":[{"n":"c", "v":10}] },
     { "name":"qtoA", "type":"cte", "prms":[{"n":"c", "v":0}] },
