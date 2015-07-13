@@ -89,6 +89,6 @@ func main() {
 
 	// run simulation
 	if !fem.Run() {
-		io.PfRed("ERROR: cannot run simulation\n")
+		chk.Panic("Run failed\n")
 	}
 }
