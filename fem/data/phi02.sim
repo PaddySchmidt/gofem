@@ -12,7 +12,7 @@
   ],
   "regions" : [
     {
-      "mshfile" : "unitsquare4e.msh",
+      "mshfile" : "rectangle.msh",
       "elemsdata" : [
         { "tag":-1, "mat":"mat", "type":"phi" }
       ]
@@ -21,7 +21,12 @@
   "stages" : [
     {
       "desc" : "do nothing",
-      "initial" : { "fcn":"circle" }
+      "initial" : { "fcn":"circle", "dof":"h" },
+      "control" : {
+        "tf"    : 1,
+        "dt"    : 0.1,
+        "dtout" : 0.1
+      }
     }
   ]
 }

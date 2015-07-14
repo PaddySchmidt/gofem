@@ -33,7 +33,7 @@ func Test_phi01(tst *testing.T) {
 	 */
 
 	//verbose()
-	chk.PrintTitle("phi01a")
+	chk.PrintTitle("phi01")
 
 	// make sure to flush log
 	defer End()
@@ -86,15 +86,13 @@ func Test_phi01(tst *testing.T) {
 	}
 }
 
-func test_phi02(tst *testing.T) {
+func Test_phi02(tst *testing.T) {
 
 	//verbose()
-	chk.PrintTitle("phi01b")
-
-	// make sure to flush log
-	defer End()
+	chk.PrintTitle("phi02")
 
 	// run simulation
+	defer End()
 	if !Start("data/phi02.sim", true, chk.Verbose) {
 		tst.Errorf("test failed\n")
 		return
