@@ -301,6 +301,7 @@ type IniStressData struct {
 type InitialData struct {
 	Fcn  string `json:"fcn"`  // function F(t, x) is given; from functions database
 	File string `json:"file"` // file with values at each node is given; filename with path is provided
+	// TODO: tell which DOF is to be computed from Fcn
 }
 
 // ImportRes holds definitions for importing results from a previous simulation
