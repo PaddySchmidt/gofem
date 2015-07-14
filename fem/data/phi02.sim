@@ -21,7 +21,7 @@
   "stages" : [
     {
       "desc" : "do nothing",
-      "initial" : { "fcn":"circle", "dof":"h" },
+      "initial" : { "fcns":["circle"], "dofs":["h"] },
       "control" : {
         "tf"    : 1,
         "dt"    : 0.1,

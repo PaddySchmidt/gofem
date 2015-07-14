@@ -299,9 +299,9 @@ type IniStressData struct {
 
 // InitialData holds data for setting initial solution values such as Y, dYdt and d2Ydt2
 type InitialData struct {
-	Fcn  string `json:"fcn"`  // function F(t, x) is given; from functions database
-	File string `json:"file"` // file with values at each node is given; filename with path is provided
-	// TODO: tell which DOF is to be computed from Fcn
+	File string   `json:"file"` // file with values at each node is given; filename with path is provided
+	Fcns []string `json:"fcns"` // functions F(t, x) are given; from functions database
+	Dofs []string `json:"dofs"` // degrees of freedom corresponding to "fcns"
 }
 
 // ImportRes holds definitions for importing results from a previous simulation
