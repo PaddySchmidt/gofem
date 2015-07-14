@@ -4,7 +4,7 @@
     "matfile" : "phi.mat"
   },
   "functions" : [
-    { "name":"circle", "type":"halo", "prms":[
+    { "name":"circle", "type":"cdist", "prms":[
         {"n":"r",  "v":1.0},
         {"n":"xc", "v":2.5}, 
         {"n":"yc", "v":2.5} 
@@ -13,7 +13,6 @@
   "regions" : [
     {
       "mshfile" : "unitsquare4e.msh",
-      "initial" : { "fcn":"circle" },
       "elemsdata" : [
         { "tag":-1, "mat":"mat", "type":"phi" }
       ]
@@ -21,7 +20,8 @@
   ],
   "stages" : [
     {
-      "desc" : "do nothing"
+      "desc" : "do nothing",
+      "initial" : { "fcn":"circle" }
     }
   ]
 }

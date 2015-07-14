@@ -5,9 +5,11 @@
 package fem
 
 import (
+	"math"
 	"testing"
 
 	"github.com/cpmech/gosl/chk"
+	"github.com/cpmech/gosl/io"
 )
 
 func Test_phi01(tst *testing.T) {
@@ -75,60 +77,13 @@ func Test_phi01(tst *testing.T) {
 		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
 	})
 
-	/*
-		// check pmap
-		pmaps := [][]int{
-			{0, 1, 2, 3, 4, 5, 6, 7, 8},
-			{3, 2, 9, 10, 6, 11, 12, 13, 14},
-			{10, 9, 15, 16, 12, 17, 18, 19, 20},
-			{16, 15, 21, 22, 18, 23, 24, 25, 26},
-		}
-		for i, ele := range dom.Elems {
-			e := ele.(*ElemP)
-			io.Pforan("e%d.pmap = %v\n", e.Id(), e.Pmap)
-			chk.Ints(tst, "pmap", e.Pmap, pmaps[i])
-		}
-
-		// constraints
-		chk.IntAssert(len(dom.EssenBcs.Bcs), 3)
-		var ct_pl_eqs []int // equations with pl prescribed [sorted]
-		for _, c := range dom.EssenBcs.Bcs {
-			chk.IntAssert(len(c.Eqs), 1)
-			eq := c.Eqs[0]
-			io.Pforan("key=%v eq=%v\n", c.Key, eq)
-			switch c.Key {
-			case "pl":
-				ct_pl_eqs = append(ct_pl_eqs, eq)
-			default:
-				tst.Errorf("key %s is incorrect", c.Key)
-			}
-		}
-		sort.Ints(ct_pl_eqs)
-		chk.Ints(tst, "equations with pl prescribed", ct_pl_eqs, []int{0, 1, 4})
-
-		// initial values @ nodes
-		io.Pforan("initial values @ nodes\n")
-		for _, nod := range dom.Nodes {
-			z := nod.Vert.C[1]
-			eq := nod.Dofs[0].Eq
-			pl := dom.Sol.Y[eq]
-			plC, _, _ := Global.HydroSt.Calc(z)
-			chk.Scalar(tst, io.Sf("nod %3d : pl(@ %4g)= %6g", nod.Vert.Id, z, pl), 1e-17, pl, plC)
-		}
-
-		// intial values @ integration points
-		io.Pforan("initial values @ integration points\n")
-		for _, ele := range dom.Elems {
-			e := ele.(*ElemP)
-			for idx, ip := range e.IpsElem {
-				s := e.States[idx]
-				z := e.Shp.IpRealCoords(e.X, ip)[1]
-				_, ρLC, _ := Global.HydroSt.Calc(z)
-				chk.Scalar(tst, io.Sf("sl(@ %18g)= %18g", z, s.A_sl), 1e-17, s.A_sl, 1)
-				chk.Scalar(tst, io.Sf("ρL(@ %18g)= %18g", z, s.A_ρL), 1e-13, s.A_ρL, ρLC)
-			}
-		}
-	*/
+	// check initial values
+	r := 0.25
+	chk.Scalar(tst, "h @ nod 4", 1e-17, dom.Sol.Y[2], -r)
+	chk.Scalar(tst, "h @ nod 8", 1e-17, dom.Sol.Y[21], math.Sqrt(2)/2.0-r)
+	for _, eq := range []int{5, 6, 13, 17} {
+		chk.Scalar(tst, io.Sf("h @ eq %d", eq), 1e-17, dom.Sol.Y[eq], 0)
+	}
 }
 
 func test_phi02(tst *testing.T) {
