@@ -50,7 +50,6 @@ func init() {
 	is_nwl = map[string]bool{"nwlx": true, "nwly": true, "nwlz": true}
 	label2keys = map[string][]string{
 		"u": ukeys, "sig": skeys, "nwl": nwlkeys, "ex_nwl": nwlkeys,
-		"pl": plkeys, "pg": pgkeys, "fl": flkeys,
 	}
 }
 
@@ -130,6 +129,7 @@ func main() {
 		pvd[ykey] = new(bytes.Buffer)
 		geo[ykey] = new(bytes.Buffer)
 		vtu[ykey] = new(bytes.Buffer)
+		label2keys[ykey] = []string{ykey}
 	}
 	if len(out.Ipkeys) > 0 {
 		pvd["ips"] = new(bytes.Buffer)
