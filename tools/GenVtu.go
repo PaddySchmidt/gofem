@@ -123,20 +123,13 @@ func main() {
 		geo["u"] = new(bytes.Buffer)
 		vtu["u"] = new(bytes.Buffer)
 	}
-	if _, ok := out.Dom.YandC["fl"]; ok {
-		pvd["fl"] = new(bytes.Buffer)
-		geo["fl"] = new(bytes.Buffer)
-		vtu["fl"] = new(bytes.Buffer)
-	}
-	if _, ok := out.Dom.YandC["pl"]; ok {
-		pvd["pl"] = new(bytes.Buffer)
-		geo["pl"] = new(bytes.Buffer)
-		vtu["pl"] = new(bytes.Buffer)
-	}
-	if _, ok := out.Dom.YandC["pg"]; ok {
-		pvd["pg"] = new(bytes.Buffer)
-		geo["pg"] = new(bytes.Buffer)
-		vtu["pg"] = new(bytes.Buffer)
+	for ykey, _ := range out.Dom.Dof2Tnum {
+		if ykey == "ux" || ykey == "uy" || ykey == "uz" {
+			continue
+		}
+		pvd[ykey] = new(bytes.Buffer)
+		geo[ykey] = new(bytes.Buffer)
+		vtu[ykey] = new(bytes.Buffer)
 	}
 	if len(out.Ipkeys) > 0 {
 		pvd["ips"] = new(bytes.Buffer)
