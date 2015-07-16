@@ -51,7 +51,7 @@ func Test_spo751a(tst *testing.T) {
 	}
 
 	// allocate domain and others
-	if !Alloc() {
+	if !Alloc(true) {
 		tst.Errorf("Alloc failed\n")
 		return
 	}
@@ -188,7 +188,7 @@ func Test_spo751b(tst *testing.T) {
 
 func Test_spo751re(tst *testing.T) {
 
-	//verbose()
+	verbose()
 	chk.PrintTitle("spo751re. Richardson extrapolation")
 
 	// run simulation

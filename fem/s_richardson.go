@@ -199,7 +199,9 @@ func (o *RichardsonExtrap) Run(stg *inp.Stage) (ok bool) {
 			}
 			//if true {
 			if t >= tout || o.laststep {
-				Global.Summary.OutTimes = append(Global.Summary.OutTimes, t)
+				if Global.Summary != nil {
+					Global.Summary.OutTimes = append(Global.Summary.OutTimes, t)
+				}
 				if !d.Out(tidx) {
 					return
 				}

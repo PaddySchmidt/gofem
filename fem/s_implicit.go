@@ -122,7 +122,9 @@ func (o *SolverImplicit) Run(stg *inp.Stage) (runisok bool) {
 
 		// perform output
 		if t >= tout || lasttimestep {
-			Global.Summary.OutTimes = append(Global.Summary.OutTimes, t)
+			if Global.Summary != nil {
+				Global.Summary.OutTimes = append(Global.Summary.OutTimes, t)
+			}
 			for _, d := range Global.Domains {
 				//if true {
 				if false {
@@ -207,7 +209,9 @@ func run_iterations(t, Δt float64, d *Domain) (diverging, ok bool) {
 
 		// save residual
 		if Global.Stat {
-			Global.Summary.Resids.Append(it == 0, largFb)
+			if Global.Summary != nil {
+				Global.Summary.Resids.Append(it == 0, largFb)
+			}
 		}
 
 		// check largFb value

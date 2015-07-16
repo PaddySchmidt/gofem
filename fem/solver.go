@@ -169,7 +169,7 @@ func RunAll() (runisok bool) {
 	}()
 
 	// allocate domains, summary, solver
-	if !Alloc() {
+	if !Alloc(true) {
 		return
 	}
 
@@ -183,7 +183,7 @@ func RunAll() (runisok bool) {
 }
 
 // Alloc allocates domains, summary and solver structures
-func Alloc() (allocisok bool) {
+func Alloc(withSummary bool) (allocisok bool) {
 
 	// alloc domains
 	for _, reg := range Global.Sim.Regions {
@@ -198,8 +198,10 @@ func Alloc() (allocisok bool) {
 	}
 
 	// alloc summary
-	Global.Summary = new(Summary)
-	Global.Summary.OutTimes = []float64{Global.Time}
+	if withSummary {
+		Global.Summary = new(Summary)
+		Global.Summary.OutTimes = []float64{Global.Time}
+	}
 
 	// alloc solver
 	if alloc, ok := solverallocators[Global.Sim.Solver.Type]; ok {

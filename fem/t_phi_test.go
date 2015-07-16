@@ -42,7 +42,7 @@ func Test_phi01(tst *testing.T) {
 	}
 
 	// allocate domain and others
-	if !Alloc() {
+	if !Alloc(true) {
 		tst.Errorf("Alloc failed\n")
 		return
 	}

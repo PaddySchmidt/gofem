@@ -48,7 +48,7 @@ func Test_sg52a(tst *testing.T) {
 	}
 
 	// allocate domain and others
-	if !Alloc() {
+	if !Alloc(true) {
 		tst.Errorf("Alloc failed\n")
 		return
 	}
