@@ -9,7 +9,6 @@ import (
 	"github.com/cpmech/gofem/fem"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/gm"
-	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/utl"
 )
 
@@ -53,15 +52,6 @@ var (
 	Csplot *SplotDat   // current subplot
 )
 
-// End must be called at the end to flush log file
-func End() {
-	if err := recover(); err != nil {
-		io.PfRed("ERROR: %v\n", err)
-	} else {
-		fem.End()
-	}
-}
-
 // Start starts handling of results given a simulation input file
 func Start(simfnpath string, stageIdx, regionIdx int) {
 
@@ -69,7 +59,8 @@ func Start(simfnpath string, stageIdx, regionIdx int) {
 	fem.Global.LogPrefix = "out_"
 	erasefiles := false
 	verbose := false
-	if !fem.Start(simfnpath, erasefiles, verbose) {
+	allowParallel := false
+	if !fem.Start(simfnpath, erasefiles, verbose, allowParallel) {
 		chk.Panic("cannot start analysis process with simfnpath=%q\n", simfnpath)
 	}
 

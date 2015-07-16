@@ -23,11 +23,10 @@ func Test_topol01(tst *testing.T) {
 	simfn := "box.sim"
 
 	// run FE simulation
-	defer fem.End()
-	if !fem.Start(datadir+simfn, true, chk.Verbose) {
+	if !fem.Start(datadir+simfn, true, chk.Verbose, false) {
 		chk.Panic("cannot start FE simulation")
 	}
-	if !fem.Run() {
+	if !fem.RunAll() {
 		chk.Panic("cannot run FE simulation")
 	}
 

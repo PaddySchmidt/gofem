@@ -22,8 +22,6 @@ func Test_out01(tst *testing.T) {
 		if err := recover(); err != nil {
 			tst.Fail()
 			io.PfRed("ERROR: %v\n", err)
-		} else {
-			fem.End()
 		}
 	}()
 
@@ -32,10 +30,10 @@ func Test_out01(tst *testing.T) {
 	chk.PrintTitle("out01")
 
 	// run FE simulation
-	if !fem.Start("data/onequa4.sim", true, chk.Verbose) {
+	if !fem.Start("data/onequa4.sim", true, chk.Verbose, false) {
 		chk.Panic("cannot start FE simulation")
 	}
-	if !fem.Run() {
+	if !fem.RunAll() {
 		chk.Panic("cannot run FE simulation")
 	}
 
@@ -164,8 +162,6 @@ func Test_out02(tst *testing.T) {
 		if err := recover(); err != nil {
 			tst.Fail()
 			io.PfRed("ERROR: %v\n", err)
-		} else {
-			fem.End()
 		}
 	}()
 
@@ -174,10 +170,10 @@ func Test_out02(tst *testing.T) {
 	chk.PrintTitle("out02")
 
 	// run FE simulation
-	if !fem.Start("data/twoqua4.sim", true, chk.Verbose) {
+	if !fem.Start("data/twoqua4.sim", true, chk.Verbose, false) {
 		chk.Panic("cannot start FE simulation")
 	}
-	if !fem.Run() {
+	if !fem.RunAll() {
 		chk.Panic("cannot run FE simulation")
 	}
 

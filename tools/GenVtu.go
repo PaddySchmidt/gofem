@@ -55,9 +55,6 @@ func init() {
 
 func main() {
 
-	// finalise analysis process and catch errors
-	defer out.End()
-
 	// input data
 	simfn := "data/twoqua4.sim"
 	exnwl := false

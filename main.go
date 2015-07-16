@@ -20,6 +20,7 @@ func main() {
 	// in put data
 	erasefiles := true
 	verbose := true
+	allowParallel := true
 
 	// catch errors
 	defer func() {
@@ -42,8 +43,6 @@ func main() {
 				io.PfRed("ERROR: %v\n", err)
 			}
 		}
-		// make sure to flush log
-		defer fem.End()
 		mpi.Stop(false)
 	}()
 	mpi.Start(false)
@@ -82,13 +81,13 @@ func main() {
 	defer utl.DoProf(false)()
 
 	// start global variables and log
-	if !fem.Start(fnamepath, erasefiles, verbose) {
+	if !fem.Start(fnamepath, erasefiles, verbose, allowParallel) {
 		chk.Panic("Start failed\n")
 		return
 	}
 
 	// run simulation
-	if !fem.Run() {
+	if !fem.RunAll() {
 		chk.Panic("Run failed\n")
 	}
 }

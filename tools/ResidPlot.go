@@ -23,7 +23,6 @@ func read_summary(simfn string) (*utl.DblSlist, string) {
 	if io.FnExt(simfn) == "" {
 		simfn += ".sim"
 	}
-	defer out.End()
 	out.Start(simfn, 0, 0)
 	return &out.Sum.Resids, io.FnKey(simfn)
 }
