@@ -10,7 +10,6 @@ import (
 	"github.com/cpmech/gofem/shp"
 
 	"github.com/cpmech/gosl/fun"
-	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/la"
 )
 
@@ -124,15 +123,10 @@ func init() {
 		}
 
 		// integration points
-		var nip int
-		if s_nip, found := io.Keycode(edat.Extra, "nip"); found {
-			nip = io.Atoi(s_nip)
-		}
-		o.IpsElem, err = shp.GetIps(o.Shp.Type, nip)
+		o.IpsElem, err = shp.GetIps(o.Shp.Type, edat.Nip)
 		if LogErr(err, "GetIps failed") {
 			return nil
 		}
-		nip = len(o.IpsElem)
 
 		// scratchpad. computed @ each ip
 		o.K = la.MatAlloc(o.Nu, o.Nu)
