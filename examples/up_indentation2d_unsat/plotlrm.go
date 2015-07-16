@@ -16,9 +16,6 @@ import (
 
 func main() {
 
-	// finalise analysis process and catch errors
-	defer out.End()
-
 	// input data
 	simfn := "a-coarse-elast-d2-q9"
 	flag.Parse()

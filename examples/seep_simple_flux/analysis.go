@@ -14,9 +14,6 @@ import (
 
 func main() {
 
-	// finalise analysis process and catch errors
-	defer out.End()
-
 	// input data
 	simfn := "d2-simple-flux"
 	flag.Parse()

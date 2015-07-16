@@ -13,8 +13,7 @@ import (
 
 func main() {
 
-	// finalise analysis process and catch errors
-	defer out.End()
+	// analytical solution
 	var sol ana.PressCylin
 	sol.Init(fun.Prms{
 		&fun.Prm{N: "a", V: 100},

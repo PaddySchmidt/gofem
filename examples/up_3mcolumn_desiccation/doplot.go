@@ -16,9 +16,6 @@ import (
 
 func main() {
 
-	// finalise analysis process and catch errors
-	defer out.End()
-
 	// input data
 	simfn := "onepulse-qua9co.sim"
 	flag.Parse()

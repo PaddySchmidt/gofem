@@ -13,12 +13,10 @@ import (
 )
 
 func main() {
+
 	// options
 	verbose := false
 	show := true
-
-	// finalise analysis process and catch errors upon exit
-	defer out.End()
 
 	// start analysis process
 	out.Start("spo754.sim", 0, 0)
