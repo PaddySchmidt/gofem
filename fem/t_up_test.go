@@ -53,28 +53,28 @@ func Test_up01a(tst *testing.T) {
 	 *           10                              12 13
 	 */
 
-	// capture errors and flush log
-	defer End()
-
 	//verbose()
 	chk.PrintTitle("up01a")
 
 	// start simulation
-	if !Start("data/up01.sim", true, chk.Verbose) {
+	if !Start("data/up01.sim", true, chk.Verbose, false) {
 		chk.Panic("cannot start simulation")
 	}
 
-	// domain
-	distr := false
-	dom := NewDomain(Global.Sim.Regions[0], distr)
-	if dom == nil {
-		chk.Panic("cannot allocate new domain")
+	// allocate domain and others
+	if !Alloc() {
+		tst.Errorf("Alloc failed\n")
+		return
 	}
 
 	// set stage
-	if !dom.SetStage(0, Global.Sim.Stages[0], distr) {
-		chk.Panic("cannot set stage")
+	if !SetStage(0, true) {
+		tst.Errorf("SetStage failed\n")
+		return
 	}
+
+	// domain
+	dom := Global.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 27)
@@ -258,14 +258,11 @@ func Test_up01a(tst *testing.T) {
 
 func Test_up01b(tst *testing.T) {
 
-	// capture errors and flush log
-	defer End()
-
 	//verbose()
 	chk.PrintTitle("up01b")
 
 	// start simulation
-	if !Start("data/up01.sim", true, chk.Verbose) {
+	if !Start("data/up01.sim", true, chk.Verbose, false) {
 		chk.Panic("cannot start simulation")
 	}
 
@@ -278,7 +275,7 @@ func Test_up01b(tst *testing.T) {
 	}
 
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		chk.Panic("cannot run simulation\n")
 	}
 }

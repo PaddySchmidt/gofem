@@ -17,10 +17,6 @@ import (
 // RichardsonExtrap solves FEM problem implicitely and with Richardson's extrapolation
 type RichardsonExtrap struct {
 
-	// input
-	Doms []*Domain // domains
-	Sum  *Summary  // summary
-
 	// variables after big step
 	Y_big []float64 // primary variables
 
@@ -44,23 +40,19 @@ type RichardsonExtrap struct {
 
 // set factory
 func init() {
-	solverallocators["rex"] = func(doms []*Domain, sum *Summary) FEsolver {
+	solverallocators["rex"] = func() FEsolver {
 		solver := new(RichardsonExtrap)
-		solver.Init(doms, sum)
+		solver.Init()
 		return solver
 	}
 }
 
-func (o *RichardsonExtrap) Init(doms []*Domain, sum *Summary) {
+func (o *RichardsonExtrap) Init() {
 
 	// check
-	if len(doms) != 1 {
+	if len(Global.Domains) != 1 {
 		chk.Panic("RichardsonExtrap works with one domain only for now")
 	}
-
-	// input
-	o.Doms = doms
-	o.Sum = sum
 
 	// auxiliary variables
 	o.nsteps = 0
@@ -107,7 +99,7 @@ func (o *RichardsonExtrap) Run(stg *inp.Stage) (ok bool) {
 	}()
 
 	// domain and variables
-	d := o.Doms[0]
+	d := Global.Domains[0]
 	o.Y_big = make([]float64, d.Ny)
 
 	// time loop
@@ -142,7 +134,7 @@ func (o *RichardsonExtrap) Run(stg *inp.Stage) (ok bool) {
 
 		// single step with Δt
 		d.Sol.T = t + o.Δt
-		o.diverging, ok = run_iterations(t+o.Δt, o.Δt, d, o.Sum)
+		o.diverging, ok = run_iterations(t+o.Δt, o.Δt, d)
 		if !ok {
 			return
 		}
@@ -162,7 +154,7 @@ func (o *RichardsonExtrap) Run(stg *inp.Stage) (ok bool) {
 
 		// 1st halved step
 		d.Sol.T = t + o.Δt/2.0
-		o.diverging, ok = run_iterations(t+o.Δt/2.0, o.Δt/2.0, d, o.Sum)
+		o.diverging, ok = run_iterations(t+o.Δt/2.0, o.Δt/2.0, d)
 		if !ok {
 			break
 		}
@@ -174,7 +166,7 @@ func (o *RichardsonExtrap) Run(stg *inp.Stage) (ok bool) {
 
 		// 2nd halved step
 		d.Sol.T = t + o.Δt
-		o.diverging, ok = run_iterations(t+o.Δt, o.Δt/2.0, d, o.Sum)
+		o.diverging, ok = run_iterations(t+o.Δt, o.Δt/2.0, d)
 		if !ok {
 			break
 		}
@@ -207,7 +199,7 @@ func (o *RichardsonExtrap) Run(stg *inp.Stage) (ok bool) {
 			}
 			//if true {
 			if t >= tout || o.laststep {
-				o.Sum.OutTimes = append(o.Sum.OutTimes, t)
+				Global.Summary.OutTimes = append(Global.Summary.OutTimes, t)
 				if !d.Out(tidx) {
 					return
 				}

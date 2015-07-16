@@ -34,11 +34,6 @@ var Global struct {
 	WspcStop []int // stop flags [nprocs]
 	WspcInum []int // workspace of integer numbers [nprocs]
 
-	// time control
-	Time    float64 // curent simulation time
-	TimeOut float64 // time for output
-	TimeIdx int     // time output index
-
 	// simulation, materials, meshes and convenience variables
 	Sim    *inp.Simulation // simulation data
 	Ndim   int             // space dimension
@@ -53,24 +48,36 @@ var Global struct {
 	DynCoefs *DynCoefs    // dynamic coefficients
 	HydroSt  *HydroStatic // computes hydrostatic states
 
+	// time control
+	Time    float64 // curent simulation time
+	TimeOut float64 // time for output
+	TimeIdx int     // time output index
+
+	// domains and summary
+	Domains []*Domain // all domains
+	Summary *Summary  // summary structure
+	Solver  FEsolver  // finite element method solver; e.g. implicit, Richardson extrapolation, etc.
+
 	// for debugging
 	DebugKb func(d *Domain, it int) // debug Kb callback function
 }
 
-// End must be called and the end to flush log file
-func End() {
-	inp.FlushLog()
-}
-
-// Start initialises 'global' and starts logging
-func Start(simfilepath string, erasefiles, verbose bool) (startisok bool) {
+// Start initialises Global data and starts logging
+//  Input:
+//    simfilepath   -- .sim filename including full path
+//    erasefiles    -- do erase previous results files
+//    allowParallel -- allow parallel execution; otherwise,
+//                     run in serial mode regardless whether MPI is on or not
+//  Output:
+//    startisok -- success
+func Start(simfilepath string, erasefiles, verbose, allowParallel bool) (startisok bool) {
 
 	// multiprocessing data
 	Global.Rank = 0
 	Global.Nproc = 1
 	Global.Root = true
 	Global.Distr = false
-	if mpi.IsOn() {
+	if mpi.IsOn() && allowParallel {
 		Global.Rank = mpi.Rank()
 		Global.Nproc = mpi.Size()
 		Global.Root = Global.Rank == 0
@@ -99,6 +106,15 @@ func Start(simfilepath string, erasefiles, verbose bool) (startisok bool) {
 	Global.LogBcs = Global.Sim.Data.LogBcs
 	Global.Debug = Global.Sim.Data.Debug
 
+	// linear solver name
+	if mpi.IsOn() && allowParallel {
+		if mpi.Size() > 1 {
+			Global.Sim.LinSol.Name = "mumps"
+		}
+	} else {
+		Global.Sim.LinSol.Name = "umfpack"
+	}
+
 	// fix show residual flag
 	if !Global.Root {
 		Global.Sim.Data.ShowR = false
@@ -112,69 +128,93 @@ func Start(simfilepath string, erasefiles, verbose bool) (startisok bool) {
 	Global.HydroSt = new(HydroStatic)
 	Global.HydroSt.Init()
 
-	// success
-	return true
-}
-
-// Run runs FE simulation
-func Run() (runisok bool) {
+	// plot functions
+	if Global.Sim.PlotF != nil {
+		if Global.Root {
+			Global.Sim.Functions.PlotAll(Global.Sim.PlotF, Global.Dirout, Global.Fnkey)
+		}
+		if Global.Verbose {
+			io.Pfyel("\nfunctions plotted\n")
+		}
+		return
+	}
 
 	// current time and output time
 	Global.Time = 0.0
 	Global.TimeOut = 0.0
 	Global.TimeIdx = 0
 
-	// plot functions
-	if Global.Sim.PlotF != nil {
-		if Global.Root {
-			Global.Sim.Functions.PlotAll(Global.Sim.PlotF, Global.Dirout, Global.Fnkey)
-		}
-		io.PfRed("\nfunctions plotted => simulation not ran\n")
-		return
-	}
+	// domains and summary
+	Global.Domains = make([]*Domain, 0)
+	Global.Summary = nil
+	Global.Solver = nil
 
-	// alloc domains
-	var domains []*Domain
-	for _, reg := range Global.Sim.Regions {
-		dom := NewDomain(reg, Global.Distr)
-		if dom == nil {
-			break
-		}
-		domains = append(domains, dom)
-	}
-	if Stop() {
-		return
-	}
+	// success
+	return true
+}
 
-	// make sure to call linear solver clean up routines upon exit
-	defer func() {
-		for _, d := range domains {
-			if !d.InitLSol {
-				d.LinSol.Clean()
-			}
-		}
-	}()
+// RunAll runs FE simulation, after allocating domains and summary. All active stages are run.
+func RunAll() (runisok bool) {
 
-	// summary of outputs; e.g. with output times
+	// clean up
+	defer CleanUp()
+
+	// benchmarking
 	cputime := time.Now()
-	var sum Summary
-	sum.OutTimes = []float64{Global.Time}
 	defer func() {
-		sum.Save()
 		if Global.Verbose && !Global.Debug {
 			io.Pf("\nfinal time = %v\n", Global.Time)
 			io.Pfblue2("cpu time   = %v\n", time.Now().Sub(cputime))
 		}
 	}()
 
+	// allocate domains, summary, solver
+	if !Alloc() {
+		return
+	}
+
+	// solve for all stages
+	if !SolveAllStages(true) {
+		return
+	}
+
+	// success
+	return true
+}
+
+// Alloc allocates domains, summary and solver structures
+func Alloc() (allocisok bool) {
+
+	// alloc domains
+	for _, reg := range Global.Sim.Regions {
+		dom := NewDomain(reg, Global.Distr)
+		if dom == nil {
+			break
+		}
+		Global.Domains = append(Global.Domains, dom)
+	}
+	if Stop() {
+		return
+	}
+
+	// alloc summary
+	Global.Summary = new(Summary)
+	Global.Summary.OutTimes = []float64{Global.Time}
+
 	// alloc solver
-	var solver FEsolver
 	if alloc, ok := solverallocators[Global.Sim.Solver.Type]; ok {
-		solver = alloc(domains, &sum)
+		Global.Solver = alloc()
 	} else {
 		LogErrCond(true, "cannot find solver type=%q. e.g. {imp, exp, rex} => implicit, explicit, Richardson extrapolation", Global.Sim.Solver.Type)
 		return
 	}
+
+	// success
+	return true
+}
+
+// SolveAllStages solve problem for all stages
+func SolveAllStages(output bool) (ok bool) {
 
 	// loop over stages
 	for stgidx, stg := range Global.Sim.Stages {
@@ -183,25 +223,17 @@ func Run() (runisok bool) {
 		Global.TimeOut = Global.Time + stg.Control.DtoFunc.F(Global.Time, nil)
 
 		// set stage
-		for _, d := range domains {
-			if LogErrCond(!d.SetStage(stgidx, Global.Sim.Stages[stgidx], Global.Distr), "SetStage failed") {
-				break
-			}
-			d.Sol.T = Global.Time
-			if !d.Out(Global.TimeIdx) {
-				break
-			}
-		}
-		if Stop() {
+		if !SetStage(stgidx, output) {
 			return
 		}
-		Global.TimeIdx += 1
 
 		// log models
-		mconduct.LogModels()
-		mreten.LogModels()
-		mporous.LogModels()
-		msolid.LogModels()
+		if output {
+			mconduct.LogModels()
+			mreten.LogModels()
+			mporous.LogModels()
+			msolid.LogModels()
+		}
 
 		// skip stage?
 		if stg.Skip {
@@ -209,11 +241,66 @@ func Run() (runisok bool) {
 		}
 
 		// time loop
-		if !solver.Run(stg) {
+		if !Global.Solver.Run(stg) {
 			return
 		}
 	}
 	return true
+}
+
+// SolveOneStage solves one stage that was already set
+func SolveOneStage(stgidx int) (ok bool) {
+
+	// time for output
+	stg := Global.Sim.Stages[stgidx]
+	Global.TimeOut = Global.Time + stg.Control.DtoFunc.F(Global.Time, nil)
+
+	// time loop
+	if !Global.Solver.Run(stg) {
+		return
+	}
+
+	// success
+	return true
+}
+
+// SetStage sets stage for all domains
+func SetStage(stgidx int, output bool) (ok bool) {
+	for _, d := range Global.Domains {
+		if LogErrCond(!d.SetStage(stgidx, Global.Sim.Stages[stgidx], Global.Distr), "SetStage failed") {
+			break
+		}
+		d.Sol.T = Global.Time
+		if output {
+			if !d.Out(Global.TimeIdx) {
+				break
+			}
+		}
+	}
+	if Stop() {
+		return
+	}
+	if output {
+		Global.TimeIdx += 1
+	}
+	return true
+}
+
+// CleanUp cleans memory and flush log
+func CleanUp() {
+
+	// flush log
+	inp.FlushLog()
+
+	// domains: clean memory
+	for _, d := range Global.Domains {
+		d.End()
+	}
+
+	// summary: save file
+	if Global.Summary != nil {
+		Global.Summary.Save()
+	}
 }
 
 // factory ////////////////////////////////////////////////////////////////////////////////////////
@@ -224,7 +311,7 @@ type FEsolver interface {
 }
 
 // solverallocators holds all available solvers
-var solverallocators = make(map[string]func([]*Domain, *Summary) FEsolver)
+var solverallocators = make(map[string]func() FEsolver)
 
 // auxiliary //////////////////////////////////////////////////////////////////////////////////////
 

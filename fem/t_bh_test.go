@@ -32,25 +32,22 @@ func Test_bh16a(tst *testing.T) {
 	chk.PrintTitle("bh16a")
 
 	// start simulation
-	if !Start("data/bh16.sim", true, chk.Verbose) {
-		tst.Errorf("test failed\n")
+	if !Start("data/bh16.sim", true, chk.Verbose, false) {
+		tst.Errorf("Start failed\n")
 		return
 	}
-
-	// make sure to flush log
-	defer End()
 
 	// domain
 	distr := false
 	dom := NewDomain(Global.Sim.Regions[0], distr)
 	if dom == nil {
-		tst.Errorf("test failed\n")
+		tst.Errorf("NewDomain failed\n")
 		return
 	}
 
 	// set stage
 	if !dom.SetStage(0, Global.Sim.Stages[0], distr) {
-		tst.Errorf("test failed\n")
+		tst.Errorf("SetStage failed\n")
 		return
 	}
 
@@ -135,20 +132,18 @@ func Test_bh16a(tst *testing.T) {
 
 func Test_bh16b(tst *testing.T) {
 
+	//verbose()
 	chk.PrintTitle("bh16b")
 
-	// run simulation
-	if !Start("data/bh16.sim", true, chk.Verbose) {
-		tst.Errorf("test failed\n")
+	// start simulation
+	if !Start("data/bh16.sim", true, chk.Verbose, false) {
+		tst.Errorf("Start failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
 	// run simulation
-	if !Run() {
-		tst.Errorf("test failed\n")
+	if !RunAll() {
+		tst.Errorf("RunAll failed\n")
 		return
 	}
 
@@ -157,27 +152,63 @@ func Test_bh16b(tst *testing.T) {
 	tolK := 1e-12
 	tolu := 1e-15
 	tols := 1e-12
-	if false {
-		TestingCompareResultsU(tst, "data/bh16.sim", "cmp/bh16.cmp", tolK, tolu, tols, skipK, chk.Verbose)
-	}
+	TestingCompareResultsU(tst, "data/bh16.sim", "cmp/bh16.cmp", tolK, tolu, tols, skipK, chk.Verbose)
 }
 
-func Test_bh14(tst *testing.T) {
+func Test_bh14a(tst *testing.T) {
 
-	chk.PrintTitle("bh14")
+	//verbose()
+	chk.PrintTitle("bh14a. using RunAll")
 
-	// run simulation
-	if !Start("data/bh14.sim", true, chk.Verbose) {
-		tst.Errorf("test failed\n")
+	// start simulation
+	if !Start("data/bh14.sim", true, chk.Verbose, false) {
+		tst.Errorf("Start failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
 	// run simulation
-	if !Run() {
-		tst.Errorf("test failed\n")
+	if !RunAll() {
+		tst.Errorf("RunAll failed\n")
+		return
+	}
+
+	// check
+	skipK := true
+	tolK := 1e-17
+	tolu := 1e-15
+	tols := 1e-17
+	TestingCompareResultsU(tst, "data/bh14.sim", "cmp/bh14.cmp", tolK, tolu, tols, skipK, chk.Verbose)
+}
+
+func Test_bh14b(tst *testing.T) {
+
+	//verbose()
+	chk.PrintTitle("bh14b. using SolveOneStage")
+
+	// start simulation
+	if !Start("data/bh14.sim", true, chk.Verbose, false) {
+		tst.Errorf("Start failed\n")
+		return
+	}
+
+	// allocate domain and others
+	if !Alloc() {
+		tst.Errorf("Alloc failed\n")
+		return
+	}
+
+	// set stage
+	stgidx := 0
+	if !SetStage(stgidx, true) {
+		tst.Errorf("SetStage failed\n")
+		return
+	}
+
+	// run
+	ok := SolveOneStage(stgidx)
+	CleanUp()
+	if !ok {
+		tst.Errorf("SolveOneStage failed\n")
 		return
 	}
 

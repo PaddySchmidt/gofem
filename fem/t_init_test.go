@@ -11,10 +11,19 @@ import (
 
 func init() {
 	io.Verbose = false
-	//chk.Verbose = true
 }
 
 func verbose() {
 	io.Verbose = true
 	chk.Verbose = true
+}
+
+func get_nids_eqs(dom *Domain) (nids, eqs []int) {
+	for _, nod := range dom.Nodes {
+		nids = append(nids, nod.Vert.Id)
+		for _, dof := range nod.Dofs {
+			eqs = append(eqs, dof.Eq)
+		}
+	}
+	return
 }

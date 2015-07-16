@@ -14,20 +14,23 @@ import (
 
 func Test_beam01(tst *testing.T) {
 
+	//verbose()
 	chk.PrintTitle("beam01")
 
 	// domain
-	if !Start("data/beam01.sim", true, chk.Verbose) {
-		tst.Errorf("test failed\n")
+	if !Start("data/beam01.sim", true, chk.Verbose, false) {
+		tst.Errorf("Start failed\n")
+		return
 	}
-	defer End()
 	distr := false
 	dom := NewDomain(Global.Sim.Regions[0], distr)
 	if dom == nil {
-		tst.Errorf("test failed\n")
+		tst.Errorf("NewDomain failed\n")
+		return
 	}
 	if !dom.SetStage(0, Global.Sim.Stages[0], distr) {
-		tst.Errorf("test failed\n")
+		tst.Errorf("SetStage failed\n")
+		return
 	}
 
 	// nodes and elements
@@ -81,6 +84,7 @@ func Test_beam01(tst *testing.T) {
 			ct_uy_eqs = append(ct_uy_eqs, eq)
 		default:
 			tst.Errorf("key %s is incorrect", c.Key)
+			return
 		}
 	}
 	sort.Ints(ct_ux_eqs)

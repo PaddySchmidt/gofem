@@ -13,13 +13,13 @@ import (
 
 func Test_fileio01(tst *testing.T) {
 
+	//verbose()
 	chk.PrintTitle("fileio01")
 
 	// start
-	if !Start("data/bh16.sim", true, chk.Verbose) {
+	if !Start("data/bh16.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 	}
-	defer End()
 
 	// domain A
 	distr := false

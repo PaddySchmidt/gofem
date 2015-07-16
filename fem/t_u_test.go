@@ -16,18 +16,11 @@ import (
 func Test_sigini01(tst *testing.T) {
 
 	//verbose()
-	chk.PrintTitle("sigini01")
+	chk.PrintTitle("sigini01. zero displacements. initial stresses")
 
 	// start simulation
-	if !Start("data/sigini01.sim", true, chk.Verbose) {
-		tst.Errorf("test failed\n")
-		return
-	}
-	defer End()
-
-	// run simulation
-	if !Run() {
-		tst.Errorf("test failed\n")
+	if !Start("data/sigini01.sim", true, chk.Verbose, false) {
+		tst.Errorf("Start failed\n")
 		return
 	}
 
@@ -68,34 +61,22 @@ func Test_sigini01(tst *testing.T) {
 func Test_sigini02(tst *testing.T) {
 
 	//verbose()
-	chk.PrintTitle("sigini02")
+	chk.PrintTitle("sigini02. initial stresses. run simulation")
 
 	// start simulation
-	if !Start("data/sigini02.sim", true, chk.Verbose) {
-		tst.Errorf("test failed\n")
+	if !Start("data/sigini02.sim", true, chk.Verbose, false) {
+		tst.Errorf("Start failed\n")
 		return
 	}
-	defer End()
 
 	// run simulation
-	if !Run() {
-		tst.Errorf("test failed\n")
+	if !RunAll() {
+		tst.Errorf("RunAll failed\n")
 		return
 	}
 
-	// allocate domain
-	distr := false
-	d := NewDomain(Global.Sim.Regions[0], distr)
-	if !d.SetStage(0, Global.Sim.Stages[0], distr) {
-		tst.Errorf("SetStage failed\n")
-		return
-	}
-
-	// read results
-	sum := ReadSum(Global.Dirout, Global.Fnkey)
-	io.Pforan("sum = %+v\n", sum)
-	ntout := len(sum.OutTimes)
-	d.In(sum, ntout-1, true)
+	// domain
+	d := Global.Domains[0]
 
 	// solution
 	var sol ana.CteStressPstrain

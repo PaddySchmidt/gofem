@@ -150,6 +150,13 @@ type Domain struct {
 	bkpSol *Solution // backup solution
 }
 
+// End cleans memory allocated by domain
+func (o *Domain) End() {
+	if !o.InitLSol {
+		o.LinSol.Clean()
+	}
+}
+
 // NewDomain returns a new domain
 func NewDomain(reg *inp.Region, distr bool) *Domain {
 	var dom Domain

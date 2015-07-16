@@ -14,28 +14,28 @@ import (
 
 func Test_frees01a(tst *testing.T) {
 
-	// finalise analysis process and catch errors
-	defer End()
-
 	//verbose()
 	chk.PrintTitle("frees01a")
 
 	// start simulation
-	if !Start("data/frees01.sim", true, chk.Verbose) {
+	if !Start("data/frees01.sim", true, chk.Verbose, false) {
 		chk.Panic("cannot start FE simulation")
 	}
 
-	// domain
-	distr := false
-	dom := NewDomain(Global.Sim.Regions[0], distr)
-	if dom == nil {
-		chk.Panic("cannot run FE simulation")
+	// allocate domain and others
+	if !Alloc() {
+		tst.Errorf("Alloc failed\n")
+		return
 	}
 
 	// set stage
-	if !dom.SetStage(0, Global.Sim.Stages[0], distr) {
-		chk.Panic("cannot set stage\n")
+	if !SetStage(0, true) {
+		tst.Errorf("SetStage failed\n")
+		return
 	}
+
+	// domain
+	dom := Global.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 62)
@@ -73,14 +73,11 @@ func Test_frees01a(tst *testing.T) {
 
 func Test_frees01b(tst *testing.T) {
 
-	// capture errors and flush log
-	defer End()
-
 	//verbose()
 	chk.PrintTitle("frees01b")
 
 	// start simulation
-	if !Start("data/frees01.sim", true, chk.Verbose) {
+	if !Start("data/frees01.sim", true, chk.Verbose, false) {
 		chk.Panic("cannot start simulation")
 	}
 
@@ -93,7 +90,7 @@ func Test_frees01b(tst *testing.T) {
 	}
 
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		chk.Panic("cannot run simulation\n")
 	}
 }

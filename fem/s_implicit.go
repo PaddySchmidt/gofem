@@ -13,22 +13,14 @@ import (
 
 // SolverImplicit solves FEM problem using an implicit procedure (with Newthon-Raphson method)
 type SolverImplicit struct {
-	Doms []*Domain // domains
-	Sum  *Summary  // summary
 }
 
 // set factory
 func init() {
-	solverallocators["imp"] = func(doms []*Domain, sum *Summary) FEsolver {
+	solverallocators["imp"] = func() FEsolver {
 		solver := new(SolverImplicit)
-		solver.Init(doms, sum)
 		return solver
 	}
-}
-
-func (o *SolverImplicit) Init(doms []*Domain, sum *Summary) {
-	o.Doms = doms
-	o.Sum = sum
 }
 
 func (o *SolverImplicit) Run(stg *inp.Stage) (runisok bool) {
@@ -79,7 +71,7 @@ func (o *SolverImplicit) Run(stg *inp.Stage) (runisok bool) {
 
 		// time update
 		t += Δt
-		for _, d := range o.Doms {
+		for _, d := range Global.Domains {
 			d.Sol.T = t
 		}
 		Δtout = stg.Control.DtoFunc.F(t, nil)
@@ -93,7 +85,7 @@ func (o *SolverImplicit) Run(stg *inp.Stage) (runisok bool) {
 
 		// for all domains
 		docontinue := false
-		for _, d := range o.Doms {
+		for _, d := range Global.Domains {
 
 			// backup solution if divergence control is on
 			if Global.Sim.Solver.DvgCtrl {
@@ -101,7 +93,7 @@ func (o *SolverImplicit) Run(stg *inp.Stage) (runisok bool) {
 			}
 
 			// run iterations
-			diverging, ok := run_iterations(t, Δt, d, o.Sum)
+			diverging, ok := run_iterations(t, Δt, d)
 			if !ok {
 				return
 			}
@@ -130,8 +122,8 @@ func (o *SolverImplicit) Run(stg *inp.Stage) (runisok bool) {
 
 		// perform output
 		if t >= tout || lasttimestep {
-			o.Sum.OutTimes = append(o.Sum.OutTimes, t)
-			for _, d := range o.Doms {
+			Global.Summary.OutTimes = append(Global.Summary.OutTimes, t)
+			for _, d := range Global.Domains {
 				//if true {
 				if false {
 					debug_print_p_results(d)
@@ -156,7 +148,7 @@ func (o *SolverImplicit) Run(stg *inp.Stage) (runisok bool) {
 }
 
 // run_iterations solves the nonlinear problem
-func run_iterations(t, Δt float64, d *Domain, sum *Summary) (diverging, ok bool) {
+func run_iterations(t, Δt float64, d *Domain) (diverging, ok bool) {
 
 	// zero accumulated increments
 	la.VecFill(d.Sol.ΔY, 0)
@@ -215,7 +207,7 @@ func run_iterations(t, Δt float64, d *Domain, sum *Summary) (diverging, ok bool
 
 		// save residual
 		if Global.Stat {
-			sum.Resids.Append(it == 0, largFb)
+			Global.Summary.Resids.Append(it == 0, largFb)
 		}
 
 		// check largFb value

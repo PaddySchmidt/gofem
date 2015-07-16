@@ -53,27 +53,25 @@ func Test_p01a(tst *testing.T) {
 	chk.PrintTitle("p01a")
 
 	// start simulation
-	if !Start("data/p01.sim", true, chk.Verbose) {
-		tst.Errorf("test failed\n")
+	if !Start("data/p01.sim", true, chk.Verbose, false) {
+		tst.Errorf("Start failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
-	// domain
-	distr := false
-	dom := NewDomain(Global.Sim.Regions[0], distr)
-	if dom == nil {
-		tst.Errorf("test failed\n")
+	// allocate domain and others
+	if !Alloc() {
+		tst.Errorf("Alloc failed\n")
 		return
 	}
 
 	// set stage
-	if !dom.SetStage(0, Global.Sim.Stages[0], distr) {
-		tst.Errorf("test failed\n")
+	if !SetStage(0, true) {
+		tst.Errorf("SetStage failed\n")
 		return
 	}
+
+	// domain
+	dom := Global.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 27)
@@ -151,37 +149,34 @@ func Test_p01a(tst *testing.T) {
 
 func Test_p01b(tst *testing.T) {
 
+	//verbose()
 	chk.PrintTitle("p01b")
 
 	// run simulation
-	if !Start("data/p01.sim", true, chk.Verbose) {
-		tst.Errorf("test failed\n")
+	if !Start("data/p01.sim", true, chk.Verbose, false) {
+		tst.Errorf("Start failed\n")
 		return
 	}
-
-	// make sure to flush log
-	defer End()
 
 	// run simulation
-	if !Run() {
-		tst.Errorf("test failed\n")
+	if !RunAll() {
+		tst.Errorf("RunAll failed\n")
 		return
 	}
+
+	// TODO: add check here
 }
 
-func Test_p02_(tst *testing.T) {
+func Test_p02(tst *testing.T) {
 
 	//verbose()
-	chk.PrintTitle("p02_")
+	chk.PrintTitle("p02")
 
 	// run simulation
-	if !Start("data/p02.sim", true, chk.Verbose) {
-		tst.Errorf("test failed\n")
+	if !Start("data/p02.sim", true, chk.Verbose, false) {
+		tst.Errorf("Start failed\n")
 		return
 	}
-
-	// make sure to flush log
-	defer End()
 
 	// for debugging Kb
 	if true {
@@ -192,8 +187,8 @@ func Test_p02_(tst *testing.T) {
 	}
 
 	// run simulation
-	if !Run() {
-		tst.Errorf("test failed\n")
+	if !RunAll() {
+		tst.Errorf("RunAll failed\n")
 		return
 	}
 }

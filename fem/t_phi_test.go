@@ -35,28 +35,26 @@ func Test_phi01(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("phi01")
 
-	// make sure to flush log
-	defer End()
-
 	// start simulation
-	if !Start("data/phi01.sim", true, chk.Verbose) {
+	if !Start("data/phi01.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 		return
 	}
 
-	// domain
-	distr := false
-	dom := NewDomain(Global.Sim.Regions[0], distr)
-	if dom == nil {
-		tst.Errorf("test failed\n")
+	// allocate domain and others
+	if !Alloc() {
+		tst.Errorf("Alloc failed\n")
 		return
 	}
 
 	// set stage
-	if !dom.SetStage(0, Global.Sim.Stages[0], distr) {
-		tst.Errorf("test failed\n")
+	if !SetStage(0, true) {
+		tst.Errorf("SetStage failed\n")
 		return
 	}
+
+	// domain
+	dom := Global.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 25)
@@ -92,14 +90,13 @@ func Test_phi02(tst *testing.T) {
 	chk.PrintTitle("phi02")
 
 	// run simulation
-	defer End()
-	if !Start("data/phi02.sim", true, chk.Verbose) {
+	if !Start("data/phi02.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 		return
 	}
 
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		tst.Errorf("test failed\n")
 		return
 	}

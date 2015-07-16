@@ -41,30 +41,29 @@ func Test_spo751a(tst *testing.T) {
 	 *      0 3 5 8 10  13  15    18   20
 	 */
 
+	//verbose()
 	chk.PrintTitle("spo751a")
 
 	// start simulation
-	if !Start("data/spo751.sim", true, chk.Verbose) {
+	if !Start("data/spo751.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
-	// domain
-	distr := false
-	dom := NewDomain(Global.Sim.Regions[0], distr)
-	if dom == nil {
-		tst.Errorf("test failed\n")
+	// allocate domain and others
+	if !Alloc() {
+		tst.Errorf("Alloc failed\n")
 		return
 	}
 
 	// set stage
-	if !dom.SetStage(0, Global.Sim.Stages[0], distr) {
-		tst.Errorf("test failed\n")
+	if !SetStage(0, true) {
+		tst.Errorf("SetStage failed\n")
 		return
 	}
+
+	// domain
+	dom := Global.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 23)
@@ -150,13 +149,10 @@ func Test_spo751b(tst *testing.T) {
 	chk.PrintTitle("spo751b")
 
 	// run simulation
-	if !Start("data/spo751.sim", true, chk.Verbose) {
+	if !Start("data/spo751.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 		return
 	}
-
-	// make sure to flush log
-	defer End()
 
 	// for debugging Kb
 	//if true {
@@ -168,7 +164,7 @@ func Test_spo751b(tst *testing.T) {
 	}
 
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		tst.Errorf("test failed\n")
 		return
 	}
@@ -196,16 +192,13 @@ func Test_spo751re(tst *testing.T) {
 	chk.PrintTitle("spo751re. Richardson extrapolation")
 
 	// run simulation
-	if !Start("data/spo751re.sim", true, chk.Verbose) {
+	if !Start("data/spo751re.sim", true, chk.Verbose, false) {
 		io.Pfred("start failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		io.Pfred("run failed\n")
 	}
 

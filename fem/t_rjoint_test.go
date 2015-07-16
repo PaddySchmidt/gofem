@@ -17,8 +17,7 @@ func Test_rjoint01(tst *testing.T) {
 	chk.PrintTitle("rjoint01. curved line in 3D")
 
 	// initialisation
-	defer End()
-	if !Start("data/rjoint01.sim", true, chk.Verbose) {
+	if !Start("data/rjoint01.sim", true, chk.Verbose, false) {
 		tst.Errorf("Start failed\n")
 		return
 	}
@@ -33,7 +32,7 @@ func Test_rjoint01(tst *testing.T) {
 	}
 
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		tst.Errorf("Run failed\n")
 		return
 	}

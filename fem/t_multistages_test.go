@@ -11,24 +11,15 @@ import (
 	"github.com/cpmech/gosl/io"
 )
 
-func get_nids_eqs(dom *Domain) (nids, eqs []int) {
-	for _, nod := range dom.Nodes {
-		nids = append(nids, nod.Vert.Id)
-		for _, dof := range nod.Dofs {
-			eqs = append(eqs, dof.Eq)
-		}
-	}
-	return
-}
-
 func Test_fourlayers01(tst *testing.T) {
 
+	//verbose()
 	chk.PrintTitle("fourlayers01")
 
-	if !Start("data/fourlayers.sim", true, chk.Verbose) {
+	if !Start("data/fourlayers.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 	}
-	defer End()
+
 	distr := false
 	dom := NewDomain(Global.Sim.Regions[0], distr)
 	if dom == nil {

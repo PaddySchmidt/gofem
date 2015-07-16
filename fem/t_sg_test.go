@@ -38,30 +38,29 @@ func Test_sg52a(tst *testing.T) {
 	 *            |------- 1 m -------|
 	 */
 
+	//verbose()
 	chk.PrintTitle("sg52a")
 
 	// start simulation
-	if !Start("data/sg52.sim", true, chk.Verbose) {
+	if !Start("data/sg52.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
-	// domain
-	distr := false
-	dom := NewDomain(Global.Sim.Regions[0], distr)
-	if dom == nil {
-		tst.Errorf("test failed\n")
+	// allocate domain and others
+	if !Alloc() {
+		tst.Errorf("Alloc failed\n")
 		return
 	}
 
 	// set stage
-	if !dom.SetStage(0, Global.Sim.Stages[0], distr) {
-		tst.Errorf("test failed\n")
+	if !SetStage(0, true) {
+		tst.Errorf("SetStage failed\n")
 		return
 	}
+
+	// domain
+	dom := Global.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 9)
@@ -149,16 +148,13 @@ func Test_sg52b(tst *testing.T) {
 	chk.PrintTitle("sg52b")
 
 	// run simulation
-	if !Start("data/sg52.sim", true, chk.Verbose) {
+	if !Start("data/sg52.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		tst.Errorf("test failed\n")
 		return
 	}
@@ -177,16 +173,13 @@ func Test_sg57(tst *testing.T) {
 	chk.PrintTitle("sg57")
 
 	// run simulation
-	if !Start("data/sg57.sim", true, chk.Verbose) {
+	if !Start("data/sg57.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		tst.Errorf("test failed\n")
 		return
 	}
@@ -205,16 +198,13 @@ func Test_sg511(tst *testing.T) {
 	chk.PrintTitle("sg511")
 
 	// run simulation
-	if !Start("data/sg511.sim", true, chk.Verbose) {
+	if !Start("data/sg511.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		tst.Errorf("test failed\n")
 		return
 	}
@@ -232,16 +222,13 @@ func Test_sg515(tst *testing.T) {
 	chk.PrintTitle("sg515")
 
 	// run simulation
-	if !Start("data/sg515.sim", true, chk.Verbose) {
+	if !Start("data/sg515.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		tst.Errorf("test failed\n")
 		return
 	}
@@ -259,16 +246,13 @@ func Test_sg517(tst *testing.T) {
 	chk.PrintTitle("sg517")
 
 	// run simulation
-	if !Start("data/sg517.sim", true, chk.Verbose) {
+	if !Start("data/sg517.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		tst.Errorf("test failed\n")
 		return
 	}
@@ -286,16 +270,13 @@ func Test_sg524(tst *testing.T) {
 	chk.PrintTitle("sg524")
 
 	// run simulation
-	if !Start("data/sg524.sim", true, chk.Verbose) {
+	if !Start("data/sg524.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		tst.Errorf("test failed\n")
 		return
 	}
@@ -313,16 +294,13 @@ func Test_sg530(tst *testing.T) {
 	chk.PrintTitle("sg530")
 
 	// run simulation
-	if !Start("data/sg530.sim", true, chk.Verbose) {
+	if !Start("data/sg530.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		tst.Errorf("test failed\n")
 		return
 	}
@@ -341,16 +319,13 @@ func Test_sg111(tst *testing.T) {
 	chk.PrintTitle("sg111")
 
 	// run simulation
-	if !Start("data/sg111.sim", true, chk.Verbose) {
+	if !Start("data/sg111.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		tst.Errorf("test failed\n")
 		return
 	}
@@ -419,16 +394,13 @@ func Test_sg114(tst *testing.T) {
 	chk.PrintTitle("sg114")
 
 	// run simulation
-	if !Start("data/sg114.sim", true, chk.Verbose) {
+	if !Start("data/sg114.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		tst.Errorf("test failed\n")
 		return
 	}
@@ -507,16 +479,13 @@ func Test_sg1121(tst *testing.T) {
 	chk.PrintTitle("sg1121")
 
 	// run simulation
-	if !Start("data/sg1121.sim", true, chk.Verbose) {
+	if !Start("data/sg1121.sim", true, chk.Verbose, false) {
 		tst.Errorf("test failed\n")
 		return
 	}
 
-	// make sure to flush log
-	defer End()
-
 	// run simulation
-	if !Run() {
+	if !RunAll() {
 		tst.Errorf("test failed\n")
 		return
 	}

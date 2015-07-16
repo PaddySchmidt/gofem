@@ -16,7 +16,6 @@ import (
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/io"
-	"github.com/cpmech/gosl/mpi"
 )
 
 // Data holds global data for simulations
@@ -92,17 +91,6 @@ func (o *LinSolData) SetDefault() {
 	o.Name = "umfpack"
 	o.Ordering = "amf"
 	o.Scaling = "rcit"
-}
-
-// PostProcess performs a post-processing of the just read json file
-func (o *LinSolData) PostProcess() {
-	if mpi.IsOn() {
-		if mpi.Size() > 1 {
-			o.Name = "mumps"
-		}
-	} else {
-		o.Name = "umfpack"
-	}
 }
 
 // SolverData holds FEM solver data
@@ -402,7 +390,6 @@ func ReadSim(dir, fn, logPrefix string, erasefiles bool) *Simulation {
 
 	// derived data
 	o.Data.PostProcess(dir, fn, erasefiles)
-	o.LinSol.PostProcess()
 	o.Solver.PostProcess()
 
 	// init log file
