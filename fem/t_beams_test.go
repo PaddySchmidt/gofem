@@ -17,19 +17,16 @@ func Test_beam01(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("beam01")
 
-	// domain
+	// start simulation
 	if !Start("data/beam01.sim", true, chk.Verbose, false) {
 		tst.Errorf("Start failed\n")
 		return
 	}
-	distr := false
-	dom := NewDomain(Global.Sim.Regions[0], distr)
-	if dom == nil {
-		tst.Errorf("NewDomain failed\n")
-		return
-	}
-	if !dom.SetStage(0, Global.Sim.Stages[0], distr) {
-		tst.Errorf("SetStage failed\n")
+
+	// allocate domain and set stage
+	dom, _, ok := AllocSetAndInit(0, false, false)
+	if !ok {
+		tst.Errorf("AllocSetAndInit failed\n")
 		return
 	}
 

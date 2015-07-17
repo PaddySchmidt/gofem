@@ -24,26 +24,19 @@ func Test_sigini01(tst *testing.T) {
 		return
 	}
 
-	// allocate domain
-	distr := false
-	d := NewDomain(Global.Sim.Regions[0], distr)
-	if !d.SetStage(0, Global.Sim.Stages[0], distr) {
-		tst.Errorf("SetStage failed\n")
-		return
-	}
-
-	// initialise solution vectors
-	if !d.SetIniVals(Global.Sim.Stages[0], false) {
-		tst.Errorf("SetIniVals failed\n")
+	// allocate domain and set stage
+	dom, _, ok := AllocSetAndInit(0, false, false)
+	if !ok {
+		tst.Errorf("AllocSetAndInit failed\n")
 		return
 	}
 
 	// check displacements
 	tolu := 1e-16
-	for _, n := range d.Nodes {
+	for _, n := range dom.Nodes {
 		eqx := n.GetEq("ux")
 		eqy := n.GetEq("uy")
-		u := []float64{d.Sol.Y[eqx], d.Sol.Y[eqy]}
+		u := []float64{dom.Sol.Y[eqx], dom.Sol.Y[eqy]}
 		chk.Vector(tst, "u", tolu, u, nil)
 	}
 
@@ -55,7 +48,7 @@ func Test_sigini01(tst *testing.T) {
 	σref := []float64{σx, σy, σz, 0}
 
 	// check stresses
-	e := d.Elems[0].(*ElemU)
+	e := dom.Elems[0].(*ElemU)
 	tols := 1e-13
 	for idx, _ := range e.IpsElem {
 		σ := e.States[idx].Sig
