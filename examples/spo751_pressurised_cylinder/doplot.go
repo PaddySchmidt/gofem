@@ -73,7 +73,7 @@ func main() {
 
 		// read results from file
 		if !dom.In(sum, tidx, true) {
-			io.PfRed("plot_spo751: cannot read solution\n")
+			io.PfRed("cannot read solution\n")
 			return
 		}
 

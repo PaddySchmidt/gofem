@@ -1,13 +1,17 @@
 #!/bin/bash
 
-examples="rjoint_ex06_pullout \
-          seep_simple_flux \
-          seep_ex01_freesurf \
-          seep_ex02_freesurf \
-          spo751_pressurised_cylinder \
-          spo754_strip_footing_collapse \
-          up_3mcolumn_desiccation \
-          up_indentation2d_unsat"
+set -e
+
+examples="\
+dynamics_sgbook \
+rjoint_ex06_pullout \
+seep_simple_flux \
+seep_ex01_freesurf \
+seep_ex02_freesurf \
+spo751_pressurised_cylinder \
+spo754_strip_footing_collapse \
+up_3mcolumn_desiccation \
+up_indentation2d_unsat"
 
 for ex in $examples; do
     echo
