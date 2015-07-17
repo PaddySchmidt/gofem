@@ -46,20 +46,12 @@ func Test_spo751a(tst *testing.T) {
 		return
 	}
 
-	// allocate domain and others
-	if !Alloc(true) {
-		tst.Errorf("Alloc failed\n")
+	// allocate domain and set stage
+	dom, _, ok := AllocSetAndInit(0, false, false)
+	if !ok {
+		tst.Errorf("AllocSetAndInit failed\n")
 		return
 	}
-
-	// set stage
-	if !SetStage(0) {
-		tst.Errorf("SetStage failed\n")
-		return
-	}
-
-	// domain
-	dom := Global.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 23)
