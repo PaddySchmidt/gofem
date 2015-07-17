@@ -7,8 +7,6 @@
 package main
 
 import (
-	"flag"
-
 	"github.com/cpmech/gofem/out"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/plt"
@@ -16,18 +14,11 @@ import (
 
 func main() {
 
-	// input data
-	simfn := "onepulse-qua9co.sim"
-	flag.Parse()
-	if len(flag.Args()) > 0 {
-		simfn = flag.Arg(0)
-	}
-	if io.FnExt(simfn) == "" {
-		simfn += ".sim"
-	}
+	// filename
+	filename, fnkey := io.Args0toFilename("onepulse-qua9co.sim", ".sim", true)
 
 	// start analysis process
-	out.Start(simfn, 0, 0)
+	out.Start(filename, 0, 0)
 
 	// define entities
 	out.Define("A B C D E", out.N{-5, -4, -3, -2, -1})
@@ -68,6 +59,7 @@ func main() {
 		out.Plot("t", "sy", l, S[i], -1)
 	}
 
-	// show
-	out.Draw("", "", true, nil)
+	// save
+	plt.SetForPng(1, 500, 200)
+	out.Draw("/tmp", "up_3mcolumn_dessication_"+fnkey+".png", false, nil)
 }
