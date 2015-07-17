@@ -16,7 +16,6 @@ func main() {
 
 	// options
 	verbose := false
-	show := true
 
 	// start analysis process
 	out.Start("spo754.sim", 0, 0)
@@ -37,8 +36,9 @@ func main() {
 	var tst testing.T
 	fem.TestingCompareResultsU(&tst, "data/spo754.sim", "spo754.cmp", tolK, tolu, tols, skipK, verbose)
 
-	// plot
+	// save
+	plt.SetForPng(0.8, 400, 200)
 	out.Splot("Plot")
 	out.Plot("uy", "t", "A", plt.Fmt{C: "r", M: "o"}, -1)
-	out.Draw("", "", show, nil)
+	out.Draw("/tmp", "spo754.png", false, nil)
 }
