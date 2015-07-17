@@ -37,7 +37,7 @@ func main() {
 	}
 
 	// show
-	out.Draw("", "", true, nil)
+	out.Draw("/tmp", "rjoint_ex06_pullout_o2elast.png", false, nil)
 }
 
 // auxiliary /////////////////////////////////////////////////////////////////////////////////////////

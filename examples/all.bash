@@ -4,6 +4,7 @@ set -e
 
 examples="\
 dynamics_sgbook \
+rjoint_ex01_curved \
 rjoint_ex06_pullout \
 seep_simple_flux \
 seep_ex01_freesurf \

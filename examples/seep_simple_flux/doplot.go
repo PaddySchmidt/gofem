@@ -5,8 +5,6 @@
 package main
 
 import (
-	"flag"
-
 	"github.com/cpmech/gofem/out"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/plt"
@@ -14,19 +12,12 @@ import (
 
 func main() {
 
-	// input data
-	simfn := "d2-simple-flux"
-	flag.Parse()
-	if len(flag.Args()) > 0 {
-		simfn = flag.Arg(0)
-	}
-	if io.FnExt(simfn) == "" {
-		simfn += ".sim"
-	}
+	// filename
+	filename, fnkey := io.Args0toFilename("d2-simple-flux", ".sim", true)
 
 	// start analysis process
 	out.Extrap = []string{"nwlx", "nwly"}
-	out.Start(simfn, 0, 0)
+	out.Start(filename, 0, 0)
 
 	// define entities
 	out.Define("top-middle", out.At{5, 3})
@@ -53,12 +44,11 @@ func main() {
 	out.Plot("t", nwlx_TM, "top-middle", plt.Fmt{}, -1)
 	out.Csplot.Ylbl = "$n_{\\ell}\\cdot w_{\\ell x}$"
 
-	// show
-	if true {
-		out.Draw("", "", true, func(i, j, nplots int) {
-			if i == 2 && j == 1 {
-				plt.Plot([]float64{0, 10}, []float64{10, 9}, "'k--'")
-			}
-		})
-	}
+	// save
+	plt.SetForPng(1.5, 400, 200)
+	out.Draw("/tmp", "seep_simple_flux_"+fnkey+".png", false, func(i, j, nplots int) {
+		if i == 2 && j == 1 {
+			plt.Plot([]float64{0, 10}, []float64{10, 9}, "'k--'")
+		}
+	})
 }
