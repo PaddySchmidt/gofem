@@ -90,13 +90,8 @@ func (o *RichardsonExtrap) Run(stg *inp.Stage) (ok bool) {
 	// time control
 	t := Global.Time
 	tf := stg.Control.Tf
-	tout := Global.TimeOut
-	tidx := Global.TimeIdx
-	defer func() {
-		Global.Time = t
-		Global.TimeOut = tout
-		Global.TimeIdx = tidx
-	}()
+	tout := t + stg.Control.DtoFunc.F(t, nil)
+	defer func() { Global.Time = t }()
 
 	// domain and variables
 	d := Global.Domains[0]
@@ -197,16 +192,13 @@ func (o *RichardsonExtrap) Run(stg *inp.Stage) (ok bool) {
 					io.PfWhite("%30.15f\r", t)
 				}
 			}
-			//if true {
 			if t >= tout || o.laststep {
 				if Global.Summary != nil {
-					Global.Summary.OutTimes = append(Global.Summary.OutTimes, t)
-				}
-				if !d.Out(tidx) {
-					return
+					if !Global.Summary.SaveResults() {
+						return
+					}
 				}
 				tout += stg.Control.DtoFunc.F(t, nil)
-				tidx += 1
 			}
 
 			// reached final time

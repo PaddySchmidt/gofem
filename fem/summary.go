@@ -15,11 +15,37 @@ import (
 
 // Summary records summary of outputs
 type Summary struct {
+
+	// main data
 	Nproc    int          // number of processors used in last last run; equal to 1 if not distributed
 	OutTimes []float64    // [nOutTimes] output times
 	Resids   utl.DblSlist // residuals (if Stat is on; includes all stages)
 	Dirout   string       // directory where results are stored
 	Fnkey    string       // filename key of simulation
+
+	// auxiliary
+	tidx int // time output index
+}
+
+// SaveResults save the results from all domains (nodes and elements)
+func (o *Summary) SaveResults() (ok bool) {
+
+	// output results from all domains
+	for _, d := range Global.Domains {
+		if LogErrCond(!d.Out(o.tidx), "SaveResults failed") {
+			break
+		}
+	}
+	if Stop() {
+		return
+	}
+
+	// update internal structures
+	o.OutTimes = append(o.OutTimes, Global.Time)
+	o.tidx += 1
+
+	// success
+	return true
 }
 
 // SaveSums saves summary to disc

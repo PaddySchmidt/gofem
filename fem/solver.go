@@ -49,9 +49,7 @@ var Global struct {
 	HydroSt  *HydroStatic // computes hydrostatic states
 
 	// time control
-	Time    float64 // curent simulation time
-	TimeOut float64 // time for output
-	TimeIdx int     // time output index
+	Time float64 // curent simulation time
 
 	// domains and summary
 	Domains []*Domain // all domains
@@ -195,7 +193,6 @@ func Alloc(withSummary bool) (allocisok bool) {
 	// alloc summary
 	if withSummary {
 		Global.Summary = new(Summary)
-		Global.Summary.OutTimes = []float64{Global.Time}
 	}
 
 	// alloc solver
@@ -215,16 +212,11 @@ func Alloc(withSummary bool) (allocisok bool) {
 //   output -- perform output of results and log material models
 func SolveAllStages(output bool) (ok bool) {
 
-	// current time and output time
+	// current time
 	Global.Time = 0.0
-	Global.TimeOut = 0.0
-	Global.TimeIdx = 0
 
 	// loop over stages
 	for stgidx, stg := range Global.Sim.Stages {
-
-		// time for output
-		Global.TimeOut = Global.Time + stg.Control.DtoFunc.F(Global.Time, nil)
 
 		// set stage
 		if !SetStage(stgidx, output) {
@@ -263,16 +255,9 @@ func SolveAllStages(output bool) (ok bool) {
 //   zeroSol -- zero vectors in domains.Sol
 func SolveOneStage(stgidx int, zeroSol bool) (ok bool) {
 
-	// current time and output time
+	// current time and stage
 	Global.Time = 0.0
-	Global.TimeOut = 0.0
-	Global.TimeIdx = 0
-
-	// pointer to stage structure
 	stg := Global.Sim.Stages[stgidx]
-
-	// time for output
-	Global.TimeOut = Global.Time + stg.Control.DtoFunc.F(Global.Time, nil)
 
 	// initialise solution vectors
 	if !InitSolution(stgidx, zeroSol) {
@@ -293,22 +278,23 @@ func SolveOneStage(stgidx int, zeroSol bool) (ok bool) {
 //   stgidx -- stage index (in Global.Sim.Stages)
 //   output -- perform output of results and log material models
 func SetStage(stgidx int, output bool) (ok bool) {
+
+	// set stage for all domains
 	for _, d := range Global.Domains {
 		if LogErrCond(!d.SetStage(stgidx, Global.Sim.Stages[stgidx], Global.Distr), "SetStage failed") {
 			break
 		}
 		d.Sol.T = Global.Time
-		if output {
-			if !d.Out(Global.TimeIdx) {
-				break
-			}
-		}
 	}
 	if Stop() {
 		return
 	}
-	if output {
-		Global.TimeIdx += 1
+
+	// perform output of results
+	if output && Global.Summary != nil {
+		if !Global.Summary.SaveResults() {
+			return
+		}
 	}
 	return true
 }

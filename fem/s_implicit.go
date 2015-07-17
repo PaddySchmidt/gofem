@@ -32,16 +32,11 @@ func (o *SolverImplicit) Run(stg *inp.Stage) (runisok bool) {
 	// time control
 	t := Global.Time
 	tf := stg.Control.Tf
-	tout := Global.TimeOut
-	tidx := Global.TimeIdx
-	defer func() {
-		Global.Time = t
-		Global.TimeOut = tout
-		Global.TimeIdx = tidx
-	}()
+	tout := t + stg.Control.DtoFunc.F(t, nil)
+	defer func() { Global.Time = t }()
 
 	// time loop
-	var Δt, Δtout float64
+	var Δt float64
 	var lasttimestep bool
 	for t < tf {
 
@@ -74,7 +69,6 @@ func (o *SolverImplicit) Run(stg *inp.Stage) (runisok bool) {
 		for _, d := range Global.Domains {
 			d.Sol.T = t
 		}
-		Δtout = stg.Control.DtoFunc.F(t, nil)
 
 		// message
 		if Global.Verbose {
@@ -123,25 +117,11 @@ func (o *SolverImplicit) Run(stg *inp.Stage) (runisok bool) {
 		// perform output
 		if t >= tout || lasttimestep {
 			if Global.Summary != nil {
-				Global.Summary.OutTimes = append(Global.Summary.OutTimes, t)
-			}
-			for _, d := range Global.Domains {
-				//if true {
-				if false {
-					debug_print_p_results(d)
-				}
-				if false {
-					debug_print_up_results(d)
-				}
-				if !d.Out(tidx) {
-					break
+				if !Global.Summary.SaveResults() {
+					return
 				}
 			}
-			if Stop() {
-				return
-			}
-			tout += Δtout
-			tidx += 1
+			tout += stg.Control.DtoFunc.F(t, nil)
 		}
 	}
 
