@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/cpmech/gosl/chk"
-	"github.com/cpmech/gosl/plt"
 )
 
 func Test_rjoint01(tst *testing.T) {
@@ -35,41 +34,5 @@ func Test_rjoint01(tst *testing.T) {
 	if !RunAll() {
 		tst.Errorf("Run failed\n")
 		return
-	}
-
-	// plot
-	//if true {
-	if false {
-
-		// allocate domain
-		sum := ReadSum(Global.Dirout, Global.Fnkey)
-		dom := NewDomain(Global.Sim.Regions[0], false)
-		if !dom.SetStage(0, Global.Sim.Stages[0], false) {
-			tst.Errorf("SetStage failed\n")
-			return
-		}
-		ele := dom.Elems[eid].(*Rjoint)
-		ipd := ele.OutIpsData()
-
-		// load results from file
-		n := len(sum.OutTimes)
-		mτ := make([]float64, n)
-		ωpb := make([]float64, n)
-		for i, _ := range sum.OutTimes {
-			if !dom.In(sum, i, true) {
-				tst.Errorf("cannot read solution\n")
-				return
-			}
-			for _, dat := range ipd {
-				res := dat.Calc(dom.Sol)
-				mτ[i] = -res["tau"]
-				ωpb[i] = res["ompb"]
-			}
-		}
-
-		// plot
-		plt.Plot(ωpb, mτ, "'b-', marker='o', clip_on=0")
-		plt.Gll("$\\bar{\\omega}_p$", "$-\\tau$", "")
-		plt.Show()
 	}
 }
