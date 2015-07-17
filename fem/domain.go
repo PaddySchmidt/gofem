@@ -515,8 +515,8 @@ func (o *Domain) SetIniVals(stg *inp.Stage, zeroSol bool) (ok bool) {
 
 	// import results from another set of files
 	if stg.Import != nil {
-		sum := ReadSum(stg.Import.Dir, stg.Import.Fnk)
-		if LogErrCond(sum == nil, "cannot import state from %s/%s.sim", stg.Import.Dir, stg.Import.Fnk) {
+		sum := new(Summary)
+		if LogErrCond(!sum.Read(stg.Import.Dir, stg.Import.Fnk), "cannot import state from %s/%s.sim", stg.Import.Dir, stg.Import.Fnk) {
 			return
 		}
 		if !o.In(sum, len(sum.OutTimes)-1, false) {

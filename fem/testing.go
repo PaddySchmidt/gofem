@@ -47,9 +47,9 @@ func TestingCompareResultsU(tst *testing.T, simfname, cmpfname string, tolK, tol
 	}
 
 	// read summary
-	sum := ReadSum(Global.Dirout, Global.Fnkey)
-	if sum == nil {
-		tst.Errorf("cannot read summary file for simulation=%q\n", simfname)
+	sum := new(Summary)
+	if !sum.Read(Global.Dirout, Global.Fnkey) {
+		tst.Errorf("cannot read summary file %q\n", simfname)
 		return
 	}
 

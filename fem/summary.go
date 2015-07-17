@@ -75,28 +75,28 @@ func (o Summary) Save() (ok bool) {
 	return save_file("SaveSum", "summary", fn, &buf)
 }
 
-// ReadSum reads summary back
-//  Note: returns nil on errors
-func ReadSum(dir, fnkey string) (o *Summary) {
+// Read reads summary back
+func (o *Summary) Read(dir, fnkey string) (ok bool) {
 
 	// open file
 	fn := out_sum_path(dir, fnkey, 0) // reading always from proc # 0
 	fil, err := os.Open(fn)
 	if LogErr(err, "ReadSum") {
-		return nil
+		return
 	}
 	defer func() {
 		LogErr(fil.Close(), "ReadSum: cannot close file")
 	}()
 
 	// decode summary
-	var sum Summary
 	dec := GetDecoder(fil)
-	err = dec.Decode(&sum)
+	err = dec.Decode(o)
 	if LogErr(err, "ReadSum") {
-		return nil
+		return
 	}
-	return &sum
+
+	// success
+	return true
 }
 
 // auxiliary ///////////////////////////////////////////////////////////////////////////////////////
