@@ -323,6 +323,43 @@ func CleanUp() {
 	}
 }
 
+// AllocSetAndInit allocates domains, summary, solver and sets stage # stgidx
+// and initial values in all domains. It also returns the first domain.
+//  Input:
+//   stgidx      -- stage index
+//   withSummary -- also allocate summary
+//   readSummary -- reads summary back from previous calculation
+//  Output:
+//   dom -- first domain; i.e. dom := Global.Domains[0];
+//   sum -- summary, if withSummary is true
+func AllocSetAndInit(stgidx int, withSummary, readSummary bool) (dom *Domain, sum *Summary, ok bool) {
+
+	// allocate domain and others
+	if !Alloc(withSummary) {
+		return
+	}
+
+	// set stage
+	if !SetStage(stgidx) {
+		return
+	}
+
+	// set initial solution vectors
+	if !InitSolution(stgidx, false) {
+		return
+	}
+
+	// read summary
+	if readSummary {
+		if !Global.Summary.Read(Global.Dirout, Global.Fnkey) {
+			return
+		}
+	}
+
+	// success
+	return Global.Domains[0], Global.Summary, true
+}
+
 // factory ////////////////////////////////////////////////////////////////////////////////////////
 
 // FEsolver implements the actual solver (time loop)
