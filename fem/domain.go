@@ -92,6 +92,27 @@ type Solution struct {
 	L   []float64 // Lagrange multipliers
 }
 
+// Reset clear values
+func (o *Solution) Reset() {
+	o.T = Global.Time
+	for i := 0; i < len(o.Y); i++ {
+		o.Y[i] = 0
+		o.ΔY[i] = 0
+	}
+	if !Global.Sim.Data.Steady {
+		for i := 0; i < len(o.Y); i++ {
+			o.Psi[i] = 0
+			o.Zet[i] = 0
+			o.Chi[i] = 0
+			o.Dydt[i] = 0
+			o.D2ydt2[i] = 0
+		}
+	}
+	for i := 0; i < len(o.L); i++ {
+		o.L[i] = 0
+	}
+}
+
 // Domain holds all Nodes and Elements active during a stage in addition to the Solution at nodes.
 // Only elements in this processor are recorded here; however information from
 // all cells might be recorded as well.
@@ -450,6 +471,25 @@ func (o *Domain) SetStage(idxstg int, stg *inp.Stage, distr bool) (setstageisok 
 		o.Sol.Chi = make([]float64, o.Ny)
 	}
 
+	// logging
+	if Global.LogBcs {
+		log.Printf("dom: essential boundary conditions:%v", o.EssenBcs.List(stg.Control.Tf))
+		log.Printf("dom: ptnatbcs=%v", o.PtNatBcs.List(stg.Control.Tf))
+	}
+	log.Printf("dom: ny=%d nlam=%d nnzKb=%d nnzA=%d nt1eqs=%d nt2eqs=%d", o.Ny, o.Nlam, o.NnzKb, o.NnzA, len(o.T1eqs), len(o.T2eqs))
+
+	// success
+	return true
+}
+
+// SetIniVals sets/resets initial values (nodes and integration points)
+func (o *Domain) SetIniVals(stg *inp.Stage, zeroSol bool) (ok bool) {
+
+	// clear solution vectors
+	if zeroSol {
+		o.Sol.Reset()
+	}
+
 	// initialise internal variables
 	if stg.HydroSt {
 		if !o.SetHydroSt(stg) {
@@ -505,15 +545,6 @@ func (o *Domain) SetStage(idxstg int, stg *inp.Stage, distr bool) (setstageisok 
 			}
 		}
 	}
-
-	// logging
-	if Global.LogBcs {
-		log.Printf("dom: essential boundary conditions:%v", o.EssenBcs.List(stg.Control.Tf))
-		log.Printf("dom: ptnatbcs=%v", o.PtNatBcs.List(stg.Control.Tf))
-	}
-	log.Printf("dom: ny=%d nlam=%d nnzKb=%d nnzA=%d nt1eqs=%d nt2eqs=%d", o.Ny, o.Nlam, o.NnzKb, o.NnzA, len(o.T1eqs), len(o.T2eqs))
-
-	// success
 	return true
 }
 

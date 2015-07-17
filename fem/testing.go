@@ -61,6 +61,12 @@ func TestingCompareResultsU(tst *testing.T, simfname, cmpfname string, tolK, tol
 		return
 	}
 
+	// initialise solution vectors
+	if !d.SetIniVals(Global.Sim.Stages[0], false) {
+		tst.Errorf("SetIniVals failed\n")
+		return
+	}
+
 	// read file
 	buf, err := io.ReadFile(cmpfname)
 	if err != nil {

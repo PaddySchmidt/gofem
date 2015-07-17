@@ -37,19 +37,26 @@ func Test_bh16a(tst *testing.T) {
 		return
 	}
 
-	// domain
-	distr := false
-	dom := NewDomain(Global.Sim.Regions[0], distr)
-	if dom == nil {
-		tst.Errorf("NewDomain failed\n")
+	// allocate domain and others
+	if !Alloc(true) {
+		tst.Errorf("Alloc failed\n")
 		return
 	}
 
 	// set stage
-	if !dom.SetStage(0, Global.Sim.Stages[0], distr) {
+	if !SetStage(0, true) {
 		tst.Errorf("SetStage failed\n")
 		return
 	}
+
+	// set initial solution vectors
+	if !InitSolution(0, false) {
+		tst.Errorf("InitSolution failed\n")
+		return
+	}
+
+	// domain
+	dom := Global.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 6)
@@ -205,7 +212,7 @@ func Test_bh14b(tst *testing.T) {
 	}
 
 	// run
-	ok := SolveOneStage(stgidx)
+	ok := SolveOneStage(stgidx, false)
 	CleanUp()
 	if !ok {
 		tst.Errorf("SolveOneStage failed\n")

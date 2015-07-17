@@ -32,6 +32,12 @@ func Test_sigini01(tst *testing.T) {
 		return
 	}
 
+	// initialise solution vectors
+	if !d.SetIniVals(Global.Sim.Stages[0], false) {
+		tst.Errorf("SetIniVals failed\n")
+		return
+	}
+
 	// check displacements
 	tolu := 1e-16
 	for _, n := range d.Nodes {

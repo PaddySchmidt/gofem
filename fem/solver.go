@@ -139,11 +139,6 @@ func Start(simfilepath string, erasefiles, verbose, allowParallel bool) (startis
 		return
 	}
 
-	// current time and output time
-	Global.Time = 0.0
-	Global.TimeOut = 0.0
-	Global.TimeIdx = 0
-
 	// domains and summary
 	Global.Domains = make([]*Domain, 0)
 	Global.Summary = nil
@@ -216,7 +211,14 @@ func Alloc(withSummary bool) (allocisok bool) {
 }
 
 // SolveAllStages solve problem for all stages
+//  Input:
+//   output -- perform output of results and log material models
 func SolveAllStages(output bool) (ok bool) {
+
+	// current time and output time
+	Global.Time = 0.0
+	Global.TimeOut = 0.0
+	Global.TimeIdx = 0
 
 	// loop over stages
 	for stgidx, stg := range Global.Sim.Stages {
@@ -226,6 +228,11 @@ func SolveAllStages(output bool) (ok bool) {
 
 		// set stage
 		if !SetStage(stgidx, output) {
+			return
+		}
+
+		// initialise solution vectors
+		if !InitSolution(stgidx, false) {
 			return
 		}
 
@@ -251,11 +258,26 @@ func SolveAllStages(output bool) (ok bool) {
 }
 
 // SolveOneStage solves one stage that was already set
-func SolveOneStage(stgidx int) (ok bool) {
+//  Input:
+//   stgidx  -- stage index (in Global.Sim.Stages)
+//   zeroSol -- zero vectors in domains.Sol
+func SolveOneStage(stgidx int, zeroSol bool) (ok bool) {
+
+	// current time and output time
+	Global.Time = 0.0
+	Global.TimeOut = 0.0
+	Global.TimeIdx = 0
+
+	// pointer to stage structure
+	stg := Global.Sim.Stages[stgidx]
 
 	// time for output
-	stg := Global.Sim.Stages[stgidx]
 	Global.TimeOut = Global.Time + stg.Control.DtoFunc.F(Global.Time, nil)
+
+	// initialise solution vectors
+	if !InitSolution(stgidx, zeroSol) {
+		return
+	}
 
 	// time loop
 	if !Global.Solver.Run(stg) {
@@ -267,6 +289,9 @@ func SolveOneStage(stgidx int) (ok bool) {
 }
 
 // SetStage sets stage for all domains
+//  Input:
+//   stgidx -- stage index (in Global.Sim.Stages)
+//   output -- perform output of results and log material models
 func SetStage(stgidx int, output bool) (ok bool) {
 	for _, d := range Global.Domains {
 		if LogErrCond(!d.SetStage(stgidx, Global.Sim.Stages[stgidx], Global.Distr), "SetStage failed") {
@@ -284,6 +309,23 @@ func SetStage(stgidx int, output bool) (ok bool) {
 	}
 	if output {
 		Global.TimeIdx += 1
+	}
+	return true
+}
+
+// InitSolution initialises solution vectors (Y, dYdt, internal values such as States.Sig, etc.)
+// in all domains for all nodes and all elements
+//  Input:
+//   stgidx  -- stage index (in Global.Sim.Stages)
+//   zeroSol -- zero vectors in domains.Sol
+func InitSolution(stgidx int, zeroSol bool) (ok bool) {
+	for _, d := range Global.Domains {
+		if LogErrCond(!d.SetIniVals(Global.Sim.Stages[stgidx], zeroSol), "InitSolution failed") {
+			break
+		}
+	}
+	if Stop() {
+		return
 	}
 	return true
 }

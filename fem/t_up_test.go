@@ -73,6 +73,12 @@ func Test_up01a(tst *testing.T) {
 		return
 	}
 
+	// set initial solution vectors
+	if !InitSolution(0, false) {
+		tst.Errorf("InitSolution failed\n")
+		return
+	}
+
 	// domain
 	dom := Global.Domains[0]
 
