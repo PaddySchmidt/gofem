@@ -65,8 +65,8 @@ func Start(simfnpath string, stageIdx, regionIdx int) {
 	}
 
 	// read summary
-	Sum = fem.ReadSum(fem.Global.Dirout, fem.Global.Fnkey)
-	if Sum == nil {
+	Sum = new(fem.Summary)
+	if !Sum.Read(fem.Global.Dirout, fem.Global.Fnkey) {
 		chk.Panic("cannot read summary file for simulation=%q\n", simfnpath)
 	}
 
