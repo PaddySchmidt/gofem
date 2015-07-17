@@ -7,8 +7,6 @@
 package main
 
 import (
-	"flag"
-
 	"github.com/cpmech/gofem/out"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/plt"
@@ -16,18 +14,11 @@ import (
 
 func main() {
 
-	// input data
-	simfn := "a-coarse-elast-d2-q9.sim"
-	flag.Parse()
-	if len(flag.Args()) > 0 {
-		simfn = flag.Arg(0)
-	}
-	if io.FnExt(simfn) == "" {
-		simfn += ".sim"
-	}
+	// filename
+	filename, fnkey := io.Args0toFilename("a-coarse-elast-d2-q9.sim", ".sim", true)
 
 	// start analysis process
-	out.Start(simfn, 0, 0)
+	out.Start(filename, 0, 0)
 
 	// define entities
 	out.Define("A B C D E", out.N{-1, -2, -3, -4, -5})                       // top => bottom
@@ -69,5 +60,6 @@ func main() {
 	}
 
 	// show
-	out.Draw("", "", true, nil)
+	plt.SetForPng(1, 500, 200)
+	out.Draw("/tmp", "up_indentation2d_unsat_"+fnkey+".png", false, nil)
 }
