@@ -28,7 +28,7 @@ type Summary struct {
 }
 
 // SaveResults save the results from all domains (nodes and elements)
-func (o *Summary) SaveResults() (ok bool) {
+func (o *Summary) SaveResults(time float64) (ok bool) {
 
 	// output results from all domains
 	for _, d := range Global.Domains {
@@ -41,7 +41,7 @@ func (o *Summary) SaveResults() (ok bool) {
 	}
 
 	// update internal structures
-	o.OutTimes = append(o.OutTimes, Global.Time)
+	o.OutTimes = append(o.OutTimes, time)
 	o.tidx += 1
 
 	// success

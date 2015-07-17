@@ -77,6 +77,11 @@ func Start(simfnpath string, stageIdx, regionIdx int) {
 		chk.Panic("cannot allocate domain\n")
 	}
 
+	// initialise solution vectors
+	if !Dom.SetIniVals(fem.Global.Sim.Stages[stageIdx], false) {
+		chk.Panic("SetIniVals failed\n")
+	}
+
 	// clear previous data
 	Ipoints = make([]*fem.OutIpData, 0)
 	Cid2ips = make([][]int, len(Dom.Msh.Cells))

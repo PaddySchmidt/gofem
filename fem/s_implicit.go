@@ -35,6 +35,13 @@ func (o *SolverImplicit) Run(stg *inp.Stage) (runisok bool) {
 	tout := t + stg.Control.DtoFunc.F(t, nil)
 	defer func() { Global.Time = t }()
 
+	// first output
+	if Global.Summary != nil {
+		if !Global.Summary.SaveResults(t) {
+			return
+		}
+	}
+
 	// time loop
 	var Δt float64
 	var lasttimestep bool
@@ -117,7 +124,7 @@ func (o *SolverImplicit) Run(stg *inp.Stage) (runisok bool) {
 		// perform output
 		if t >= tout || lasttimestep {
 			if Global.Summary != nil {
-				if !Global.Summary.SaveResults() {
+				if !Global.Summary.SaveResults(t) {
 					return
 				}
 			}

@@ -2,7 +2,8 @@
   "data" : {
     "desc"    : "Bhatti Example 1.4 p25",
     "matfile" : "bh.mat",
-    "steady"  : true
+    "steady"  : true,
+    "encoder" : "json"
   },
   "functions" : [
     { "name":"load", "type":"cte", "prms":[ {"n":"c", "v":-150000} ] }

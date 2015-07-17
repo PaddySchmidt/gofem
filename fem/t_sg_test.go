@@ -54,7 +54,7 @@ func Test_sg52a(tst *testing.T) {
 	}
 
 	// set stage
-	if !SetStage(0, true) {
+	if !SetStage(0) {
 		tst.Errorf("SetStage failed\n")
 		return
 	}

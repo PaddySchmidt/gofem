@@ -3,7 +3,8 @@
     "desc"    : "one qua4",
     "matfile" : "simple.mat",
     "steady"  : true,
-    "showR"   : true
+    "showR"   : true,
+    "encoder" : "json"
   },
   "functions" : [
     { "name":"qnH", "type":"cte", "prms":[{"n":"c", "v":-50 }] },

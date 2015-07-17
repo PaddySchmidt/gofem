@@ -219,7 +219,7 @@ func SolveAllStages(output bool) (ok bool) {
 	for stgidx, stg := range Global.Sim.Stages {
 
 		// set stage
-		if !SetStage(stgidx, output) {
+		if !SetStage(stgidx) {
 			return
 		}
 
@@ -276,10 +276,7 @@ func SolveOneStage(stgidx int, zeroSol bool) (ok bool) {
 // SetStage sets stage for all domains
 //  Input:
 //   stgidx -- stage index (in Global.Sim.Stages)
-//   output -- perform output of results and log material models
-func SetStage(stgidx int, output bool) (ok bool) {
-
-	// set stage for all domains
+func SetStage(stgidx int) (ok bool) {
 	for _, d := range Global.Domains {
 		if LogErrCond(!d.SetStage(stgidx, Global.Sim.Stages[stgidx], Global.Distr), "SetStage failed") {
 			break
@@ -288,13 +285,6 @@ func SetStage(stgidx int, output bool) (ok bool) {
 	}
 	if Stop() {
 		return
-	}
-
-	// perform output of results
-	if output && Global.Summary != nil {
-		if !Global.Summary.SaveResults() {
-			return
-		}
 	}
 	return true
 }

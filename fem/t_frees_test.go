@@ -29,7 +29,7 @@ func Test_frees01a(tst *testing.T) {
 	}
 
 	// set stage
-	if !SetStage(0, true) {
+	if !SetStage(0) {
 		tst.Errorf("SetStage failed\n")
 		return
 	}

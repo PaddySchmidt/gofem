@@ -44,7 +44,7 @@ func Test_bh16a(tst *testing.T) {
 	}
 
 	// set stage
-	if !SetStage(0, true) {
+	if !SetStage(0) {
 		tst.Errorf("SetStage failed\n")
 		return
 	}
@@ -206,7 +206,7 @@ func Test_bh14b(tst *testing.T) {
 
 	// set stage
 	stgidx := 0
-	if !SetStage(stgidx, true) {
+	if !SetStage(stgidx) {
 		tst.Errorf("SetStage failed\n")
 		return
 	}

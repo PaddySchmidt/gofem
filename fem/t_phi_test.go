@@ -48,7 +48,7 @@ func Test_phi01(tst *testing.T) {
 	}
 
 	// set stage
-	if !SetStage(0, true) {
+	if !SetStage(0) {
 		tst.Errorf("SetStage failed\n")
 		return
 	}

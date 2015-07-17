@@ -93,6 +93,13 @@ func (o *RichardsonExtrap) Run(stg *inp.Stage) (ok bool) {
 	tout := t + stg.Control.DtoFunc.F(t, nil)
 	defer func() { Global.Time = t }()
 
+	// first output
+	if Global.Summary != nil {
+		if !Global.Summary.SaveResults(t) {
+			return
+		}
+	}
+
 	// domain and variables
 	d := Global.Domains[0]
 	o.Y_big = make([]float64, d.Ny)
@@ -194,7 +201,7 @@ func (o *RichardsonExtrap) Run(stg *inp.Stage) (ok bool) {
 			}
 			if t >= tout || o.laststep {
 				if Global.Summary != nil {
-					if !Global.Summary.SaveResults() {
+					if !Global.Summary.SaveResults(t) {
 						return
 					}
 				}
