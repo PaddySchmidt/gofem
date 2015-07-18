@@ -31,14 +31,14 @@ See page 487 of [1].
 ### 1.1.1 Geometry, mesh and boundary conditions
 
 <div id="container">
-<img src="examples/dynamics_sgbook/figs/sg111msh.png">
+<img src="dynamics_sgbook/figs/sg111msh.png">
 Finite element mesh.
 </div>
 
 ### 1.1.2 Results
 
 <div id="container">
-<img src="examples/dynamics_sgbook/figs/sg111.png">
+<img src="dynamics_sgbook/figs/sg111.png">
 Deflection at the right hand side.
 </div>
 
@@ -51,14 +51,14 @@ See page 491 of [1].
 ### 1.2.1 Geometry, mesh and boundary conditions
 
 <div id="container">
-<img src="examples/dynamics_sgbook/figs/sg114msh.png">
+<img src="dynamics_sgbook/figs/sg114msh.png">
 Finite element mesh.
 </div>
 
 ### 1.2.2 Results
 
 <div id="container">
-<img src="examples/dynamics_sgbook/figs/sg114.png">
+<img src="dynamics_sgbook/figs/sg114.png">
 Deflection.
 </div>
 
@@ -71,14 +71,14 @@ See page 515 of [1].
 ### 1.3.1 Geometry, mesh and boundary conditions
 
 <div id="container">
-<img src="examples/dynamics_sgbook/figs/sg1121msh.png">
+<img src="dynamics_sgbook/figs/sg1121msh.png">
 Finite element mesh.
 </div>
 
 ### 1.3.2 Results
 
 <div id="container">
-<img src="examples/dynamics_sgbook/figs/sg1121.png">
+<img src="dynamics_sgbook/figs/sg1121.png">
 Deflection.
 </div>
 
@@ -91,14 +91,14 @@ A curved rod is immersed in a parallelepiped and has a force applied to one of i
 ## 2.1 Mesh
 
 <div id="container">
-<img src="examples/rjoint_ex01_curved/figs/mesh.png">
+<img src="rjoint_ex01_curved/figs/mesh.png">
 Mesh with curved rod (3-node element shown by straight lines in red).
 </div>
 
 ## 2.2 Results
 
 <div id="container">
-<img src="examples/rjoint_ex01_curved/figs/rjoint01.png">
+<img src="rjoint_ex01_curved/figs/rjoint01.png">
 Shear stress along joint element.
 </div>
 
@@ -111,19 +111,22 @@ Pullout test in reinforced concrete block.
 ## 3.1 Mesh
 
 <div id="container">
-<img src="examples/rjoint_ex06_pullout/figs/mesh.png">
+<img src="rjoint_ex06_pullout/figs/mesh.png">
 Finite element mesh.
 </div>
 
 ## 3.2 Results
 
 <div id="container">
-<img src="examples/rjoint_ex06_pullout/figs/rjoint_ex06_pullout_o2elast.png">
+<img src="rjoint_ex06_pullout/figs/rjoint_ex06_pullout_o2elast.png">
 Displacements of nodes along rod (rebar).
 </div>
 
 
+
 # 4 seep_ex01_freesurf -- Transient simulation with seepage face
+
+
 # 5 seep_ex02_freesurf -- Transient simulation with seepage face
 # 6 seep_simple_flux -- Simple flux in a horizontal permeametre
 # 7 spo751_pressurised_cylinder -- Internally pressurised cylinder

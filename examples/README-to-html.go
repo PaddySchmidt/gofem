@@ -51,7 +51,7 @@ func main() {
 	io.Pforan("path = %v\n", path)
 
 	// set path of figures
-	html = strings.Replace(html, "img src=\"examples", io.Sf("img src=\"%s/examples", path), -1)
+	html = strings.Replace(html, "img src=\"", io.Sf("img src=\"%s/examples/", path), -1)
 
 	// set header and footer
 	html = `<!DOCTYPE HTML>
