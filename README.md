@@ -8,6 +8,10 @@ language (golang).
 Unless otherwise noted, the Gofem source files are distributed
 under the BSD-style license found in the LICENSE file.
 
+## Examples
+
+See examples here: http://cpmech.github.io/gofem/tree/master/examples
+
 ## Installation and documentation
 
 http://cpmech.github.io/gofem
