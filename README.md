@@ -10,7 +10,7 @@ under the BSD-style license found in the LICENSE file.
 
 ## Examples
 
-See examples here: http://cpmech.github.io/gofem/tree/master/examples
+See examples here: https://github.com/cpmech/gofem/blob/master/examples/README.md
 
 ## Installation and documentation
 
