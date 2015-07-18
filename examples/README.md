@@ -1,4 +1,4 @@
-# Gofem --- examples
+# Gofem &ndash; examples
 
 ## Summary
 1.  **dynamics_sgbook** -- Solid dynamics. Examples from Smith, Griffiths and Margetts book [1].
@@ -6,7 +6,7 @@
 3.  **rjoint_ex06_pullout** -- Pullout test in reinforced concrete [2,3].
 4.  **seep_ex01_freesurf** -- Transient simulation with seepage face. Rectangle domain. [4]
 5.  **seep_ex02_freesurf** -- Transient simulation with seepage face. Earthen Slope. [4]
-6.  **seep_simple_flux** -- Simple flux in a horizontal permeametre. 2D and 3D simulations with computation of water discharge.
+6.  **seep_simple_flux** -- Simple flux in a horizontal permeameter. 2D and 3D simulations with computation of water discharge.
 7.  **spo751_pressurised_cylinder** -- Internally pressurised cylinder. Plasticity problem number 7.5.1 (page 244) from Souza-Peric-Owen (SPO) book [5].
 8.  **spo754_strip_footing_collapse** -- Strip-footing collapse. Plasticity problem number 7.5.4 (page 252) from Souza-Peric-Owen (SPO) book [5].
 9.  **up_3mcolumn_desiccation** -- Desiccation of porous column. Unsaturated porous media simulation from [6].
@@ -117,6 +117,8 @@ Finite element mesh.
 
 ## 3.2 Results
 
+The plot shows the displacement of rod nodes for a number of time outputs. 'y' is the length of the rod starting from 0.20 because the rod is inside the beam.
+
 <div id="container">
 <p><img src="rjoint_ex06_pullout/figs/rjoint_ex06_pullout_o2elast.png" width="400"></p>
 Displacements of nodes along rod (rebar).
@@ -126,30 +128,44 @@ Displacements of nodes along rod (rebar).
 
 # 4 seep_ex01_freesurf -- Transient simulation with seepage face
 
+Modelling the seepage face using enriched element as proposed in [4]. The right hand side of a block of porous medium has the liquid pressure decreased thus inducing flow from left to right. [See video of similar simulation here](https://vimeo.com/113379824).
+
+## 4.1 Mesh
+
+<div id="container">
+<p><img src="seep_ex01_freesurf/figs/mesh.png" width="400"></p>
+Finite element mesh.
+</div>
+
+## 4.2 Results
+
+<div id="container">
+<p><img src="seep_ex01_freesurf/figs/coarse.png" width="400"></p>
+Results: pressure and saturation distribution at the end of the simulation.
+</div>
+
 
 # 5 seep_ex02_freesurf -- Transient simulation with seepage face
-# 6 seep_simple_flux -- Simple flux in a horizontal permeametre
-# 7 spo751_pressurised_cylinder -- Internally pressurised cylinder
-# 8 spo754_strip_footing_collapse -- Strip-footing collapse
-# 9 up_3mcolumn_desiccation -- Desiccation of porous column
-# 10 up_indentation2d_unsat -- Indentation of unsaturated porous medium
+
+Modelling the seepage face using enriched element as proposed in [4]. The right hand side of a earthen slope has the liquid pressure decreased thus inducing flow from left to right. [See video of similar simulation here](https://vimeo.com/113380931).
+
+## 5.1 Mesh
+
+<div id="container">
+<p><img src="seep_ex02_freesurf/figs/mesh.png" width="400"></p>
+Finite element mesh.
+</div>
+
+## 5.2 Results
+
+<div id="container">
+<p><img src="seep_ex02_freesurf/figs/struct.png" width="400"></p>
+Results: pressure and saturation distribution at the end of the simulation.
+</div>
 
 
 
-
-
-
-
-
-
-## Pullout test: rjoing_ex06_pullout
-
-3D beam with one steel rod being pulled out
-
-The plot shows the displacement of rod nodes for a number of time outputs. 'y' is the length of the
-rod starting from 0.20 because the rod is inside the beam.
-
-## Horizontal permeameter: seep_simple_flux
+# 6 seep_simple_flux -- Simple flux in a horizontal permeameter
 
 Cylinder with porous media under seepage only. With gravity. To the left hand side hydrostatic
 pressure is kept constant. To the right hand side, pressure is decrease by the following _shift_
@@ -164,17 +180,174 @@ _hydrost_ must be true in _stages_
 
 _dvgctrl_ divergence control will reduce the time step in case divergence occurs
 
-The plot shows ...
+## 6.1 2D: Mesh
+
+<div id="container">
+<p><img src="seep_simple_flux/figs/d2-coarse-msh.png" width="400"></p>
+Finite element mesh. Rectangle with 10 x 3 units of length.
+</div>
+
+## 6.2 2D: Results
+
+<div id="container">
+<p><img src="seep_simple_flux/figs/seep_simple_flux_d2-simple-flux.png" width="400"></p>
+Results.
+ (a) pressure along vertical section at middle of rectangle (x=5.0);
+ (b) pressure along horizontal section at lower part of the rectangle (y=0.0);
+ (c) filter velocity at x=5 and y=3.
+</div>
+
+<div id="container">
+<p><img src="seep_simple_flux/figs/d2-results.png" width="400"></p>
+Seepage velocity.
+</div>
+
+## 6.3 3D: Results
+
+<div id="container">
+<p><img src="seep_simple_flux/figs/d3-results.png" width="400"></p>
+Seepage velocity.
+</div>
 
 
-## Plotting
 
-Use package _out_
+# 7 spo751_pressurised_cylinder -- Internally pressurised cylinder
+
+See page 244 of [5]. Pressure is applied to the edge tagged with -10. The material is modelled using the von Mises model.
+
+## 7.1 Mesh
+
+<div id="container">
+<p><img src="spo751_pressurised_cylinder/figs/mesh.png" width="400"></p>
+Finite element mesh.
+</div>
+
+## 7.2 Results
+
+<div id="container">
+<p><img src="spo751_pressurised_cylinder/figs/gofem_spo751_disp.png" width="400"></p>
+Displacement of the outer face; node # 20 with tag -202.
+</div>
+
+<div id="container">
+<p><img src="spo751_pressurised_cylinder/figs/gofem_spo751_sr.png" width="400"></p>
+Radial stress component of integration points along a line from the inner to the outer faces.
+</div>
+
+<div id="container">
+<p><img src="spo751_pressurised_cylinder/figs/gofem_spo751_st.png" width="400"></p>
+Tangential stress component of integration points along a line from the inner to the outer faces.
+</div>
 
 
 
+# 8 spo754_strip_footing_collapse -- Strip-footing collapse
 
-## Notes
+See page 252 of [5]. Displacement is applied to the region corresponding to the footing at the left hand side. von Mises model is used.
 
-Check gofem/inp/sim.go
-Check where 2/3, 5/6, 8/9 came from? (Zienkiewicz)
+## 8.1 Mesh
+
+<div id="container">
+<p><img src="spo754_strip_footing_collapse/figs/mesh.png" width="400"></p>
+Finite element mesh.
+</div>
+
+## 8.2 Results
+
+TODO.
+
+
+
+# 9 up_3mcolumn_desiccation -- Desiccation of porous column
+
+Desiccation of a 3 metres high column of porous medium. The bottom of the column has pressure specified. This pressure varies causing desiccation of column.
+
+## 9.1 Mesh
+
+<div id="container">
+<p><img src="up_3mcolumn_desiccation/figs/mesh.png"></p>
+Finite element mesh.
+</div>
+
+### 9.2 Decreasing and increasing the pressure.
+
+<div id="container">
+<p><img src="up_3mcolumn_desiccation/figs/up_3mcolumn_dessication_onepulse-qua9co.png"></p>
+Results.
+</div>
+
+### 9.3 Linearly decreasing the pressure to reach unsaturated state.
+
+<div id="container">
+<p><img src="up_3mcolumn_desiccation/figs/up_3mcolumn_dessication_linear-qua9co.png"></p>
+Results.
+</div>
+
+### 9.4 Wetting of initially unsaturated column.
+
+<div id="container">
+<p><img src="up_3mcolumn_desiccation/figs/up_3mcolumn_dessication_wet-linear-qua9co.png"></p>
+Results.
+</div>
+
+
+
+# 10 up_indentation2d_unsat -- Indentation of unsaturated porous medium
+
+This example shows the indentation of an unsaturated soil. First, the domain is made unsaturated by means of decreasing the pressure at the bottom. The next simulation the applies the indenter at the surface. Two ways of modelling this problem are considered:
+
+* a and b simulations -- lower the pressure at bottom and apply the load
+* c and d simulations -- dry the medium by means of flux prescribed at the surface then apply the load
+
+## 10.1 Mesh
+
+The size of the domain is 3 x 3 in units of length.
+
+<div id="container">
+<p><img src="up_indentation2d_unsat/figs/mesh.png"></p>
+Finite element mesh.
+</div>
+
+## 10.2 Results -- first stage by lowering pressure
+
+<div id="container">
+<p><img src="up_indentation2d_unsat/figs/up_indentation2d_unsat_a-coarse-elast-d2-q9.png"></p>
+Results from first stage by lowering pressure. First stage: lowering pressure.
+</div>
+
+<div id="container">
+<p><img src="up_indentation2d_unsat/figs/up_indentation2d_unsat_b-coarse-elast-d2-q9.png"></p>
+Results from first stage by lowering pressure. Second stage: applying indenter.
+</div>
+
+<div id="container">
+<p><img src="up_indentation2d_unsat/figs/up_indentation2d_unsat_lrm_a-coarse-elast-d2-q9.png"></p>
+Results from first stage by lowering pressure. First stage: liquid retention behaviour under the indenter.
+</div>
+
+<div id="container">
+<p><img src="up_indentation2d_unsat/figs/up_indentation2d_unsat_lrm_b-coarse-elast-d2-q9.png"></p>
+Results from first stage by lowering pressure. Second stage: liquid retention behaviour under the indenter.
+</div>
+
+## 10.3 Results -- first stage by drying surface
+
+<div id="container">
+<p><img src="up_indentation2d_unsat/figs/up_indentation2d_unsat_c-coarse-elast-d2-q9.png"></p>
+Results from first stage by drying surface. First stage: drying surface by applying flux.
+</div>
+
+<div id="container">
+<p><img src="up_indentation2d_unsat/figs/up_indentation2d_unsat_d-coarse-elast-d2-q9.png"></p>
+Results from first stage by lowering pressure. Second stage: applying indenter.
+</div>
+
+<div id="container">
+<p><img src="up_indentation2d_unsat/figs/up_indentation2d_unsat_lrm_c-coarse-elast-d2-q9.png"></p>
+Results from first stage by lowering pressure. First stage: liquid retention behaviour under the indenter.
+</div>
+
+<div id="container">
+<p><img src="up_indentation2d_unsat/figs/up_indentation2d_unsat_lrm_d-coarse-elast-d2-q9.png"></p>
+Results from first stage by lowering pressure. Second stage: liquid retention behaviour under the indenter.
+</div>
