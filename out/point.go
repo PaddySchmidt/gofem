@@ -18,7 +18,7 @@ type Point struct {
 // Points is a set of Point
 type Points []*Point
 
-// Len the length of Points
+// Len returns the length of Points
 func (o Points) Len() int {
 	return len(o)
 }
