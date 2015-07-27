@@ -5,7 +5,8 @@
 package fem
 
 import (
-	"github.com/cpmech/gofem/inp"
+	"github.com/cpmech/gosl/chk"
+	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/la"
 	"github.com/cpmech/gosl/mpi"
@@ -13,32 +14,38 @@ import (
 
 // SolverImplicit solves FEM problem using an implicit procedure (with Newthon-Raphson method)
 type SolverImplicit struct {
+	doms []*Domain
+	sum  *Summary
+	dc   *DynCoefs
 }
 
 // set factory
 func init() {
-	solverallocators["imp"] = func() FEsolver {
+	solverallocators["imp"] = func(doms []*Domain, sum *Summary, dc *DynCoefs) FEsolver {
 		solver := new(SolverImplicit)
+		solver.doms = doms
+		solver.sum = sum
+		solver.dc = dc
 		return solver
 	}
 }
 
-func (o *SolverImplicit) Run(stg *inp.Stage) (runisok bool) {
+func (o *SolverImplicit) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose bool, dbgKb DebugKb_t) (err error) {
 
 	// auxiliary
 	md := 1.0    // time step multiplier if divergence control is on
 	ndiverg := 0 // number of steps diverging
 
-	// time control
-	t := Global.Time
-	tf := stg.Control.Tf
-	tout := t + stg.Control.DtoFunc.F(t, nil)
-	defer func() { Global.Time = t }()
+	// control
+	t := o.doms[0].Sol.T
+	dat := o.doms[0].Sim.Solver
+	tout := t + dtoFunc.F(t, nil)
 
 	// first output
-	if Global.Summary != nil {
-		if !Global.Summary.SaveResults(t) {
-			return
+	if o.sum != nil {
+		err = o.sum.SaveDomains(t, o.doms)
+		if err != nil {
+			return chk.Err("cannot save results:\n%v", err)
 		}
 	}
 
@@ -48,61 +55,55 @@ func (o *SolverImplicit) Run(stg *inp.Stage) (runisok bool) {
 	for t < tf {
 
 		// check for continued divergence
-		if LogErrCond(ndiverg >= Global.Sim.Solver.NdvgMax, "continuous divergence after %d steps reached", ndiverg) {
-			return
+		if ndiverg >= dat.NdvgMax {
+			return chk.Err("continuous divergence after %d steps reached", ndiverg)
 		}
 
 		// time increment
-		Δt = stg.Control.DtFunc.F(t, nil) * md
+		Δt = dtFunc.F(t, nil) * md
 		if t+Δt >= tf {
-			Δt = tf - t
 			lasttimestep = true
 		}
-		if Δt < Global.Sim.Solver.DtMin {
+		if Δt < dat.DtMin {
 			if md < 1 {
-				LogErrCond(true, "Δt increment is too small: %g < %g", Δt, Global.Sim.Solver.DtMin)
-				return false
+				return chk.Err("Δt increment is too small: %g < %g", Δt, dat.DtMin)
 			}
-			return true
 		}
+		t += Δt
 
 		// dynamic coefficients
-		if LogErr(Global.DynCoefs.CalcBoth(Δt), "cannot compute dynamic coefficients") {
-			return
-		}
-
-		// time update
-		t += Δt
-		for _, d := range Global.Domains {
-			d.Sol.T = t
+		err = o.dc.CalcBoth(Δt)
+		if err != nil {
+			return chk.Err("cannot compute dynamic coefficients")
 		}
 
 		// message
-		if Global.Verbose {
-			if !Global.Sim.Data.ShowR && !Global.Debug {
+		if verbose {
+			if !dat.ShowR {
 				io.PfWhite("%30.15f\r", t)
 			}
 		}
 
 		// for all domains
 		docontinue := false
-		for _, d := range Global.Domains {
+		for _, d := range o.doms {
 
 			// backup solution if divergence control is on
-			if Global.Sim.Solver.DvgCtrl {
+			if dat.DvgCtrl {
 				d.backup()
 			}
 
 			// run iterations
-			diverging, ok := run_iterations(t, Δt, d)
-			if !ok {
-				return
+			d.Sol.T = t
+			diverging, err := run_iterations(t, Δt, d, o.dc, o.sum, dbgKb)
+			if err != nil {
+				return chk.Err("run_iterations failed:\n%v", err)
 			}
 
 			// restore solution and reduce time step if divergence control is on
-			if Global.Sim.Solver.DvgCtrl {
+			if dat.DvgCtrl {
 				if diverging {
-					if Global.Verbose {
+					if verbose {
 						io.Pfred(". . . iterations diverging (%2d) . . .\n", ndiverg+1)
 					}
 					d.restore()
@@ -123,37 +124,54 @@ func (o *SolverImplicit) Run(stg *inp.Stage) (runisok bool) {
 
 		// perform output
 		if t >= tout || lasttimestep {
-			if Global.Summary != nil {
-				if !Global.Summary.SaveResults(t) {
-					return
+			if o.sum != nil {
+				err = o.sum.SaveDomains(t, o.doms)
+				if err != nil {
+					return chk.Err("cannot save results:\n%v", err)
 				}
 			}
-			tout += stg.Control.DtoFunc.F(t, nil)
+			tout += dtoFunc.F(t, nil)
 		}
 	}
-
-	// success
-	return true
+	return
 }
 
 // run_iterations solves the nonlinear problem
-func run_iterations(t, Δt float64, d *Domain) (diverging, ok bool) {
+func run_iterations(t, Δt float64, d *Domain, dc *DynCoefs, sum *Summary, dbgKb DebugKb_t) (diverging bool, err error) {
 
 	// zero accumulated increments
 	la.VecFill(d.Sol.ΔY, 0)
 
 	// calculate global starred vectors and interpolate starred variables from nodes to integration points
-	if LogErr(d.star_vars(Δt), "cannot compute starred variables") {
-		return
+	if !d.Sim.Data.Steady {
+
+		// compute starred vectors
+		for _, I := range d.T1eqs {
+			d.Sol.Psi[I] = dc.β1*d.Sol.Y[I] + dc.β2*d.Sol.Dydt[I]
+		}
+		for _, I := range d.T2eqs {
+			d.Sol.Zet[I] = dc.α1*d.Sol.Y[I] + dc.α2*d.Sol.Dydt[I] + dc.α3*d.Sol.D2ydt2[I]
+			d.Sol.Chi[I] = dc.α4*d.Sol.Y[I] + dc.α5*d.Sol.Dydt[I] + dc.α6*d.Sol.D2ydt2[I]
+		}
+
+		// set internal starred variables
+		for _, e := range d.Elems {
+			err = e.InterpStarVars(d.Sol)
+			if err != nil {
+				err = chk.Err("cannot compute starred variables:\n%v", err)
+				return
+			}
+		}
 	}
 
 	// auxiliary variables
 	var it int
 	var largFb, largFb0, Lδu float64
 	var prevFb, prevLδu float64
+	dat := d.Sim.Solver
 
 	// message
-	if Global.Sim.Data.ShowR {
+	if dat.ShowR {
 		io.Pf("\n%13s%4s%23s%23s\n", "t", "it", "largFb", "Lδu")
 		defer func() {
 			io.Pf("%13.6e%4d%23.15e%23.15e\n", t, it, largFb, Lδu)
@@ -161,21 +179,19 @@ func run_iterations(t, Δt float64, d *Domain) (diverging, ok bool) {
 	}
 
 	// iterations
-	for it = 0; it < Global.Sim.Solver.NmaxIt; it++ {
+	for it = 0; it < dat.NmaxIt; it++ {
 
 		// assemble right-hand side vector (fb) with negative of residuals
 		la.VecFill(d.Fb, 0)
 		for _, e := range d.Elems {
-			if !e.AddToRhs(d.Fb, d.Sol) {
-				break
+			err = e.AddToRhs(d.Fb, d.Sol)
+			if err != nil {
+				return
 			}
-		}
-		if Stop() {
-			return
 		}
 
 		// join all fb
-		if Global.Distr {
+		if d.Distr {
 			mpi.AllReduceSum(d.Fb, d.Wb) // this must be done here because there might be nodes sharing boundary conditions
 		}
 
@@ -185,19 +201,13 @@ func run_iterations(t, Δt float64, d *Domain) (diverging, ok bool) {
 		// essential boundary conditioins; e.g. constraints
 		d.EssenBcs.AddToRhs(d.Fb, d.Sol)
 
-		// debug
-		if Global.Debug {
-			//la.PrintVec("fb", d.Fb[:d.Ny], "%13.10f ", false)
-			//panic("stop")
-		}
-
 		// find largest absolute component of fb
 		largFb = la.VecLargest(d.Fb, 1)
 
 		// save residual
-		if Global.Stat {
-			if Global.Summary != nil {
-				Global.Summary.Resids.Append(it == 0, largFb)
+		if d.Sim.Data.Stat {
+			if sum != nil {
+				sum.Resids.Append(it == 0, largFb)
 			}
 		}
 
@@ -207,17 +217,17 @@ func run_iterations(t, Δt float64, d *Domain) (diverging, ok bool) {
 			largFb0 = largFb
 		} else {
 			// check convergence on Lf0
-			if largFb < Global.Sim.Solver.FbTol*largFb0 { // converged on fb
+			if largFb < dat.FbTol*largFb0 { // converged on fb
 				break
 			}
 			// check convergence on fb_min
-			if largFb < Global.Sim.Solver.FbMin { // converged with smallest value of fb
+			if largFb < dat.FbMin { // converged with smallest value of fb
 				break
 			}
 		}
 
 		// check divergence on fb
-		if it > 1 && Global.Sim.Solver.DvgCtrl {
+		if it > 1 && dat.DvgCtrl {
 			if largFb > prevFb {
 				diverging = true
 				break
@@ -226,59 +236,51 @@ func run_iterations(t, Δt float64, d *Domain) (diverging, ok bool) {
 		prevFb = largFb
 
 		// assemble Jacobian matrix
-		do_asm_fact := (it == 0 || !Global.Sim.Data.CteTg)
+		do_asm_fact := (it == 0 || !dat.CteTg)
 		if do_asm_fact {
 
 			// assemble element matrices
 			d.Kb.Start()
 			for _, e := range d.Elems {
-				if !e.AddToKb(d.Kb, d.Sol, it == 0) {
-					break
+				err = e.AddToKb(d.Kb, d.Sol, it == 0)
+				if err != nil {
+					return
 				}
-			}
-			if Stop() {
-				return
 			}
 
 			// debug
-			if Global.DebugKb != nil {
-				Global.DebugKb(d, it)
+			if dbgKb != nil {
+				dbgKb(d, it)
 			}
 
 			// join A and tr(A) matrices into Kb
-			if Global.Root {
+			if d.Proc == 0 {
 				d.Kb.PutMatAndMatT(&d.EssenBcs.A)
 			}
 
 			// initialise linear solver
 			if d.InitLSol {
-				if LogErr(d.LinSol.InitR(d.Kb, Global.Sim.LinSol.Symmetric, Global.Sim.LinSol.Verbose, Global.Sim.LinSol.Timing), "cannot initialise linear solver") {
+				err = d.LinSol.InitR(d.Kb, d.Sim.LinSol.Symmetric, d.Sim.LinSol.Verbose, d.Sim.LinSol.Timing)
+				if err != nil {
+					err = chk.Err("cannot initialise linear solver:\n%v", err)
 					return
 				}
 				d.InitLSol = false
 			}
 
 			// perform factorisation
-			LogErr(d.LinSol.Fact(), "factorisation")
-			if Stop() {
+			err = d.LinSol.Fact()
+			if err != nil {
+				err = chk.Err("factorisation failed:\n%v", err)
 				return
 			}
 		}
 
-		// debug
-		//KK := d.Kb.ToMatrix(nil).ToDense()
-		//la.PrintMat("KK", KK, "%20.10f", false)
-		//panic("stop")
-
 		// solve for wb := δyb
-		LogErr(d.LinSol.SolveR(d.Wb, d.Fb, false), "solve")
-		if Stop() {
+		err = d.LinSol.SolveR(d.Wb, d.Fb, false)
+		if err != nil {
+			err = chk.Err("solve failed:%v\n", err)
 			return
-		}
-
-		// debug
-		if Global.Debug {
-			//la.PrintVec("wb", d.Wb[:d.Ny], "%13.10f ", false)
 		}
 
 		// update primary variables (y)
@@ -286,13 +288,13 @@ func run_iterations(t, Δt float64, d *Domain) (diverging, ok bool) {
 			d.Sol.Y[i] += d.Wb[i]  // y += δy
 			d.Sol.ΔY[i] += d.Wb[i] // ΔY += δy
 		}
-		if !Global.Sim.Data.Steady {
+		if !d.Sim.Data.Steady {
 			for _, I := range d.T1eqs {
-				d.Sol.Dydt[I] = Global.DynCoefs.β1*d.Sol.Y[I] - d.Sol.Psi[I]
+				d.Sol.Dydt[I] = dc.β1*d.Sol.Y[I] - d.Sol.Psi[I]
 			}
 			for _, I := range d.T2eqs {
-				d.Sol.Dydt[I] = Global.DynCoefs.α4*d.Sol.Y[I] - d.Sol.Chi[I]
-				d.Sol.D2ydt2[I] = Global.DynCoefs.α1*d.Sol.Y[I] - d.Sol.Zet[I]
+				d.Sol.Dydt[I] = dc.α4*d.Sol.Y[I] - d.Sol.Chi[I]
+				d.Sol.D2ydt2[I] = dc.α1*d.Sol.Y[I] - d.Sol.Zet[I]
 			}
 		}
 
@@ -316,29 +318,27 @@ func run_iterations(t, Δt float64, d *Domain) (diverging, ok bool) {
 
 		// update secondary variables
 		for _, e := range d.Elems {
-			if !e.Update(d.Sol) {
+			err = e.Update(d.Sol)
+			if err != nil {
 				break
 			}
 		}
-		if Stop() {
-			return
-		}
 
 		// compute RMS norm of δu and check convegence on δu
-		Lδu = la.VecRmsErr(d.Wb[:d.Ny], Global.Sim.Solver.Atol, Global.Sim.Solver.Rtol, d.Sol.Y[:d.Ny])
+		Lδu = la.VecRmsErr(d.Wb[:d.Ny], dat.Atol, dat.Rtol, d.Sol.Y[:d.Ny])
 
 		// message
-		if Global.Sim.Data.ShowR {
+		if dat.ShowR {
 			io.Pf("%13.6e%4d%23.15e%23.15e\n", t, it, largFb, Lδu)
 		}
 
 		// stop if converged on δu
-		if Lδu < Global.Sim.Solver.Itol {
+		if Lδu < dat.Itol {
 			break
 		}
 
 		// check divergence on Lδu
-		if it > 1 && Global.Sim.Solver.DvgCtrl {
+		if it > 1 && dat.DvgCtrl {
 			if Lδu > prevLδu {
 				diverging = true
 				break
@@ -348,12 +348,9 @@ func run_iterations(t, Δt float64, d *Domain) (diverging, ok bool) {
 	}
 
 	// check if iterations diverged
-	if it == Global.Sim.Solver.NmaxIt {
+	if it == dat.NmaxIt {
 		io.PfMag("max number of iterations reached: it = %d\n", it)
 		return
 	}
-
-	// success
-	ok = true
 	return
 }

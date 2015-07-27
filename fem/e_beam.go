@@ -9,6 +9,7 @@ import (
 
 	"github.com/cpmech/gofem/inp"
 
+	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/la"
 )
@@ -17,9 +18,10 @@ import (
 type Beam struct {
 
 	// basic data
-	Cid int         // cell/element id
-	X   [][]float64 // matrix of nodal coordinates [ndim][nnode]
-	Nu  int         // total number of unknowns == 2 * nsn
+	Cid  int         // cell/element id
+	X    [][]float64 // matrix of nodal coordinates [ndim][nnode]
+	Nu   int         // total number of unknowns == 2 * nsn
+	Ndim int         // space dimension
 
 	// parameters
 	E   float64 // Young's modulus
@@ -57,14 +59,14 @@ type Beam struct {
 func init() {
 
 	// information allocator
-	infogetters["beam"] = func(cellType string, faceConds []*FaceCond) *Info {
+	infogetters["beam"] = func(sim *inp.Simulation, cell *inp.Cell, edat *inp.ElemData) *Info {
 
 		// new info
 		var info Info
 
 		// solution variables
 		ykeys := []string{"ux", "uy", "rz"}
-		if Global.Ndim == 3 {
+		if sim.Ndim == 3 {
 			ykeys = []string{"ux", "uy", "uz", "rx", "ry", "rz"}
 		}
 		info.Dofs = make([][]string, 2)
@@ -81,25 +83,25 @@ func init() {
 	}
 
 	// element allocator
-	eallocators["beam"] = func(cellType string, faceConds []*FaceCond, cid int, edat *inp.ElemData, x [][]float64) Elem {
+	eallocators["beam"] = func(sim *inp.Simulation, cell *inp.Cell, edat *inp.ElemData, x [][]float64) Elem {
 
 		// check
-		if LogErrCond(Global.Ndim == 3, "beam is not implemented for 3D yet") {
-			return nil
+		ndim := len(x)
+		if ndim == 3 {
+			chk.Panic("beam is not implemented for 3D yet")
 		}
 
 		// basic data
 		var o Beam
-		o.Cid = cid
+		o.Cid = cell.Id
 		o.X = x
-		ndim := Global.Ndim
 		ndof := 3 * (ndim - 1)
 		o.Nu = ndof * ndim
+		o.Ndim = ndim
 
 		// parameters
-		matname := edat.Mat
-		matdata := Global.Sim.Mdb.Get(edat.Mat)
-		if LogErrCond(matdata == nil, "materials database failed on getting %q material\n", matname) {
+		matdata := sim.MatParams.Get(edat.Mat)
+		if matdata == nil {
 			return nil
 		}
 		for _, p := range matdata.Prms {
@@ -196,7 +198,7 @@ func init() {
 		la.MatTrMul3(o.M, 1, o.T, o.Ml, o.T) // M := 1 * trans(T) * Ml * T
 
 		// scratchpad. computed @ each ip
-		o.grav = make([]float64, Global.Ndim)
+		o.grav = make([]float64, ndim)
 		o.fi = make([]float64, o.Nu)
 
 		// return new element
@@ -208,8 +210,8 @@ func init() {
 func (o Beam) Id() int { return o.Cid }
 
 // SetEqs set equations [2][?]. Format of eqs == format of info.Dofs
-func (o *Beam) SetEqs(eqs [][]int, mixedform_eqs []int) (ok bool) {
-	ndof := 3 * (Global.Ndim - 1)
+func (o *Beam) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
+	ndof := 3 * (o.Ndim - 1)
 	o.Umap = make([]int, o.Nu)
 	for m := 0; m < 2; m++ {
 		for i := 0; i < ndof; i++ {
@@ -217,16 +219,16 @@ func (o *Beam) SetEqs(eqs [][]int, mixedform_eqs []int) (ok bool) {
 			o.Umap[r] = eqs[m][i]
 		}
 	}
-	return true
+	return
 }
 
 // SetEleConds set element conditions
-func (o *Beam) SetEleConds(key string, f fun.Func, extra string) (ok bool) {
+func (o *Beam) SetEleConds(key string, f fun.Func, extra string) (err error) {
 
 	// gravity
 	if key == "g" {
 		o.Gfcn = f
-		return true
+		return
 	}
 
 	// distributed loads
@@ -240,29 +242,21 @@ func (o *Beam) SetEleConds(key string, f fun.Func, extra string) (ok bool) {
 	case "qt":
 		o.Hasq, o.Qt = true, f
 	default:
-		LogErrCond(true, "cannot handle boundary condition named %q", key)
-		return false
+		return chk.Err("cannot handle boundary condition named %q", key)
 	}
-	return true
+	return
 }
 
 // InterpStarVars interpolates star variables to integration points
-func (o *Beam) InterpStarVars(sol *Solution) (ok bool) {
-
-	// steady
-	if Global.Sim.Data.Steady {
-		return true
-	}
-
-	// dynamics
+func (o *Beam) InterpStarVars(sol *Solution) (err error) {
 	for i, I := range o.Umap {
 		o.ζe[i] = sol.Zet[I]
 	}
-	return true
+	return
 }
 
 // adds -R to global residual vector fb
-func (o Beam) AddToRhs(fb []float64, sol *Solution) (ok bool) {
+func (o Beam) AddToRhs(fb []float64, sol *Solution) (err error) {
 
 	// node displacements
 	for i, I := range o.Umap {
@@ -270,14 +264,14 @@ func (o Beam) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 	}
 
 	// steady/dynamics
-	if Global.Sim.Data.Steady {
+	if sol.Steady {
 		la.MatVecMul(o.fi, 1, o.K, o.ue)
 	} else {
-		dc := Global.DynCoefs
+		α1 := sol.DynCfs.α1
 		for i := 0; i < o.Nu; i++ {
 			o.fi[i] = 0
 			for j := 0; j < o.Nu; j++ {
-				o.fi[i] += o.M[i][j]*(dc.α1*o.ue[j]-o.ζe[j]) + o.K[i][j]*o.ue[j]
+				o.fi[i] += o.M[i][j]*(α1*o.ue[j]-o.ζe[j]) + o.K[i][j]*o.ue[j]
 			}
 		}
 	}
@@ -303,41 +297,41 @@ func (o Beam) AddToRhs(fb []float64, sol *Solution) (ok bool) {
 	for i, I := range o.Umap {
 		fb[I] -= o.fi[i]
 	}
-	return true
+	return
 }
 
 // adds element K to global Jacobian matrix Kb
-func (o Beam) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) {
-	if Global.Sim.Data.Steady {
+func (o Beam) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
+	if sol.Steady {
 		for i, I := range o.Umap {
 			for j, J := range o.Umap {
 				Kb.Put(I, J, o.K[i][j])
 			}
 		}
-	} else {
-		dc := Global.DynCoefs
-		for i, I := range o.Umap {
-			for j, J := range o.Umap {
-				Kb.Put(I, J, o.M[i][j]*dc.α1+o.K[i][j])
-			}
+		return
+	}
+	α1 := sol.DynCfs.α1
+	for i, I := range o.Umap {
+		for j, J := range o.Umap {
+			Kb.Put(I, J, o.M[i][j]*α1+o.K[i][j])
 		}
 	}
-	return true
+	return
 }
 
 // Update perform (tangent) update
-func (o *Beam) Update(sol *Solution) (ok bool) {
-	return true
+func (o *Beam) Update(sol *Solution) (err error) {
+	return
 }
 
 // Encode encodes internal variables
-func (o Beam) Encode(enc Encoder) (ok bool) {
-	return true
+func (o Beam) Encode(enc Encoder) (err error) {
+	return
 }
 
 // Decode decodes internal variables
-func (o Beam) Decode(dec Decoder) (ok bool) {
-	return true
+func (o Beam) Decode(dec Decoder) (err error) {
+	return
 }
 
 // OutIpsData returns data from all integration points for output

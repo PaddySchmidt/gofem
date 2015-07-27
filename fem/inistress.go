@@ -5,14 +5,13 @@
 package fem
 
 import (
-	"log"
-
 	"github.com/cpmech/gofem/inp"
+	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/utl"
 )
 
 // SetIniStress sets the initial state with initial stresses
-func (o *Domain) SetIniStress(stg *inp.Stage) (ok bool) {
+func (o *Domain) SetIniStress(stg *inp.Stage) (err error) {
 
 	// set elements with homogeneous stress state
 	dat := stg.IniStress
@@ -29,12 +28,12 @@ func (o *Domain) SetIniStress(stg *inp.Stage) (ok bool) {
 				ivs := map[string][]float64{"sx": v, "sy": v, "sz": v}
 
 				// set element's states
-				if LogErrCond(!e.SetIniIvs(o.Sol, ivs), "homogeneous/isotropic: element's internal values setting failed") {
-					return
+				err = e.SetIniIvs(o.Sol, ivs)
+				if err != nil {
+					return chk.Err("homogeneous/isotropic: element's internal values setting failed:\n%v", err)
 				}
 			}
-			log.Printf("dom: initial homogeneous/isotropic state set with σ0 = %g", dat.S0)
-			return true
+			return
 		}
 
 		// plane-strain state
@@ -51,13 +50,13 @@ func (o *Domain) SetIniStress(stg *inp.Stage) (ok bool) {
 				ivs := map[string][]float64{"sx": vx, "sy": vy, "sz": vz}
 
 				// set element's states
-				if LogErrCond(!e.SetIniIvs(o.Sol, ivs), "homogeneous/plane-strain: element's internal values setting failed") {
-					return
+				err = e.SetIniIvs(o.Sol, ivs)
+				if err != nil {
+					return chk.Err("homogeneous/plane-strain: element's internal values setting failed:\n%v", err)
 				}
 			}
-			log.Printf("dom: initial homogeneous/plane-strain state set with sx=%g sy=%g sz=%g", dat.Sh, dat.Sv, sz)
-			return true
+			return
 		}
 	}
-	return true
+	return
 }

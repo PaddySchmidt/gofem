@@ -7,6 +7,7 @@ package fem
 import (
 	"github.com/cpmech/gofem/inp"
 
+	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/la"
 )
@@ -22,23 +23,23 @@ type OutIpData struct {
 type Elem interface {
 
 	// information and initialisation
-	Id() int                                           // returns the cell Id
-	SetEqs(eqs [][]int, mixedform_eqs []int) (ok bool) // set equations
+	Id() int                                             // returns the cell Id
+	SetEqs(eqs [][]int, mixedform_eqs []int) (err error) // set equations
 
 	// conditions (natural BCs and element's)
-	SetEleConds(key string, f fun.Func, extra string) (ok bool) // set element conditions
+	SetEleConds(key string, f fun.Func, extra string) (err error) // set element conditions
 
 	// called for each time step
-	InterpStarVars(sol *Solution) (ok bool) // interpolate star variables to integration points
+	InterpStarVars(sol *Solution) (err error) // interpolate star variables to integration points
 
 	// called for each iteration
-	AddToRhs(fb []float64, sol *Solution) (ok bool)                // adds -R to global residual vector fb
-	AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (ok bool) // adds element K to global Jacobian matrix Kb
-	Update(sol *Solution) (ok bool)                                // perform (tangent) update
+	AddToRhs(fb []float64, sol *Solution) (err error)                // adds -R to global residual vector fb
+	AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) // adds element K to global Jacobian matrix Kb
+	Update(sol *Solution) (err error)                                // perform (tangent) update
 
 	// reading and writing of element data
-	Encode(enc Encoder) (ok bool) // encodes internal variables
-	Decode(dec Decoder) (ok bool) // decodes internal variables
+	Encode(enc Encoder) (err error) // encodes internal variables
+	Decode(dec Decoder) (err error) // decodes internal variables
 
 	// output
 	OutIpsData() (data []*OutIpData) // returns data from all integration points for output
@@ -46,17 +47,17 @@ type Elem interface {
 
 // ElemConnector defines connector elements; elements that depend upon others
 type ElemConnector interface {
-	Id() int                                                  // returns the cell Id
-	Connect(cid2elem []Elem, c *inp.Cell) (nnzK int, ok bool) // connect multiple elements; e.g.: connect rod/solid elements in Rjoints
+	Id() int                                                    // returns the cell Id
+	Connect(cid2elem []Elem, c *inp.Cell) (nnzK int, err error) // connect multiple elements; e.g.: connect rod/solid elements in Rjoints
 }
 
 // ElemIntvars defines elements with {z,q} internal variables
 type ElemIntvars interface {
-	Ipoints() (coords [][]float64)                               // returns the real coordinates of integration points [nip][ndim]
-	SetIniIvs(sol *Solution, ivs map[string][]float64) (ok bool) // sets initial ivs for given values in sol and ivs map
-	BackupIvs(aux bool) (ok bool)                                // create copy of internal variables
-	RestoreIvs(aux bool) (ok bool)                               // restore internal variables from copies
-	Ureset(sol *Solution) (ok bool)                              // fixes internal variables after u (displacements) have been zeroed
+	Ipoints() (coords [][]float64)                                 // returns the real coordinates of integration points [nip][ndim]
+	SetIniIvs(sol *Solution, ivs map[string][]float64) (err error) // sets initial ivs for given values in sol and ivs map
+	BackupIvs(aux bool) (err error)                                // create copy of internal variables
+	RestoreIvs(aux bool) (err error)                               // restore internal variables from copies
+	Ureset(sol *Solution) (err error)                              // fixes internal variables after u (displacements) have been zeroed
 }
 
 // Info holds all information required to set a simulation stage
@@ -77,39 +78,49 @@ type Info struct {
 // GetElemInfo returns information about elements/formulations
 //  cellType -- e.g. "qua8"
 //  elemType -- e.g. "u"
-func GetElemInfo(cellType, elemType string, faceConds []*FaceCond) *Info {
-	infogetter, ok := infogetters[elemType]
-	if LogErrCond(!ok, "cannot find element type = %s", elemType) {
-		return nil
+func GetElemInfo(cell *inp.Cell, reg *inp.Region, sim *inp.Simulation) (info *Info, inactive bool, err error) {
+	edat := reg.Etag2data(cell.Tag)
+	if edat == nil {
+		err = chk.Err("cannot get data for element {tag=%d, id=%d}", cell.Tag, cell.Id)
+		return
 	}
-	info := infogetter(cellType, faceConds)
-	if LogErrCond(info == nil, "cannot find info from %q element", elemType) {
-		return nil
+	infogetter, ok := infogetters[edat.Type]
+	if !ok {
+		err = chk.Err("cannot get info for element {type=%q, tag=%d, id=%d}", edat.Type, cell.Tag, cell.Id)
+		return
 	}
-	return info
+	info = infogetter(sim, cell, edat)
+	if info == nil {
+		err = chk.Err("info for element {type=%q, tag=%d, id=%d} is not available", edat.Type, cell.Tag, cell.Id)
+	}
+	return
 }
 
 // NewElem returns a new element from its type; e.g. "p", "u" or "up"
-func NewElem(edat *inp.ElemData, cid int, msh *inp.Mesh, faceConds []*FaceCond) Elem {
-	elemType := edat.Type
-	allocator, ok := eallocators[elemType]
-	if LogErrCond(!ok, "cannot find element type = %s", elemType) {
-		return nil
+func NewElem(cell *inp.Cell, reg *inp.Region, sim *inp.Simulation) (ele Elem, err error) {
+	edat := reg.Etag2data(cell.Tag)
+	if edat == nil {
+		err = chk.Err("cannot get data for element {tag=%d, id=%d}", cell.Tag, cell.Id)
+		return
 	}
-	c := msh.Cells[cid]
-	x := BuildCoordsMatrix(c, msh)
-	ele := allocator(c.Type, faceConds, cid, edat, x)
-	if LogErrCond(ele == nil, "cannot allocate %q element", elemType) {
-		return nil
+	allocator, ok := eallocators[edat.Type]
+	if !ok {
+		err = chk.Err("cannot get allocator for element {type=%q, tag=%d, id=%d}", edat.Type, cell.Tag, cell.Id)
+		return
 	}
-	return ele
+	x := BuildCoordsMatrix(cell, reg.Msh)
+	ele = allocator(sim, cell, edat, x)
+	if ele == nil {
+		err = chk.Err("element {type=%q, tag=%d, id=%d} is not available", edat.Type, cell.Tag, cell.Id)
+	}
+	return
 }
 
 // BuildCoordsMatrix returns the coordinate matrix of a particular Cell
-func BuildCoordsMatrix(c *inp.Cell, msh *inp.Mesh) (x [][]float64) {
-	x = la.MatAlloc(msh.Ndim, len(c.Verts))
+func BuildCoordsMatrix(cell *inp.Cell, msh *inp.Mesh) (x [][]float64) {
+	x = la.MatAlloc(msh.Ndim, len(cell.Verts))
 	for i := 0; i < msh.Ndim; i++ {
-		for j, v := range c.Verts {
+		for j, v := range cell.Verts {
 			x[i][j] = msh.Verts[v].C[i]
 		}
 	}
@@ -117,7 +128,7 @@ func BuildCoordsMatrix(c *inp.Cell, msh *inp.Mesh) (x [][]float64) {
 }
 
 // infogetters holds all available formulations/info; elemType => infogetter
-var infogetters = make(map[string]func(cellType string, faceConds []*FaceCond) *Info)
+var infogetters = make(map[string]func(sim *inp.Simulation, cell *inp.Cell, edat *inp.ElemData) *Info)
 
 // eallocators holds all available elements; elemType => eallocator
-var eallocators = make(map[string]func(cellType string, faceConds []*FaceCond, cid int, edat *inp.ElemData, x [][]float64) Elem)
+var eallocators = make(map[string]func(sim *inp.Simulation, cell *inp.Cell, edat *inp.ElemData, x [][]float64) Elem)

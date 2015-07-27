@@ -6,7 +6,6 @@ package inp
 
 import (
 	"encoding/json"
-	"log"
 	"math"
 	"path/filepath"
 
@@ -45,7 +44,8 @@ type Cell struct {
 	Neighs []int // neighbours; e.g. [3, 7, -1, 11] => side:cid => 0:3, 1:7, 2:-1(no cell), 3:11
 
 	// derived
-	Shp *shp.Shape // shape structure
+	Shp     *shp.Shape // shape structure
+	FaceBcs FaceConds  // face boundary condition
 
 	// specific problems data
 	IsJoint   bool         // cell represents joint element
@@ -98,20 +98,21 @@ func ReadMsh(dir, fn string) *Mesh {
 	// read file
 	o.FnamePath = filepath.Join(dir, fn)
 	b, err := io.ReadFile(o.FnamePath)
-	if LogErr(err, "msh: cannot open mesh file "+o.FnamePath) {
+	if err != nil {
 		return nil
 	}
 
 	// decode
-	if LogErr(json.Unmarshal(b, &o), "msh: cannot unmarshal mesh file "+fn+"\n") {
+	err = json.Unmarshal(b, &o)
+	if err != nil {
 		return nil
 	}
 
 	// check
-	if LogErrCond(len(o.Verts) < 2, "msh: mesh must have at least 2 vertices and 1 cell") {
+	if len(o.Verts) < 2 {
 		return nil
 	}
-	if LogErrCond(len(o.Cells) < 1, "msh: mesh must have at least 2 vertices and 1 cell") {
+	if len(o.Cells) < 1 {
 		return nil
 	}
 
@@ -129,13 +130,13 @@ func ReadMsh(dir, fn string) *Mesh {
 	for i, v := range o.Verts {
 
 		// check vertex id
-		if LogErrCond(v.Id != i, "msh: vertices must be sequentially numbered. %d != %d\n", v.Id, i) {
+		if v.Id != i {
 			return nil
 		}
 
 		// ndim
 		nd := len(v.C)
-		if LogErrCond(nd < 2 || nd > 4, "msh: ndim must be 2 or 3\n") {
+		if nd < 2 || nd > 4 {
 			return nil
 		}
 		if nd == 3 {
@@ -171,10 +172,10 @@ func ReadMsh(dir, fn string) *Mesh {
 	for i, c := range o.Cells {
 
 		// check id and tag
-		if LogErrCond(c.Id != i, "msh: cells must be sequentially numbered. %d != %d\n", c.Id, i) {
+		if c.Id != i {
 			return nil
 		}
-		if LogErrCond(c.Tag >= 0, "msh: cell tags must be negative\n") {
+		if c.Tag >= 0 {
 			return nil
 		}
 
@@ -215,7 +216,7 @@ func ReadMsh(dir, fn string) *Mesh {
 			c.IsJoint = true
 		default:
 			c.Shp = shp.Get(c.Type)
-			if LogErrCond(c.Shp == nil, "msh: cannot find shape type == %q\n", c.Type) {
+			if c.Shp == nil {
 				return nil
 			}
 		}
@@ -226,8 +227,7 @@ func ReadMsh(dir, fn string) *Mesh {
 		o.FaceTag2verts[ftag] = utl.IntUnique(verts)
 	}
 
-	// log
-	log.Printf("msh: fn=%s nverts=%d ncells=%d ncelltags=%d nfacetags=%d nseamtags=%d nverttags=%d ncelltypes=%d npart=%d\n", fn, len(o.Verts), len(o.Cells), len(o.CellTag2cells), len(o.FaceTag2cells), len(o.SeamTag2cells), len(o.VertTag2verts), len(o.Ctype2cells), len(o.Part2cells))
+	// results
 	return &o
 }
 

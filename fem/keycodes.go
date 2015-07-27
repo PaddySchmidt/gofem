@@ -8,28 +8,29 @@ import (
 	"math"
 
 	"github.com/cpmech/gofem/shp"
+	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
 )
 
-func GetIntegrationPoints(nip, nipf int, cellType string) (ipsElem, ipsFace []*shp.Ipoint) {
+func GetIntegrationPoints(nip, nipf int, cellType string) (ipsElem, ipsFace []*shp.Ipoint, err error) {
 
 	// get integration points of element
-	var err error
 	ipsElem, err = shp.GetIps(cellType, nip)
-	if LogErr(err, io.Sf("cannot get integration points for element with shape type=%q and nip=%d", cellType, nip)) {
-		return nil, nil
+	if err != nil {
+		err = chk.Err("cannot get integration points for element with shape type=%q and nip=%d\n%v", cellType, nip, err)
+		return
 	}
 
 	// get integration points of face
 	faceType := shp.GetFaceType(cellType)
 	ipsFace, err = shp.GetIps(faceType, nipf)
-	if LogErr(err, io.Sf("cannot get integration points for face with face-shape type=%q and nip=%d", faceType, nip)) {
-		return nil, nil
+	if err != nil {
+		err = chk.Err("cannot get integration points for face with face-shape type=%q and nip=%d\n%v", faceType, nip, err)
 	}
 	return
 }
 
-func GetSolidFlags(extra string) (useB, debug bool, thickness float64) {
+func GetSolidFlags(axisym, pstress bool, extra string) (useB, debug bool, thickness float64) {
 
 	// defaults
 	useB = false
@@ -42,7 +43,7 @@ func GetSolidFlags(extra string) (useB, debug bool, thickness float64) {
 	}
 
 	// fix useB flag in case of axisymmetric simulation
-	if Global.Sim.Data.Axisym {
+	if axisym {
 		useB = true
 	}
 
@@ -52,7 +53,7 @@ func GetSolidFlags(extra string) (useB, debug bool, thickness float64) {
 	}
 
 	// fix thickness flag
-	if !Global.Sim.Data.Pstress {
+	if !pstress {
 		thickness = 1.0
 	}
 

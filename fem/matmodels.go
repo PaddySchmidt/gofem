@@ -5,67 +5,77 @@
 package fem
 
 import (
+	"github.com/cpmech/gofem/inp"
 	"github.com/cpmech/gofem/mconduct"
 	"github.com/cpmech/gofem/mporous"
 	"github.com/cpmech/gofem/mreten"
 	"github.com/cpmech/gofem/msolid"
 
+	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/io"
 )
 
 // GetAndInitPorousModel get porous model from material name
 // It returns nil on errors, after logging
-func GetAndInitPorousModel(matname string) *mporous.Model {
+func GetAndInitPorousModel(mdb *inp.MatDb, matname, simfnk string) (mdl *mporous.Model, err error) {
 
 	// materials
-	cndmat, lrmmat, pormat, err := Global.Sim.Mdb.GroupGet3(matname, "c", "l", "p")
-	if LogErr(err, io.Sf("materials database failed on getting %q (porous) group\n", matname)) {
-		return nil
+	cndmat, lrmmat, pormat, err := mdb.GroupGet3(matname, "c", "l", "p")
+	if err != nil {
+		err = chk.Err("materials database failed on getting %q (porous) group:\n%v", matname, err)
+		return
 	}
 
 	// conductivity models
-	simfnk := Global.Sim.Data.FnameKey
 	getnew := false
 	cnd := mconduct.GetModel(simfnk, cndmat.Name, cndmat.Model, getnew)
-	if LogErrCond(cnd == nil, "cannot allocate conductivity models with name=%q", cndmat.Model) {
-		return nil
+	if cnd == nil {
+		err = chk.Err("cannot allocate conductivity models with name=%q", cndmat.Model)
+		return
 	}
 
 	// retention model
 	lrm := mreten.GetModel(simfnk, lrmmat.Name, lrmmat.Model, getnew)
-	if LogErrCond(lrm == nil, "cannot allocate liquid retention model with name=%q", lrmmat.Model) {
-		return nil
+	if lrm == nil {
+		err = chk.Err("cannot allocate liquid retention model with name=%q", lrmmat.Model)
+		return
 	}
 
 	// porous model
-	mdl := mporous.GetModel(simfnk, pormat.Name, getnew)
-	if LogErrCond(mdl == nil, "cannot allocate model for porous medium with name=%q", pormat.Name) {
-		return nil
+	mdl = mporous.GetModel(simfnk, pormat.Name, getnew)
+	if mdl == nil {
+		err = chk.Err("cannot allocate model for porous medium with name=%q", pormat.Name)
+		return
 	}
 
 	// initialise all models
 	// TODO: initialise just once
-	if LogErr(cnd.Init(cndmat.Prms), "cannot initialise conductivity model") {
-		return nil
+	err = cnd.Init(cndmat.Prms)
+	if err != nil {
+		err = chk.Err("cannot initialise conductivity model:\n%v", err)
+		return
 	}
-	if LogErr(lrm.Init(lrmmat.Prms), "cannot initialise liquid retention model") {
-		return nil
+	err = lrm.Init(lrmmat.Prms)
+	if err != nil {
+		err = chk.Err("cannot initialise liquid retention model:\n%v", err)
+		return
 	}
-	if LogErr(mdl.Init(pormat.Prms, cnd, lrm), "cannot initialise porous model") {
-		return nil
+	err = mdl.Init(pormat.Prms, cnd, lrm)
+	if err != nil {
+		err = chk.Err("cannot initialise porous model:\n%v", err)
+		return
 	}
-
-	// results
-	return mdl
+	return
 }
 
-func GetAndInitSolidModel(matname string, ndim int) (msolid.Model, fun.Prms) {
+func GetAndInitSolidModel(mdb *inp.MatDb, matname, simfnk string, ndim int, pstress bool) (mdl msolid.Model, prms fun.Prms, err error) {
 
 	// material name
-	matdata := Global.Sim.Mdb.Get(matname)
-	if LogErrCond(matdata == nil, "materials database failed on getting %q (solid) material\n", matname) {
-		return nil, nil
+	matdata := mdb.Get(matname)
+	if matdata == nil {
+		err = chk.Err("materials database failed on getting %q (solid) material\n", matname)
+		return
 	}
 	mdlname := matdata.Model
 
@@ -73,28 +83,33 @@ func GetAndInitSolidModel(matname string, ndim int) (msolid.Model, fun.Prms) {
 	if mdlname == "group" {
 		if s_matname, found := io.Keycode(matdata.Extra, "s"); found {
 			matname = s_matname
-			matdata = Global.Sim.Mdb.Get(matname)
-			if LogErrCond(matdata == nil, "materials database failed on getting %q (solid/sub) material\n", matname) {
-				return nil, nil
+			matdata = mdb.Get(matname)
+			if matdata == nil {
+				err = chk.Err("materials database failed on getting %q (solid/sub) material\n", matname)
+				return
 			}
 			mdlname = matdata.Model
 		} else {
-			LogErrCond(true, "cannot find solid model in grouped material data. 's' subkey needed in Extra field")
-			return nil, nil
+			err = chk.Err("cannot find solid model in grouped material data. 's' subkey needed in Extra field")
+			return
 		}
 	}
 
 	// initialise model
-	mdl, existent := msolid.GetModel(Global.Sim.Data.FnameKey, matname, mdlname, false)
-	if LogErrCond(mdl == nil, "cannot find solid model named %q", mdlname) {
-		return nil, nil
+	mdl, existent := msolid.GetModel(simfnk, matname, mdlname, false)
+	if mdl == nil {
+		err = chk.Err("cannot find solid model named %q", mdlname)
+		return
 	}
 	if !existent {
-		if LogErr(mdl.Init(ndim, Global.Sim.Data.Pstress, matdata.Prms), "solid model initialisation failed") {
-			return nil, nil
+		err = mdl.Init(ndim, pstress, matdata.Prms)
+		if err != nil {
+			err = chk.Err("solid model initialisation failed:\n%v", err)
+			return
 		}
 	}
 
 	// results
-	return mdl, matdata.Prms
+	prms = matdata.Prms
+	return
 }

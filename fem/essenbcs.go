@@ -40,6 +40,7 @@ type EssentialBc struct {
 // EssentialBcs implements a structure to record the definition of essential bcs / constraints.
 // Each constraint will have a unique Lagrange multiplier index.
 type EssentialBcs struct {
+	HydFcn *HydroStatic   // for computing hydrostatic conditions
 	Eq2idx map[int][]int  // maps eq number to indices in BcsTmp
 	Bcs    []*EssentialBc // active essential bcs / constraints
 	A      la.Triplet     // matrix of coefficients 'A'
@@ -50,10 +51,11 @@ type EssentialBcs struct {
 }
 
 // Reset initialises this structure. It also performs a reset of internal structures.
-func (o *EssentialBcs) Reset() {
+func (o *EssentialBcs) Init(hydfcn *HydroStatic) {
 	o.BcsTmp = make([]eqbcpair, 0)
 	o.Eq2idx = make(map[int][]int)
 	o.Bcs = make([]*EssentialBc, 0)
+	o.HydFcn = hydfcn
 }
 
 // Build builds this structure and its iternal data
@@ -147,10 +149,11 @@ func GetIsEssenKeyMap() map[string]bool {
 //  extra -- is a keycode-style data. e.g. "!type:incsup2d !alp:30"
 //  Notes: 1) the default for key is single point constraint; e.g. "ux", "uy", ...
 //         2) hydraulic head can be set with key == "H"
-func (o *EssentialBcs) Set(key string, nodes []*Node, fcn fun.Func, extra string) (setisok bool) {
+func (o *EssentialBcs) Set(key string, nodes []*Node, fcn fun.Func, extra string) (err error) {
 
 	// len(nod) must be greater than 0
 	chk.IntAssertLessThan(0, len(nodes)) // 0 < len(nod)
+	ndim := len(nodes[0].Vert.C)
 
 	// rigid element
 	if key == "rigid" {
@@ -160,15 +163,15 @@ func (o *EssentialBcs) Set(key string, nodes []*Node, fcn fun.Func, extra string
 				o.add(key, []int{a[j].Eq, b.Eq}, []float64{1, -1}, &fun.Zero)
 			}
 		}
-		return true // success
+		return // success
 	}
 
 	// inclined support
 	if key == "incsup" {
 
 		// check
-		if LogErrCond(Global.Ndim != 2, "inclined support works only in 2D for now") {
-			return false // problem
+		if ndim != 2 {
+			return chk.Err("inclined support works only in 2D for now")
 		}
 
 		// get data
@@ -196,7 +199,7 @@ func (o *EssentialBcs) Set(key string, nodes []*Node, fcn fun.Func, extra string
 			// set constraint
 			o.add(key, []int{eqx, eqy}, []float64{co, si}, &fun.Zero)
 		}
-		return true // success
+		return // success
 	}
 
 	// hydraulic head
@@ -212,12 +215,12 @@ func (o *EssentialBcs) Set(key string, nodes []*Node, fcn fun.Func, extra string
 				continue // node doesn't have key. ex: pl in qua8/qua4 elements
 			}
 			z := nod.Vert.C[1] // 2D
-			if Global.Ndim == 3 {
+			if ndim == 3 {
 				z = nod.Vert.C[2] // 3D
 			}
-			plVal, _, err := Global.HydroSt.Calc(z)
-			if LogErr(err, "cannot set hst (hydrostatic) essential boundary condition") {
-				return
+			plVal, _, err := o.HydFcn.Calc(z)
+			if err != nil {
+				return chk.Err("cannot set hst (hydrostatic) essential boundary condition")
 			}
 			pl := fun.Add{
 				B: 1, Fb: &fun.Cte{C: plVal},
@@ -227,20 +230,20 @@ func (o *EssentialBcs) Set(key string, nodes []*Node, fcn fun.Func, extra string
 			// set constraint
 			o.add_single("pl", d.Eq, &pl)
 		}
-		return true // success
+		return // success
 	}
 
 	// single-point constraint
 	for _, nod := range nodes {
 		d := nod.GetDof(key)
 		if d == nil {
-			return true // success
+			return // success
 		}
 		o.add_single(key, d.Eq, fcn)
 	}
 
 	// success
-	return true
+	return
 }
 
 // auxiliary /////////////////////////////////////////////////////////////////////////////////////////

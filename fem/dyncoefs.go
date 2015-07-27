@@ -33,7 +33,7 @@ type DynCoefs struct {
 }
 
 // Init initialises this structure
-func (o *DynCoefs) Init(dat *inp.SolverData) (ok bool) {
+func (o *DynCoefs) Init(dat *inp.SolverData) {
 
 	// hmin
 	o.hmin = dat.DtMin
@@ -43,15 +43,15 @@ func (o *DynCoefs) Init(dat *inp.SolverData) (ok bool) {
 
 	// θ-method
 	o.θ = dat.Theta
-	if LogErrCond(o.θ < 1e-5 || o.θ > 1.0, _dyncoefs_err1, o.θ) {
-		return
+	if o.θ < 1e-5 || o.θ > 1.0 {
+		chk.Panic("θ-method requires 1e-5 <= θ <= 1.0 (θ = %v is incorrect)", o.θ)
 	}
 
 	// HHT method
 	if dat.HHT {
 		o.α = dat.HHTalp
-		if LogErrCond(o.α < -1.0/3.0 || o.α > 0.0, _dyncoefs_err2, o.α) {
-			return
+		if o.α < -1.0/3.0 || o.α > 0.0 {
+			chk.Panic("HHT method requires: -1/3 <= α <= 0 (α = %v is incorrect)", o.α)
 		}
 		o.θ1 = (1.0 - 2.0*o.α) / 2.0
 		o.θ2 = (1.0 - o.α) * (1.0 - o.α) / 2.0
@@ -59,16 +59,13 @@ func (o *DynCoefs) Init(dat *inp.SolverData) (ok bool) {
 		// Newmark's method
 	} else {
 		o.θ1, o.θ2 = dat.Theta1, dat.Theta2
-		if LogErrCond(o.θ1 < 0.0001 || o.θ1 > 1.0, _dyncoefs_err3, o.θ1) {
-			return
+		if o.θ1 < 0.0001 || o.θ1 > 1.0 {
+			chk.Panic("θ1 must be between 0.0001 and 1.0 (θ1 = %v is incorrect)", o.θ1)
 		}
-		if LogErrCond(o.θ2 < 0.0001 || o.θ2 > 1.0, _dyncoefs_err4, o.θ2) {
-			return
+		if o.θ2 < 0.0001 || o.θ2 > 1.0 {
+			chk.Panic("θ2 must be between 0.0001 and 1.0 (θ2 = %v is incorrect)", o.θ2)
 		}
 	}
-
-	// success
-	return true
 }
 
 // CalcBoth computes betas and alphas
@@ -87,8 +84,7 @@ func (o *DynCoefs) CalcBetas(Δt float64) (err error) {
 	// timestep
 	h := Δt
 	if h < o.hmin {
-		err = chk.Err(_dyncoefs_err5, o.hmin, h)
-		return
+		return chk.Err("θ-method requires h >= %v (h = %v is incorrect)", o.hmin, h)
 	}
 
 	// β coefficients
@@ -103,8 +99,7 @@ func (o *DynCoefs) CalcAlphas(Δt float64) (err error) {
 	// timestep
 	h := Δt
 	if h < o.hmin {
-		err = chk.Err(_dyncoefs_err6, o.hmin, h)
-		return
+		return chk.Err("Newmark/HHT method requires h >= %v (h = %v is incorrect)", o.hmin, h)
 	}
 
 	// α coefficients
@@ -129,13 +124,3 @@ func (o *DynCoefs) Print() {
 	io.Pfgrey("α1=%v, α2=%v, α3=%v, α4=%v, α5=%v, α6=%v\n", o.α1, o.α2, o.α3, o.α4, o.α5, o.α6)
 	io.Pfgrey("α7=%v, α8=%v\n", o.α7, o.α8)
 }
-
-// error messages
-var (
-	_dyncoefs_err1 = "θ-method requires 1e-5 <= θ <= 1.0 (θ = %v is incorrect)"
-	_dyncoefs_err2 = "HHT method requires: -1/3 <= α <= 0 (α = %v is incorrect)"
-	_dyncoefs_err3 = "θ1 must be between 0.0001 and 1.0 (θ1 = %v is incorrect)"
-	_dyncoefs_err4 = "θ2 must be between 0.0001 and 1.0 (θ2 = %v is incorrect)"
-	_dyncoefs_err5 = "θ-method requires h >= %v (h = %v is incorrect)"
-	_dyncoefs_err6 = "Newmark/HHT method requires h >= %v (h = %v is incorrect)"
-)

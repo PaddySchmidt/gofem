@@ -9,8 +9,6 @@ import (
 	"math"
 	"testing"
 
-	"github.com/cpmech/gofem/mporous"
-	"github.com/cpmech/gofem/msolid"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/num"
@@ -39,35 +37,24 @@ type T_results struct {
 type T_results_set []*T_results
 
 // testing_compare_results_u compares results with u-formulation
-func TestingCompareResultsU(tst *testing.T, simfname, cmpfname string, tolK, tolu, tols float64, skipK, verbose bool) {
+func TestingCompareResultsU(tst *testing.T, simfilepath, cmpfname string, tolK, tolu, tols float64, skipK, verbose bool) {
 
-	// only root can run this test
-	if !Global.Root {
-		return
+	// FEM structure
+	fem := NewFEM(simfilepath, "", false, true, false, verbose)
+
+	// set stage
+	err := fem.SetStage(0)
+	if err != nil {
+		chk.Panic("cannot set stage:\n%v", err)
 	}
 
-	// read summary
-	sum := new(Summary)
-	if !sum.Read(Global.Dirout, Global.Fnkey) {
-		tst.Errorf("cannot read summary file %q\n", simfname)
-		return
+	// zero solution
+	err = fem.ZeroStage(0, true)
+	if err != nil {
+		chk.Panic("cannot zero stage data:\n%v", err)
 	}
 
-	// allocate domain
-	distr := false
-	d := NewDomain(Global.Sim.Regions[0], distr)
-	if !d.SetStage(0, Global.Sim.Stages[0], distr) {
-		tst.Errorf("TestingCompareResultsU: SetStage failed\n")
-		return
-	}
-
-	// initialise solution vectors
-	if !d.SetIniVals(Global.Sim.Stages[0], false) {
-		tst.Errorf("SetIniVals failed\n")
-		return
-	}
-
-	// read file
+	// read file with comparison results
 	buf, err := io.ReadFile(cmpfname)
 	if err != nil {
 		tst.Errorf("TestingCompareResultsU: ReadFile failed\n")
@@ -83,6 +70,7 @@ func TestingCompareResultsU(tst *testing.T, simfname, cmpfname string, tolK, tol
 	}
 
 	// run comparisons
+	dom := fem.Domains[0]
 	dmult := 1.0
 	for idx, cmp := range cmp_set {
 
@@ -98,12 +86,12 @@ func TestingCompareResultsU(tst *testing.T, simfname, cmpfname string, tolK, tol
 		}
 
 		// load gofem results
-		if !d.In(sum, tidx, true) {
-			tst.Errorf("TestingCompareResultsU: reading of results failed\n")
-			return
+		err = dom.Read(fem.Summary, tidx, 0, true)
+		if err != nil {
+			chk.Panic("cannot read 'gofem' results:\n%v", err)
 		}
 		if verbose {
-			io.Pfyel("time = %v\n", d.Sol.T)
+			io.Pfyel("time = %v\n", dom.Sol.T)
 		}
 
 		// check K matrices
@@ -112,10 +100,10 @@ func TestingCompareResultsU(tst *testing.T, simfname, cmpfname string, tolK, tol
 				io.Pfgreen(". . . checking K matrices . . .\n")
 			}
 			for eid, Ksg := range cmp.Kmats {
-				if e, ok := d.Elems[eid].(*ElemU); ok {
-					if !e.AddToKb(d.Kb, d.Sol, true) {
-						tst.Errorf("TestingCompareResultsU: AddToKb failed\n")
-						return
+				if e, ok := dom.Elems[eid].(*ElemU); ok {
+					err = e.AddToKb(dom.Kb, dom.Sol, true)
+					if err != nil {
+						chk.Panic("TestingCompareResultsU: AddToKb failed\n")
 					}
 					chk.Matrix(tst, io.Sf("K%d", eid), tolK, e.K, Ksg)
 				}
@@ -127,13 +115,13 @@ func TestingCompareResultsU(tst *testing.T, simfname, cmpfname string, tolK, tol
 			io.Pfgreen(". . . checking displacements . . .\n")
 		}
 		for nid, usg := range cmp.Disp {
-			ix := d.Vid2node[nid].Dofs[0].Eq
-			iy := d.Vid2node[nid].Dofs[1].Eq
-			chk.AnaNum(tst, "ux", tolu, d.Sol.Y[ix], usg[0]*dmult, verbose)
-			chk.AnaNum(tst, "uy", tolu, d.Sol.Y[iy], usg[1]*dmult, verbose)
+			ix := dom.Vid2node[nid].Dofs[0].Eq
+			iy := dom.Vid2node[nid].Dofs[1].Eq
+			chk.AnaNum(tst, "ux", tolu, dom.Sol.Y[ix], usg[0]*dmult, verbose)
+			chk.AnaNum(tst, "uy", tolu, dom.Sol.Y[iy], usg[1]*dmult, verbose)
 			if len(usg) == 3 {
-				iz := d.Vid2node[nid].Dofs[2].Eq
-				chk.AnaNum(tst, "uz", tolu, d.Sol.Y[iz], usg[2]*dmult, verbose)
+				iz := dom.Vid2node[nid].Dofs[2].Eq
+				chk.AnaNum(tst, "uz", tolu, dom.Sol.Y[iz], usg[2]*dmult, verbose)
 			}
 		}
 
@@ -146,7 +134,7 @@ func TestingCompareResultsU(tst *testing.T, simfname, cmpfname string, tolK, tol
 				if verbose {
 					io.Pforan("eid = %d\n", eid)
 				}
-				if e, ok := d.Cid2elem[eid].(*ElemU); ok {
+				if e, ok := dom.Cid2elem[eid].(*ElemU); ok {
 					for ip, val := range sig {
 						if verbose {
 							io.Pfgrey2("ip = %d\n", ip)
@@ -190,6 +178,7 @@ type testKb struct {
 	Yold  []float64 // auxiliary array
 }
 
+/*
 // p_DebugKb defines a global function to debug Kb for p-elements
 //  Note: it returns a function to reset the global function
 func p_DebugKb(o *testKb) (resetDebugKb func()) {
@@ -455,6 +444,7 @@ func rjoint_DebugKb(o *testKb) (resetDebugKb func()) {
 	}
 	return
 }
+*/
 
 // skip skips test based on it and/or t
 func (o testKb) skip() bool {

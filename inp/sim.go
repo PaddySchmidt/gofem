@@ -8,7 +8,6 @@ package inp
 import (
 	"encoding/json"
 	goio "io"
-	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -24,56 +23,18 @@ type Data struct {
 	// global information
 	Desc    string `json:"desc"`    // description of simulation
 	Matfile string `json:"matfile"` // materials file path
-	DirOut  string `json:"dirout"`  // directory for output; e.g. /tmp/gofem
-	Encoder string `json:"encoder"` // encoder name; e.g. "gob" "json" "xml"
+	//DirOut  string `json:"dirout"`  // directory for output; e.g. /tmp/gofem
+	//Encoder string `json:"encoder"` // encoder name; e.g. "gob" "json" "xml"
 
 	// problem definition and options
 	Steady  bool    `json:"steady"`  // steady simulation
-	Pstress bool    `json:"pstress"` // plane-stress
 	Axisym  bool    `json:"axisym"`  // axisymmetric
+	Pstress bool    `json:"pstress"` // plane-stress
 	NoLBB   bool    `json:"nolbb"`   // do not satisfy Ladyženskaja-Babuška-Brezzi condition; i.e. do not use [qua8,qua4] for u-p formulation
-	LogBcs  bool    `json:"logbcs"`  // log boundary conditions setting up
 	Debug   bool    `json:"debug"`   // activate debugging
 	Stat    bool    `json:"stat"`    // activate statistics
 	Wlevel  float64 `json:"wlevel"`  // water level; 0 means use max elevation
 	Surch   float64 `json:"surch"`   // surcharge load at surface == qn0
-
-	// options
-	React bool `json:"react"` // indicates whether or not reaction forces must be computed
-	ShowR bool `json:"showr"` // show residual
-	NoDiv bool `json:"nodiv"` // disregard divergence control in both fb or Lδu
-	CteTg bool `json:"ctetg"` // use constant tangent (modified Newton) during iterations
-
-	// derived
-	FnameDir string // directory where .sim filename is locatd
-	FnameKey string // simulation filename key; e.g. mysim01.sim => mysim01
-}
-
-// SetDefault sets defaults values
-func (o *Data) SetDefault() {
-	o.Encoder = "gob"
-}
-
-// PostProcess performs a post-processing of the just read json file
-func (o *Data) PostProcess(dir, fn string, erasefiles bool) {
-	o.FnameDir = os.ExpandEnv(dir)
-	o.FnameKey = io.FnKey(fn)
-	if o.DirOut == "" {
-		o.DirOut = "/tmp/gofem/" + o.FnameKey
-	}
-	if o.Encoder != "gob" && o.Encoder != "json" {
-		o.Encoder = "gob"
-	}
-	err := os.MkdirAll(o.DirOut, 0777)
-	if err != nil {
-		chk.Panic("cannot create directory for output results (%s): %v", o.DirOut, err)
-	}
-	if erasefiles {
-		io.RemoveAll(io.Sf("%s/%s_*.vtu", o.DirOut, o.FnameKey))
-		io.RemoveAll(io.Sf("%s/%s_*.log", o.DirOut, o.FnameKey))
-		io.RemoveAll(io.Sf("%s/%s_*.gob", o.DirOut, o.FnameKey))
-		io.RemoveAll(io.Sf("%s/%s_*.json", o.DirOut, o.FnameKey))
-	}
 }
 
 // LinSolData holds data for linear solvers
@@ -86,26 +47,11 @@ type LinSolData struct {
 	Scaling   string `json:"scaling"`   // scaling scheme
 }
 
-// SetDefault sets defaults values
-func (o *LinSolData) SetDefault() {
-	o.Name = "umfpack"
-	o.Ordering = "amf"
-	o.Scaling = "rcit"
-}
-
 // SolverData holds FEM solver data
 type SolverData struct {
 
-	// constants
-	Eps float64 // smallest number satisfying 1.0 + ϵ > 1.0
-
-	// nonlinear solver type. e.g.:
-	//  "imp" -- implicit
-	//  "exp" -- explicit
-	//  "rex" -- Richardson's extrapolation
-	Type string `json:"type"` // nonlinear solver type: {imp, exp, rex} => implicit, explicit, Richardson extrapolation
-
 	// nonlinear solver
+	Type    string  `json:"type"`    // nonlinear solver type: {imp, exp, rex} => implicit, explicit, Richardson extrapolation
 	NmaxIt  int     `json:"nmaxit"`  // number of max iterations
 	Atol    float64 `json:"atol"`    // absolute tolerance
 	Rtol    float64 `json:"rtol"`    // relative tolerance
@@ -113,15 +59,17 @@ type SolverData struct {
 	FbMin   float64 `json:"fbmin"`   // minimum value of fb
 	DvgCtrl bool    `json:"dvgctrl"` // use divergence control
 	NdvgMax int     `json:"ndvgmax"` // max number of continued divergence
+	CteTg   bool    `json:"ctetg"`   // use constant tangent (modified Newton) during iterations
+	ShowR   bool    `json:"showr"`   // show residual
 
 	// Richardson's extrapolation
-	REnogus  bool    // Richardson extrapolation: no Gustafsson's step control
-	REnssmax int     // Richardson extrapolation: max number of substeps
-	REatol   float64 // Richardson extrapolation: absolute tolerance
-	RErtol   float64 // Richardson extrapolation: relative tolerance
-	REmfac   float64 // Richardson extrapolation: multiplier factor
-	REmmin   float64 // Richardson extrapolation: min multiplier
-	REmmax   float64 // Richardson extrapolation: max multiplier
+	REnogus  bool    `json:"renogus"`  // Richardson extrapolation: no Gustafsson's step control
+	REnssmax int     `json:"renssmax"` // Richardson extrapolation: max number of substeps
+	REatol   float64 `json:"reatol"`   // Richardson extrapolation: absolute tolerance
+	RErtol   float64 `json:"rertol"`   // Richardson extrapolation: relative tolerance
+	REmfac   float64 `json:"remfac"`   // Richardson extrapolation: multiplier factor
+	REmmin   float64 `json:"remmin"`   // Richardson extrapolation: min multiplier
+	REmmax   float64 `json:"remmax"`   // Richardson extrapolation: max multiplier
 
 	// transient analyses
 	DtMin      float64 `json:"dtmin"`      // minium value of Dt for transient (θ and Newmark / Dyn coefficients)
@@ -138,61 +86,11 @@ type SolverData struct {
 	// combination of coefficients
 	ThCombo1 bool `json:"thcombo1"` // use θ=2/3, θ1=5/6 and θ2=8/9 to avoid oscillations
 
+	// constants
+	Eps float64 `json:"eps"` // smallest number satisfying 1.0 + ϵ > 1.0
+
 	// derived
 	Itol float64 // iterations tolerance
-}
-
-// SetDefault set defaults values
-func (o *SolverData) SetDefault() {
-
-	// constants
-	o.Eps = 1e-16
-
-	// nonlinear solver
-	o.Type = "imp"
-	o.NmaxIt = 20
-	o.Atol = 1e-6
-	o.Rtol = 1e-6
-	o.FbTol = 1e-8
-	o.FbMin = 1e-14
-	o.NdvgMax = 20
-
-	// Richardson's extrapolation
-	o.REnssmax = 10000
-	o.REatol = 1e-6
-	o.RErtol = 1e-6
-	o.REmfac = 0.9
-	o.REmmin = 0.1
-	o.REmmax = 2.0
-
-	// transient analyses
-	o.DtMin = 1e-8
-	o.Theta = 0.5
-
-	// dynamics
-	o.Theta1 = 0.5
-	o.Theta2 = 0.5
-	o.HHTalp = 0.5
-}
-
-// PostProcess performs a post-processing of the just read json file
-func (o *SolverData) PostProcess() {
-
-	// coefficients for transient analyses
-	if o.ThGalerkin {
-		o.Theta = 2.0 / 3.0
-	}
-	if o.ThLiniger {
-		o.Theta = 0.878
-	}
-	if o.ThCombo1 {
-		o.Theta = 2.0 / 3.0
-		o.Theta1 = 5.0 / 6.0
-		o.Theta2 = 8.0 / 9.0
-	}
-
-	// iterations tolerance
-	o.Itol = max(10.0*o.Eps/o.Rtol, min(0.01, math.Sqrt(o.Rtol)))
 }
 
 // ElemData holds element data
@@ -215,9 +113,7 @@ type Region struct {
 	ElemsData []*ElemData `json:"elemsdata"` // list of elements data
 
 	// derived
-	Msh *Mesh // the mesh
-
-	// derived data
+	Msh      *Mesh       // the mesh
 	etag2idx map[int]int // maps element tag to element index in ElemsData slice
 }
 
@@ -328,17 +224,6 @@ type Stage struct {
 	Control TimeControl `json:"control"` // time control
 }
 
-// GetFaceBc returns face boundary condition structure by giving a face tag
-//  Note: returns nil if not found
-func (o Stage) GetFaceBc(facetag int) *FaceBc {
-	for _, fbc := range o.FaceBcs {
-		if facetag == fbc.Tag {
-			return fbc
-		}
-	}
-	return nil
-}
-
 // Simulation holds all simulation data
 type Simulation struct {
 
@@ -352,66 +237,89 @@ type Simulation struct {
 	Stages    []*Stage   `json:"stages"`    // stores all stages
 
 	// derived
-	Mdb        *MatDb   // materials database
+	DirOut     string   // directory to save results
+	Key        string   // simulation key; e.g. mysim01.sim => mysim01 or mysim01-alias
+	EncType    string   // encoder type
+	MatParams  *MatDb   // materials' parameters
 	Ndim       int      // space dimension
 	MaxElev    float64  // maximum elevation
-	Gfcn       fun.Func // first stage: gravity constant function
+	Gravity    fun.Func // first stage: gravity constant function
 	WaterRho0  float64  // first stage: intrinsic density of water corresponding to pressure pl=0
 	WaterBulk  float64  // first stage: bulk modulus of water
 	WaterLevel float64  // first stage: water level == max(Wlevel, MaxElev)
 }
 
+// Simulation //////////////////////////////////////////////////////////////////////////////////////
+
 // ReadSim reads all simulation data from a .sim JSON file
-//  Notes:  1) this function initialises log file
-//          2) returns nil on errors
-func ReadSim(dir, fn, logPrefix string, erasefiles bool) *Simulation {
+func ReadSim(simfilepath, alias string, erasefiles bool) *Simulation {
 
 	// new sim
 	var o Simulation
 
 	// read file
-	b, err := io.ReadFile(filepath.Join(dir, fn))
+	b, err := io.ReadFile(simfilepath)
 	if err != nil {
-		io.PfRed("sim: cannot read simulation file %s/%s\n%v\n", dir, fn, err)
-		return nil
+		chk.Panic("ReadSim: cannot read simulation file %q", simfilepath)
 	}
 
 	// set default values
-	o.Data.SetDefault()
 	o.Solver.SetDefault()
 	o.LinSol.SetDefault()
 
 	// decode
 	err = json.Unmarshal(b, &o)
 	if err != nil {
-		io.PfRed("sim: cannot unmarshal simulation file %s/%s\n%v\n", dir, fn, err)
-		return nil
+		chk.Panic("ReadSim: cannot unmarshal simulation file %q", simfilepath)
 	}
 
-	// derived data
-	o.Data.PostProcess(dir, fn, erasefiles)
+	// input directory and filename key
+	dir := filepath.Dir(simfilepath)
+	fn := filepath.Base(simfilepath)
+	dir = os.ExpandEnv(dir)
+	fnkey := io.FnKey(fn)
+	o.Key = fnkey
+	if alias != "" {
+		o.Key += "-" + alias
+	}
+
+	// output directory
+	//o.DirOut = o.Data.DirOut
+	//if o.DirOut == "" {
+	//o.DirOut = "/tmp/gofem/" + fnkey
+	//}
+
+	// encoder type
+	//o.EncType = o.Data.Encoder
+	//if o.EncType != "gob" && o.EncType != "json" {
+	//o.EncType = "gob"
+	//}
+
+	// create directory and erase previous simulation results
+	if erasefiles {
+		err = os.MkdirAll(o.DirOut, 0777)
+		if err != nil {
+			chk.Panic("cannot create directory for output results (%s): %v", o.DirOut, err)
+		}
+		io.RemoveAll(io.Sf("%s/%s*", o.DirOut, fnkey))
+	}
+
+	// set solver constants
 	o.Solver.PostProcess()
 
-	// init log file
-	err = InitLogFile(o.Data.DirOut, logPrefix+o.Data.FnameKey)
-	if err != nil {
-		io.PfRed("sim: cannot create log file\n%v", err)
-		return nil
-	}
-
 	// read materials database
-	o.Mdb = ReadMat(o.Data.FnameDir, o.Data.Matfile)
-	if LogErrCond(o.Mdb == nil, "sim: cannot read materials file") {
-		return nil
+	o.MatParams = ReadMat(dir, o.Data.Matfile)
+	if o.MatParams == nil {
+		chk.Panic("ReadSim: cannot read materials database\n")
 	}
 
 	// for all regions
 	for i, reg := range o.Regions {
 
 		// read mesh
-		reg.Msh = ReadMsh(o.Data.FnameDir, reg.Mshfile)
-		if LogErrCond(reg.Msh == nil, "cannot read mesh file") {
-			return nil
+		reg.Msh = ReadMsh(dir, reg.Mshfile)
+		if reg.Msh == nil {
+			chk.Panic("ReadSim: cannot read mesh file\n")
 		}
 
 		// dependent variables
@@ -428,8 +336,8 @@ func ReadSim(dir, fn, logPrefix string, erasefiles bool) *Simulation {
 				o.MaxElev = reg.Msh.Zmax
 			}
 		} else {
-			if LogErrCond(reg.Msh.Ndim != o.Ndim, "all meshes must have the same ndim. %d != %d") {
-				return nil
+			if reg.Msh.Ndim != o.Ndim {
+				chk.Panic("ReadSim: Ndim value is inconsistent: %d != %d", reg.Msh.Ndim, o.Ndim)
 			}
 			if o.Ndim == 2 {
 				o.MaxElev = max(o.MaxElev, reg.Msh.Ymax)
@@ -439,7 +347,7 @@ func ReadSim(dir, fn, logPrefix string, erasefiles bool) *Simulation {
 		}
 
 		// get water data
-		for _, mat := range o.Mdb.Materials {
+		for _, mat := range o.MatParams.Materials {
 			if mat.Model == "porous" {
 				if prm := mat.Prms.Find("RhoL0"); prm != nil {
 					o.WaterRho0 = prm.V
@@ -471,8 +379,8 @@ func ReadSim(dir, fn, logPrefix string, erasefiles bool) *Simulation {
 			stg.Control.DtFunc = &fun.Cte{C: stg.Control.Dt}
 		} else {
 			stg.Control.DtFunc = o.Functions.Get(stg.Control.DtFcn)
-			if LogErrCond(stg.Control.DtFunc == nil, "sim: cannot get Dt function named %s\n", stg.Control.DtFcn) {
-				return nil
+			if stg.Control.DtFunc == nil {
+				chk.Panic("ReadSim: cannot find DtFunc named %q", stg.Control.DtFcn)
 			}
 			stg.Control.Dt = stg.Control.DtFunc.F(t, nil)
 		}
@@ -490,8 +398,8 @@ func ReadSim(dir, fn, logPrefix string, erasefiles bool) *Simulation {
 			}
 		} else {
 			stg.Control.DtoFunc = o.Functions.Get(stg.Control.DtoFcn)
-			if LogErrCond(stg.Control.DtoFunc == nil, "sim: cannot get DtOut function named %s\n", stg.Control.DtoFcn) {
-				return nil
+			if stg.Control.DtoFunc == nil {
+				chk.Panic("ReadSim: cannot find DtoFunc named %q", stg.Control.DtoFcn)
 			}
 			stg.Control.DtOut = stg.Control.DtoFunc.F(t, nil)
 		}
@@ -503,18 +411,18 @@ func ReadSim(dir, fn, logPrefix string, erasefiles bool) *Simulation {
 			for _, econd := range stg.EleConds {
 				for j, key := range econd.Keys {
 					if key == "g" {
-						if o.Gfcn == nil {
-							o.Gfcn = o.Functions.Get(econd.Funcs[j])
-							if LogErrCond(o.Gfcn == nil, "sim: cannot find gravity function in functions database") {
-								return nil
+						if o.Gravity == nil {
+							o.Gravity = o.Functions.Get(econd.Funcs[j])
+							if o.Gravity == nil {
+								chk.Panic("ReadSim: cannot find function named %q", econd.Funcs[j])
 							}
 							break
 						}
 					}
 				}
 			}
-			if o.Gfcn == nil {
-				o.Gfcn = &fun.Cte{C: 10}
+			if o.Gravity == nil {
+				o.Gravity = &fun.Cte{C: 10}
 			}
 		}
 
@@ -522,10 +430,11 @@ func ReadSim(dir, fn, logPrefix string, erasefiles bool) *Simulation {
 		t += stg.Control.Tf
 	}
 
-	// log
-	log.Printf("sim: file=%s/%s desc=%q nfunctions=%d nregions=%d nstages=%d linsol=%s itol=%g\n", dir, fn, o.Data.Desc, len(o.Functions), len(o.Regions), len(o.Stages), o.LinSol.Name, o.Solver.Itol)
+	// results
 	return &o
 }
+
+// auxiliary ///////////////////////////////////////////////////////////////////////////////////////
 
 // Etag2data returns the ElemData corresponding to element tag
 //  Note: returns nil if not found
@@ -545,4 +454,77 @@ func (o *Simulation) GetInfo(w goio.Writer) (err error) {
 	}
 	_, err = w.Write(b)
 	return
+}
+
+// GetFaceBc returns face boundary condition structure by giving a face tag
+//  Note: returns nil if not found
+func (o Stage) GetFaceBc(facetag int) *FaceBc {
+	for _, fbc := range o.FaceBcs {
+		if facetag == fbc.Tag {
+			return fbc
+		}
+	}
+	return nil
+}
+
+// extra settings //////////////////////////////////////////////////////////////////////////////////
+
+// SetDefault sets defaults values
+func (o *LinSolData) SetDefault() {
+	o.Name = "umfpack"
+	o.Ordering = "amf"
+	o.Scaling = "rcit"
+}
+
+// SetDefault set defaults values
+func (o *SolverData) SetDefault() {
+
+	// nonlinear solver
+	o.Type = "imp"
+	o.NmaxIt = 20
+	o.Atol = 1e-6
+	o.Rtol = 1e-6
+	o.FbTol = 1e-8
+	o.FbMin = 1e-14
+	o.NdvgMax = 20
+
+	// Richardson's extrapolation
+	o.REnssmax = 10000
+	o.REatol = 1e-6
+	o.RErtol = 1e-6
+	o.REmfac = 0.9
+	o.REmmin = 0.1
+	o.REmmax = 2.0
+
+	// transient analyses
+	o.DtMin = 1e-8
+	o.Theta = 0.5
+
+	// dynamics
+	o.Theta1 = 0.5
+	o.Theta2 = 0.5
+	o.HHTalp = 0.5
+
+	// constants
+	o.Eps = 1e-16
+}
+
+// PostProcess performs a post-processing of the just read json file
+func (o *SolverData) PostProcess() {
+
+	// coefficients for transient analyses
+	if o.ThGalerkin {
+		o.Theta = 2.0 / 3.0
+	}
+	if o.ThLiniger {
+		o.Theta = 0.878
+	}
+	if o.ThCombo1 {
+		o.Theta = 2.0 / 3.0
+		o.Theta1 = 5.0 / 6.0
+		o.Theta2 = 8.0 / 9.0
+	}
+
+	// iterations tolerance
+	o.Itol = max(10.0*o.Eps/o.Rtol, min(0.01, math.Sqrt(o.Rtol)))
 }

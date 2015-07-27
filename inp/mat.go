@@ -6,7 +6,6 @@ package inp
 
 import (
 	"encoding/json"
-	"log"
 	"path/filepath"
 
 	"github.com/cpmech/gosl/chk"
@@ -41,17 +40,17 @@ func ReadMat(dir, fn string) *MatDb {
 
 	// read file
 	b, err := io.ReadFile(filepath.Join(dir, fn))
-	if LogErr(err, "mat: cannot open materials file "+dir+"/"+fn) {
+	if err != nil {
 		return nil
 	}
 
 	// decode
-	if LogErr(json.Unmarshal(b, &o), "mat: cannot unmarshal materials file "+fn) {
+	err = json.Unmarshal(b, &o)
+	if err != nil {
 		return nil
 	}
 
-	// log
-	log.Printf("mat: fn=%s nfunctions=%d nmaterials=%d\n", fn, len(o.Functions), len(o.Materials))
+	// results
 	return &o
 }
 

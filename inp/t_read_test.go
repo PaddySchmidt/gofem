@@ -40,7 +40,7 @@ func Test_sim01(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("sim01")
 
-	sim := ReadSim("data", "bh16.sim", "", true)
+	sim := ReadSim("data/bh16.sim", "", true)
 	if sim == nil {
 		tst.Errorf("test failed: check error log\n")
 		return
@@ -52,7 +52,7 @@ func Test_sim01(tst *testing.T) {
 
 	io.Pfyel("ndim    = %v\n", sim.Ndim)
 	io.Pfyel("maxElev = %v\n", sim.MaxElev)
-	io.Pfyel("grav    = %v\n", sim.Gfcn.F(0, nil))
+	io.Pfyel("grav    = %v\n", sim.Gravity.F(0, nil))
 	io.Pfyel("Wrho0   = %v\n", sim.WaterRho0)
 	io.Pfyel("Wbulk   = %v\n", sim.WaterBulk)
 	io.Pfyel("Wlevel  = %v\n", sim.WaterLevel)
@@ -63,7 +63,7 @@ func Test_sim02(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("sim01")
 
-	sim := ReadSim("data", "frees01.sim", "", true)
+	sim := ReadSim("data/frees01.sim", "", true)
 	if sim == nil {
 		tst.Errorf("test failed: check error log\n")
 		return
@@ -75,7 +75,7 @@ func Test_sim02(tst *testing.T) {
 
 	io.Pfyel("ndim    = %v\n", sim.Ndim)
 	io.Pfyel("maxElev = %v\n", sim.MaxElev)
-	io.Pfyel("grav    = %v\n", sim.Gfcn.F(0, nil))
+	io.Pfyel("grav    = %v\n", sim.Gravity.F(0, nil))
 	io.Pfyel("Wrho0   = %v\n", sim.WaterRho0)
 	io.Pfyel("Wbulk   = %v\n", sim.WaterBulk)
 	io.Pfyel("Wlevel  = %v\n", sim.WaterLevel)

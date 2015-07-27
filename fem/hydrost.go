@@ -5,8 +5,6 @@
 package fem
 
 import (
-	"log"
-
 	"github.com/cpmech/gofem/inp"
 
 	"github.com/cpmech/gosl/chk"
@@ -32,21 +30,21 @@ import (
 type HydroStatic struct {
 	zwater float64
 	ρL0    float64
-	g      float64
 	Cl     float64
+	g      float64
 	fcn    ode.Cb_fcn
 	Jac    ode.Cb_jac
 	sol    ode.ODE
 }
 
 // Init initialises this structure
-func (o *HydroStatic) Init() {
+func (o *HydroStatic) Init(waterLevel, waterRho0, waterBulk, g float64) {
 
 	// basic data
-	o.zwater = Global.Sim.WaterLevel
-	o.ρL0 = Global.Sim.WaterRho0
-	o.g = Global.Sim.Gfcn.F(0, nil)
-	o.Cl = o.ρL0 / Global.Sim.WaterBulk
+	o.zwater = waterLevel
+	o.ρL0 = waterRho0
+	o.Cl = o.ρL0 / waterBulk
+	o.g = g
 
 	// x := {pl, ρL}
 	o.fcn = func(f []float64, x float64, y []float64, args ...interface{}) error {
@@ -89,24 +87,23 @@ func (o HydroStatic) Calc(z float64) (pl, ρL float64, err error) {
 }
 
 // SetHydroSt sets the initial state to a hydrostatic condition
-func (o *Domain) SetHydroSt(stg *inp.Stage) (ok bool) {
+func (o *Domain) SetHydroSt(stg *inp.Stage) (err error) {
 
 	// set Sol
-	ndim := Global.Ndim
+	ndim := o.Sim.Ndim
 	for _, n := range o.Nodes {
 		z := n.Vert.C[ndim-1]
 		dof := n.GetDof("pl")
 		if dof != nil {
-			pl, _, err := Global.HydroSt.Calc(z)
-			if LogErr(err, "hydrost: cannot compute pl") {
-				return
+			pl, _, err := o.HydSta.Calc(z)
+			if err != nil {
+				return chk.Err("hydrost: cannot compute pl:\n%v", err)
 			}
 			o.Sol.Y[dof.Eq] = pl
 		}
 	}
 
 	// set elements
-	var err error
 	for _, e := range o.ElemIntvars {
 
 		// build map with pressures @ ips
@@ -116,20 +113,18 @@ func (o *Domain) SetHydroSt(stg *inp.Stage) (ok bool) {
 		ρL := make([]float64, nip)
 		for i := 0; i < nip; i++ {
 			z := coords[i][ndim-1]
-			pl[i], ρL[i], err = Global.HydroSt.Calc(z)
-			if LogErr(err, "hydrost: cannot compute pl and ρL") {
-				return
+			pl[i], ρL[i], err = o.HydSta.Calc(z)
+			if err != nil {
+				return chk.Err("hydrost: cannot compute pl and ρL:\n%v", err)
 			}
 		}
 		ivs := map[string][]float64{"pl": pl, "ρL": ρL}
 
 		// set element's states
-		if LogErrCond(!e.SetIniIvs(o.Sol, ivs), "hydrost: element's internal values setting failed") {
-			return
+		err = e.SetIniIvs(o.Sol, ivs)
+		if err != nil {
+			return chk.Err("hydrost: element's internal values setting failed:\n%v", err)
 		}
 	}
-
-	// success
-	log.Printf("dom: initial hydrostatic state set")
-	return true
+	return
 }

@@ -56,13 +56,12 @@ type GeoLayer struct {
 
 // Start starts ODE solver for computing state variables in Calc
 //  prev -- previous state @ top of this layer
-func (o *GeoLayer) Start(prev *geostate) {
+func (o *GeoLayer) Start(prev *geostate, g float64) {
 
 	// set state @ top
 	o.top = prev
 
 	// y := {pl, ρL, ρ, σV} == geostate
-	g := Global.Sim.Gfcn.F(0, nil)
 	nf := o.nf0
 	sl := 1.0
 	o.fcn = func(f []float64, x float64, y []float64, args ...interface{}) error {
@@ -113,19 +112,22 @@ func (o GeoLayers) Less(i, j int) bool {
 }
 
 // SetGeoSt sets the initial state to a hydrostatic condition
-func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
+func (o *Domain) SetGeoSt(stg *inp.Stage) (err error) {
 
 	// check layers definition
 	geo := stg.GeoSt
-	if LogErrCond(len(geo.Layers) < 1, "geost: layers must be defined by stating what tags belong to which layer") {
-		return
+	if len(geo.Layers) < 1 {
+		return chk.Err("geost: layers must be defined by specifying what tags belong to which layer")
 	}
 
 	// get region
-	if LogErrCond(len(Global.Sim.Regions) != 1, "geost: can only handle one domain for now") {
-		return
+	if len(o.Sim.Regions) != 1 {
+		return chk.Err("geost: can only handle one domain for now")
 	}
-	reg := Global.Sim.Regions[0]
+	reg := o.Sim.Regions[0]
+
+	// gravity
+	grav := o.Sim.Gravity.F(0, nil)
 
 	// fix UseK0
 	nlayers := len(geo.Layers)
@@ -136,7 +138,7 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
 	// initialise layers
 	var L GeoLayers
 	L = make([]*GeoLayer, nlayers)
-	ndim := Global.Ndim
+	ndim := o.Sim.Ndim
 	nodehandled := make(map[int]bool)
 	ctaghandled := make(map[int]bool) // required to make sure all elements were initialised
 	for i, tags := range geo.Layers {
@@ -144,12 +146,13 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
 		// new layer
 		L[i] = new(GeoLayer)
 		L[i].Tags = tags
-		L[i].Zmin = Global.Sim.MaxElev
+		L[i].Zmin = o.Sim.MaxElev
 		L[i].Zmax = 0
-		L[i].Cl = Global.Sim.WaterRho0 / Global.Sim.WaterBulk
+		L[i].Cl = o.Sim.WaterRho0 / o.Sim.WaterBulk
 
 		// get porous parameters
-		if !L[i].get_porous_parameters(reg, tags[0]) {
+		L[i].RhoS0, L[i].nf0, err = get_porous_parameters(o.Sim.MatParams, reg, tags[0])
+		if err != nil {
 			return
 		}
 
@@ -159,8 +162,8 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
 		} else {
 			L[i].K0 = geo.Nu[i] / (1.0 - geo.Nu[i])
 		}
-		if LogErrCond(L[i].K0 < 1e-7, "geost: K0 or Nu is incorect: K0=%g, Nu=%g", L[i].K0, geo.Nu) {
-			return
+		if L[i].K0 < 1e-7 {
+			return chk.Err("geost: K0 or Nu is incorect: K0=%g, Nu=%g", L[i].K0, geo.Nu)
 		}
 
 		// for each tag of cells in this layer
@@ -168,8 +171,8 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
 
 			// check tags
 			cells := o.Msh.CellTag2cells[tag]
-			if LogErrCond(len(cells) < 1, "geost: there are no cells with tag = %d", tag) {
-				return
+			if len(cells) < 1 {
+				return chk.Err("geost: there are no cells with tag = %d", tag)
 			}
 
 			// set nodes and elements and find min and max z-coordinates
@@ -190,8 +193,8 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
 
 	// make sure all elements tags were handled
 	for tag, _ := range o.Msh.CellTag2cells {
-		if LogErrCond(!ctaghandled[tag], "geost: there are cells not included in any layer: ctag=%d", tag) {
-			return
+		if !ctaghandled[tag] {
+			return chk.Err("geost: there are cells not included in any layer: ctag=%d", tag)
 		}
 	}
 
@@ -199,7 +202,6 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
 	sort.Sort(L)
 
 	// set previous/top states in layers and compute Sol.Y
-	var err error
 	for i, lay := range L {
 
 		// previous state
@@ -208,29 +210,29 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
 		nf := lay.nf0
 		sl := 1.0
 		if i == 0 {
-			pl := (Global.Sim.WaterLevel - Global.Sim.MaxElev) * Global.Sim.WaterRho0 * Global.Sim.Gfcn.F(0, nil)
-			ρL := Global.Sim.WaterRho0
+			pl := (o.Sim.WaterLevel - o.Sim.MaxElev) * o.Sim.WaterRho0 * grav
+			ρL := o.Sim.WaterRho0
 			ρ := nf*sl*ρL + (1.0-nf)*ρS
-			σV := -Global.Sim.Data.Surch
+			σV := -o.Sim.Data.Surch
 			top = &geostate{pl, ρL, ρ, σV}
 		} else {
 			top, err = L[i-1].Calc(L[i-1].Zmin)
-			if LogErr(err, "cannot compute state @ bottom of layer") {
-				return
+			if err != nil {
+				return chk.Err("cannot compute state @ bottom of layer:\n%v", err)
 			}
 			ρL := top.ρL
 			top.ρ = nf*sl*ρL + (1.0-nf)*ρS
 		}
 
 		// start layer
-		lay.Start(top)
+		lay.Start(top, grav)
 
 		// set nodes
 		for _, nod := range lay.Nodes {
 			z := nod.Vert.C[ndim-1]
 			s, err := lay.Calc(z)
-			if LogErr(err, io.Sf("cannot compute state @ node z = %g", z)) {
-				return
+			if err != nil {
+				return chk.Err("cannot compute state @ node z = %g\n%v", z, err)
 			}
 			dof := nod.GetDof("pl")
 			if dof != nil {
@@ -249,52 +251,53 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (ok bool) {
 				for i := 0; i < nip; i++ {
 					z := coords[i][ndim-1]
 					s, err := lay.Calc(z)
-					if LogErr(err, io.Sf("cannot compute state @ ip z = %g", z)) {
-						return
+					if err != nil {
+						return chk.Err("cannot compute state @ ip z = %g\n%v", z, err)
 					}
 					svT[i] = -s.σV
 				}
 				ivs := map[string][]float64{"svT": svT, "K0": []float64{lay.K0}}
 
 				// set element's states
-				if LogErrCond(!ele.SetIniIvs(o.Sol, ivs), "geost: element's internal values setting failed") {
-					return
+				err = ele.SetIniIvs(o.Sol, ivs)
+				if err != nil {
+					return chk.Err("geost: element's internal values setting failed:\n%v", err)
 				}
 			}
 		}
 	}
-	return true
+	return
 }
 
 // auxiliary //////////////////////////////////////////////////////////////////////////////////////////
 
 // get_porous_parameters extracts parameters based on region data
-func (o *GeoLayer) get_porous_parameters(reg *inp.Region, ctag int) (ok bool) {
+func get_porous_parameters(mdb *inp.MatDb, reg *inp.Region, ctag int) (RhoS0, nf0 float64, err error) {
 	edat := reg.Etag2data(ctag)
-	mat := Global.Sim.Mdb.Get(edat.Mat)
+	mat := mdb.Get(edat.Mat)
 	if mat.Model != "group" {
-		LogErrCond(true, "geost: material type describing layer must be 'group' with porous data")
+		err = chk.Err("geost: material type describing layer must be 'group' with porous data")
 		return
 	}
-	//var RhoL0, BulkL float64
 	if matname, found := io.Keycode(mat.Extra, "p"); found {
-		m := Global.Sim.Mdb.Get(matname)
+		m := mdb.Get(matname)
 		for _, p := range m.Prms {
 			switch p.N {
 			case "RhoS0":
-				o.RhoS0 = p.V
+				RhoS0 = p.V
 			case "nf0":
-				o.nf0 = p.V
+				nf0 = p.V
 			}
 		}
 	}
-	if LogErrCond(o.RhoS0 < 1e-7, "geost: initial density of solids RhoS0=%g is incorrect", o.RhoS0) {
+	if RhoS0 < 1e-7 {
+		err = chk.Err("geost: initial density of solids RhoS0=%g is incorrect", RhoS0)
 		return
 	}
-	if LogErrCond(o.nf0 < 1e-7, "geost: initial porosity nf0=%g is incorrect", o.nf0) {
-		return
+	if nf0 < 1e-7 {
+		err = chk.Err("geost: initial porosity nf0=%g is incorrect", nf0)
 	}
-	return true
+	return
 }
 
 // String prints geostate
