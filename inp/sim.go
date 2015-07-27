@@ -23,8 +23,8 @@ type Data struct {
 	// global information
 	Desc    string `json:"desc"`    // description of simulation
 	Matfile string `json:"matfile"` // materials file path
-	//DirOut  string `json:"dirout"`  // directory for output; e.g. /tmp/gofem
-	//Encoder string `json:"encoder"` // encoder name; e.g. "gob" "json" "xml"
+	DirOut  string `json:"dirout"`  // directory for output; e.g. /tmp/gofem
+	Encoder string `json:"encoder"` // encoder name; e.g. "gob" "json" "xml"
 
 	// problem definition and options
 	Steady  bool    `json:"steady"`  // steady simulation
@@ -284,16 +284,16 @@ func ReadSim(simfilepath, alias string, erasefiles bool) *Simulation {
 	}
 
 	// output directory
-	//o.DirOut = o.Data.DirOut
-	//if o.DirOut == "" {
-	//o.DirOut = "/tmp/gofem/" + fnkey
-	//}
+	o.DirOut = o.Data.DirOut
+	if o.DirOut == "" {
+		o.DirOut = "/tmp/gofem/" + fnkey
+	}
 
 	// encoder type
-	//o.EncType = o.Data.Encoder
-	//if o.EncType != "gob" && o.EncType != "json" {
-	//o.EncType = "gob"
-	//}
+	o.EncType = o.Data.Encoder
+	if o.EncType != "gob" && o.EncType != "json" {
+		o.EncType = "gob"
+	}
 
 	// create directory and erase previous simulation results
 	if erasefiles {
