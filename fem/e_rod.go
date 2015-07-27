@@ -101,7 +101,7 @@ func init() {
 		if matdata == nil {
 			chk.Panic("cannot get materials data for rod element {tag=%d id=%d material=%q}", cell.Tag, cell.Id, edat.Mat)
 		}
-		o.Model = msolid.GetOnedSolid(sim.Key, edat.Mat, matdata.Name, false)
+		o.Model = msolid.GetOnedSolid(sim.Key, edat.Mat, matdata.Model, false)
 		if o.Model == nil {
 			chk.Panic("cannot get model for rod element {tag=%d id=%d material=%q}", cell.Tag, cell.Id, edat.Mat)
 		}

@@ -153,6 +153,13 @@ func (o *EssentialBcs) Set(key string, nodes []*Node, fcn fun.Func, extra string
 
 	// len(nod) must be greater than 0
 	chk.IntAssertLessThan(0, len(nodes)) // 0 < len(nod)
+
+	// skip nil node
+	if nodes[0] == nil {
+		return
+	}
+
+	// space dimension
 	ndim := len(nodes[0].Vert.C)
 
 	// rigid element

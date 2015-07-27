@@ -141,7 +141,7 @@ func Test_sg52b(tst *testing.T) {
 	chk.PrintTitle("sg52b")
 
 	// run simulation
-	fem := NewFEM("data/sg52.sim", "", true, false, false, false, chk.Verbose)
+	fem := NewFEM("data/sg52.sim", "", true, true, false, false, chk.Verbose)
 
 	// run simulation
 	err := fem.Run()
@@ -164,7 +164,7 @@ func Test_sg57(tst *testing.T) {
 	chk.PrintTitle("sg57")
 
 	// run simulation
-	fem := NewFEM("data/sg57.sim", "", true, false, false, false, chk.Verbose)
+	fem := NewFEM("data/sg57.sim", "", true, true, false, false, chk.Verbose)
 
 	// run simulation
 	err := fem.Run()
@@ -187,7 +187,7 @@ func Test_sg511(tst *testing.T) {
 	chk.PrintTitle("sg511")
 
 	// run simulation
-	fem := NewFEM("data/sg511.sim", "", true, false, false, false, chk.Verbose)
+	fem := NewFEM("data/sg511.sim", "", true, true, false, false, chk.Verbose)
 
 	// run simulation
 	err := fem.Run()
@@ -206,10 +206,11 @@ func Test_sg511(tst *testing.T) {
 
 func Test_sg515(tst *testing.T) {
 
+	//verbose()
 	chk.PrintTitle("sg515")
 
 	// run simulation
-	fem := NewFEM("data/sg515.sim", "", true, false, false, false, chk.Verbose)
+	fem := NewFEM("data/sg515.sim", "", true, true, false, false, chk.Verbose)
 
 	// run simulation
 	err := fem.Run()
@@ -228,10 +229,11 @@ func Test_sg515(tst *testing.T) {
 
 func Test_sg517(tst *testing.T) {
 
+	//verbose()
 	chk.PrintTitle("sg517")
 
 	// run simulation
-	fem := NewFEM("data/sg517.sim", "", true, false, false, false, chk.Verbose)
+	fem := NewFEM("data/sg517.sim", "", true, true, false, false, chk.Verbose)
 
 	// run simulation
 	err := fem.Run()
@@ -250,10 +252,11 @@ func Test_sg517(tst *testing.T) {
 
 func Test_sg524(tst *testing.T) {
 
+	//verbose()
 	chk.PrintTitle("sg524")
 
 	// run simulation
-	fem := NewFEM("data/sg524.sim", "", true, false, false, false, chk.Verbose)
+	fem := NewFEM("data/sg524.sim", "", true, true, false, false, chk.Verbose)
 
 	// run simulation
 	err := fem.Run()
@@ -272,10 +275,11 @@ func Test_sg524(tst *testing.T) {
 
 func Test_sg530(tst *testing.T) {
 
+	//verbose()
 	chk.PrintTitle("sg530")
 
 	// run simulation
-	fem := NewFEM("data/sg530.sim", "", true, false, false, false, chk.Verbose)
+	fem := NewFEM("data/sg530.sim", "", true, true, false, false, chk.Verbose)
 
 	// run simulation
 	err := fem.Run()

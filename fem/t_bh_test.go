@@ -154,11 +154,11 @@ func Test_bh16b(tst *testing.T) {
 
 func Test_bh14a(tst *testing.T) {
 
-	verbose()
+	//verbose()
 	chk.PrintTitle("bh14a. using RunAll")
 
 	// start simulation
-	fem := NewFEM("data/bh14.sim", "", true, false, false, false, chk.Verbose)
+	fem := NewFEM("data/bh14.sim", "", true, true, false, false, chk.Verbose)
 
 	io.Pforan("here = %+v\n", fem)
 

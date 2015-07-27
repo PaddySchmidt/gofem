@@ -142,7 +142,7 @@ func Test_spo751b(tst *testing.T) {
 	chk.PrintTitle("spo751b")
 
 	// run simulation
-	fem := NewFEM("data/spo751.sim", "", true, false, false, false, chk.Verbose)
+	fem := NewFEM("data/spo751.sim", "", true, true, false, false, chk.Verbose)
 
 	// for debugging Kb
 	/*
