@@ -21,7 +21,9 @@
     }
   ],
   "solver" : {
-    "type" : "rex"
+    "type" : "rex",
+    "REatol" : 1e-5,
+    "RErtol" : 1e-5
   },
   "stages" : [
     {
