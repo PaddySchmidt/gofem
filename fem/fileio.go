@@ -43,7 +43,7 @@ func GetDecoder(r goio.Reader, enctype string) Decoder {
 }
 
 // SaveSol saves solution (o.Sol) to a file which name is set with tidx (time output index)
-func (o Domain) SaveSol(tidx int) (err error) {
+func (o Domain) SaveSol(tidx int, verbose bool) (err error) {
 
 	// skip if root
 	if o.Proc != 0 {
@@ -74,7 +74,7 @@ func (o Domain) SaveSol(tidx int) (err error) {
 
 	// save file
 	fn := out_nod_path(o.Sim.DirOut, o.Sim.Key, o.Sim.EncType, tidx, o.Proc)
-	return save_file(fn, &buf)
+	return save_file(fn, &buf, verbose)
 }
 
 // ReadSol reads Solution from a file which name is set with tidx (time output index)
@@ -112,7 +112,7 @@ func (o *Domain) ReadSol(dir, fnkey, enctype string, tidx int) (err error) {
 }
 
 // SaveIvs saves elements's internal values to a file which name is set with tidx (time output index)
-func (o Domain) SaveIvs(tidx int) (err error) {
+func (o Domain) SaveIvs(tidx int, verbose bool) (err error) {
 
 	// buffer and encoder
 	var buf bytes.Buffer
@@ -131,7 +131,7 @@ func (o Domain) SaveIvs(tidx int) (err error) {
 
 	// save file
 	fn := out_ele_path(o.Sim.DirOut, o.Sim.Key, o.Sim.EncType, tidx, o.Proc)
-	return save_file(fn, &buf)
+	return save_file(fn, &buf, verbose)
 }
 
 // ReadIvs reads elements's internal values from a file which name is set with tidx (time output index)
@@ -169,12 +169,12 @@ func (o *Domain) ReadIvs(dir, fnkey, enctype string, tidx, proc int) (err error)
 }
 
 // Out performs output of Solution and Internal values to files
-func (o *Domain) Save(tidx int) (err error) {
-	err = o.SaveSol(tidx)
+func (o *Domain) Save(tidx int, verbose bool) (err error) {
+	err = o.SaveSol(tidx, verbose)
 	if err != nil {
 		return
 	}
-	return o.SaveIvs(tidx)
+	return o.SaveIvs(tidx, verbose)
 }
 
 // In performs the inverse operation of Out()
@@ -216,12 +216,15 @@ func out_ele_path(dir, fnkey, enctype string, tidx, proc int) string {
 	return path.Join(dir, io.Sf("%s_p%d_ele_%010d.%s", fnkey, proc, tidx, enctype))
 }
 
-func save_file(filename string, buf *bytes.Buffer) (err error) {
+func save_file(filename string, buf *bytes.Buffer, verbose bool) (err error) {
 	fil, err := os.Create(filename)
 	if err != nil {
 		return
 	}
 	defer func() { err = fil.Close() }()
 	_, err = fil.Write(buf.Bytes())
+	if verbose {
+		io.Pfblue2("file <%s> written\n", filename)
+	}
 	return
 }

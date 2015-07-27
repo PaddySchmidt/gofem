@@ -29,11 +29,11 @@ type Summary struct {
 }
 
 // SaveDomains save the results from all domains (nodes and elements)
-func (o *Summary) SaveDomains(time float64, doms []*Domain) (err error) {
+func (o *Summary) SaveDomains(time float64, doms []*Domain, verbose bool) (err error) {
 
 	// output results from all domains
 	for _, d := range doms {
-		err = d.Save(o.tidx)
+		err = d.Save(o.tidx, verbose)
 		if err != nil {
 			return chk.Err("SaveResults failed:\n%v", err)
 		}
@@ -46,7 +46,7 @@ func (o *Summary) SaveDomains(time float64, doms []*Domain) (err error) {
 }
 
 // SaveSums saves summary to disc
-func (o Summary) Save(dirout, fnkey, enctype string, nproc, proc int) (err error) {
+func (o Summary) Save(dirout, fnkey, enctype string, nproc, proc int, verbose bool) (err error) {
 
 	// skip if not root
 	if proc != 0 {
@@ -70,7 +70,7 @@ func (o Summary) Save(dirout, fnkey, enctype string, nproc, proc int) (err error
 
 	// save file
 	fn := out_sum_path(dirout, fnkey, enctype, proc)
-	return save_file(fn, &buf)
+	return save_file(fn, &buf, verbose)
 }
 
 // Read reads summary back

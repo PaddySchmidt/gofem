@@ -36,6 +36,7 @@ type FEM struct {
 	Domains []*Domain       // all domains
 	Solver  FEsolver        // finite element method solver; e.g. implicit, Richardson extrapolation, etc.
 	DebugKb DebugKb_t       // debug Kb callback function
+	Nproc   int             // number of processors
 	Proc    int             // processor id
 	Verbose bool            // show messages
 }
@@ -76,13 +77,14 @@ func NewFEM(simfilepath, alias string, erasePrev, readSummary, allowParallel, ve
 	}
 
 	// multiprocessing data
-	nproc, distr := 1, false
+	o.Nproc = 1
+	distr := false
 	if mpi.IsOn() {
 		if allowParallel {
 			o.Proc = mpi.Rank()
-			nproc = mpi.Size()
-			distr = nproc > 1
-			if nproc > 1 {
+			o.Nproc = mpi.Size()
+			distr = o.Nproc > 1
+			if distr {
 				o.Sim.LinSol.Name = "mumps"
 			}
 		}
@@ -98,7 +100,7 @@ func NewFEM(simfilepath, alias string, erasePrev, readSummary, allowParallel, ve
 	o.HydSta.Init(o.Sim.WaterLevel, o.Sim.WaterRho0, o.Sim.WaterBulk, o.Sim.Gravity.F(0, nil))
 
 	// allocate domains
-	o.Domains = NewDomains(o.Sim, o.DynCfs, o.HydSta, o.Proc, nproc, distr)
+	o.Domains = NewDomains(o.Sim, o.DynCfs, o.HydSta, o.Proc, o.Nproc, distr)
 
 	// allocate solver
 	if alloc, ok := solverallocators[o.Sim.Solver.Type]; ok {
@@ -157,6 +159,11 @@ func (o *FEM) Run() (err error) {
 		if err != nil {
 			return
 		}
+	}
+
+	// save results
+	if o.Summary != nil {
+		err = o.Summary.Save(o.Sim.DirOut, o.Sim.Key, o.Sim.EncType, o.Nproc, o.Proc, o.Verbose)
 	}
 	return
 }

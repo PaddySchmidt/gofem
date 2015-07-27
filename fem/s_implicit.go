@@ -43,7 +43,7 @@ func (o *SolverImplicit) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose bool,
 
 	// first output
 	if o.sum != nil {
-		err = o.sum.SaveDomains(t, o.doms)
+		err = o.sum.SaveDomains(t, o.doms, false)
 		if err != nil {
 			return chk.Err("cannot save results:\n%v", err)
 		}
@@ -125,7 +125,7 @@ func (o *SolverImplicit) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose bool,
 		// perform output
 		if t >= tout || lasttimestep {
 			if o.sum != nil {
-				err = o.sum.SaveDomains(t, o.doms)
+				err = o.sum.SaveDomains(t, o.doms, false)
 				if err != nil {
 					return chk.Err("cannot save results:\n%v", err)
 				}
