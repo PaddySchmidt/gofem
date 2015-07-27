@@ -84,6 +84,7 @@ func GetElemInfo(cell *inp.Cell, reg *inp.Region, sim *inp.Simulation) (info *In
 		err = chk.Err("cannot get data for element {tag=%d, id=%d}", cell.Tag, cell.Id)
 		return
 	}
+	inactive = edat.Inact
 	infogetter, ok := infogetters[edat.Type]
 	if !ok {
 		err = chk.Err("cannot get info for element {type=%q, tag=%d, id=%d}", edat.Type, cell.Tag, cell.Id)

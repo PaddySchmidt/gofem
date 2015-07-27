@@ -238,7 +238,7 @@ func (o *Domain) SetStage(stgidx int) (err error) {
 
 		// allocate element
 		mycell := cell.Part == o.Proc // cell belongs to this processor
-		if mycell {
+		if mycell || !o.Distr {
 
 			// new element
 			ele, err := NewElem(cell, o.Reg, o.Sim)
