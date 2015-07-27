@@ -90,7 +90,10 @@ func init() {
 		var info Info
 
 		// number of nodes in element
-		nverts := shp.GetNverts(edat.Type)
+		nverts := shp.GetNverts(cell.Type)
+		if nverts < 0 {
+			return nil
+		}
 
 		// solution variables
 		ykeys := []string{"ux", "uy"}
@@ -117,7 +120,7 @@ func init() {
 		var o ElemU
 		o.Cid = cell.Id
 		o.X = x
-		o.Shp = shp.Get(edat.Type)
+		o.Shp = shp.Get(cell.Type)
 		o.Ndim = len(x)
 		o.Nu = o.Ndim * o.Shp.Nverts
 
@@ -126,7 +129,7 @@ func init() {
 
 		// integration points
 		var err error
-		o.IpsElem, o.IpsFace, err = GetIntegrationPoints(edat.Nip, edat.Nipf, edat.Type)
+		o.IpsElem, o.IpsFace, err = GetIntegrationPoints(edat.Nip, edat.Nipf, cell.Type)
 		if err != nil {
 			chk.Panic("cannot allocate integration points with nip=%d and nipf=%d:\n%v", edat.Nip, edat.Nipf, err)
 		}

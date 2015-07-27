@@ -17,18 +17,25 @@ func Test_beam01(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("beam01")
 
-	// start simulation
-	if !Start("data/beam01.sim", true, chk.Verbose, false) {
-		tst.Errorf("Start failed\n")
+	// fem
+	fem := NewFEM("data/beam01.sim", "", true, false, false, chk.Verbose)
+
+	// set stage
+	err := fem.SetStage(0)
+	if err != nil {
+		tst.Errorf("SetStage failed:\n%v", err)
 		return
 	}
 
-	// allocate domain and set stage
-	dom, _, ok := AllocSetAndInit(0, false, false)
-	if !ok {
-		tst.Errorf("AllocSetAndInit failed\n")
+	// initialise solution vectors
+	err = fem.ZeroStage(0, true)
+	if err != nil {
+		tst.Errorf("ZeroStage failed:\n%v", err)
 		return
 	}
+
+	// domain
+	dom := fem.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 2)

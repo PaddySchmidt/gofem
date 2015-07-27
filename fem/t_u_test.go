@@ -18,18 +18,25 @@ func Test_sigini01(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("sigini01. zero displacements. initial stresses")
 
-	// start simulation
-	if !Start("data/sigini01.sim", true, chk.Verbose, false) {
-		tst.Errorf("Start failed\n")
+	// fem
+	fem := NewFEM("data/sigini01.sim", "", true, false, false, chk.Verbose)
+
+	// set stage
+	err := fem.SetStage(0)
+	if err != nil {
+		tst.Errorf("SetStage failed:\n%v", err)
 		return
 	}
 
-	// allocate domain and set stage
-	dom, _, ok := AllocSetAndInit(0, false, false)
-	if !ok {
-		tst.Errorf("AllocSetAndInit failed\n")
+	// initialise solution vectors
+	err = fem.ZeroStage(0, true)
+	if err != nil {
+		tst.Errorf("ZeroStage failed:\n%v", err)
 		return
 	}
+
+	// domain
+	dom := fem.Domains[0]
 
 	// check displacements
 	tolu := 1e-16
@@ -62,20 +69,18 @@ func Test_sigini02(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("sigini02. initial stresses. run simulation")
 
-	// start simulation
-	if !Start("data/sigini02.sim", true, chk.Verbose, false) {
-		tst.Errorf("Start failed\n")
-		return
-	}
+	// fem
+	fem := NewFEM("data/sigini02.sim", "", true, false, false, chk.Verbose)
 
 	// run simulation
-	if !RunAll() {
-		tst.Errorf("RunAll failed\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed\n%v", err)
 		return
 	}
 
 	// domain
-	d := Global.Domains[0]
+	dom := fem.Domains[0]
 
 	// solution
 	var sol ana.CteStressPstrain
@@ -87,17 +92,17 @@ func Test_sigini02(tst *testing.T) {
 	})
 
 	// check displacements
-	t := d.Sol.T
+	t := dom.Sol.T
 	tolu := 1e-16
-	for _, n := range d.Nodes {
+	for _, n := range dom.Nodes {
 		eqx := n.GetEq("ux")
 		eqy := n.GetEq("uy")
-		u := []float64{d.Sol.Y[eqx], d.Sol.Y[eqy]}
+		u := []float64{dom.Sol.Y[eqx], dom.Sol.Y[eqy]}
 		sol.CheckDispl(tst, t, u, n.Vert.C, tolu)
 	}
 
 	// check stresses
-	e := d.Elems[0].(*ElemU)
+	e := dom.Elems[0].(*ElemU)
 	tols := 1e-13
 	for idx, ip := range e.IpsElem {
 		x := e.Shp.IpRealCoords(e.X, ip)
