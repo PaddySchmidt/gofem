@@ -32,22 +32,22 @@ func Test_bh16a(tst *testing.T) {
 	chk.PrintTitle("bh16a")
 
 	// start simulation
-	fem := NewFEM("data/bh16.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/bh16.sim", "", true, false, false, false, chk.Verbose)
 
 	// set stage
-	err := fem.SetStage(0)
+	err := analysis.SetStage(0)
 	if err != nil {
 		tst.Errorf("SetStage failed:\n%v", err)
 	}
 
 	// initialise solution vectros
-	err = fem.ZeroStage(0, true)
+	err = analysis.ZeroStage(0, true)
 	if err != nil {
 		tst.Errorf("ZeroStage failed:\n%v", err)
 	}
 
 	// domain
-	dom := fem.Domains[0]
+	dom := analysis.Domains[0]
 	io.Pforan("dom.elems = %v\n", dom.Elems)
 
 	// nodes and elements
@@ -135,10 +135,10 @@ func Test_bh16b(tst *testing.T) {
 	chk.PrintTitle("bh16b")
 
 	// start simulation
-	fem := NewFEM("data/bh16.sim", "", true, true, false, false, chk.Verbose)
+	analysis := NewFEM("data/bh16.sim", "", true, true, false, false, chk.Verbose)
 
 	// run simulation
-	err := fem.Run()
+	err := analysis.Run()
 	if err != nil {
 		tst.Errorf("Run failed:\n%v", err)
 		return
@@ -158,12 +158,10 @@ func Test_bh14a(tst *testing.T) {
 	chk.PrintTitle("bh14a. using RunAll")
 
 	// start simulation
-	fem := NewFEM("data/bh14.sim", "", true, true, false, false, chk.Verbose)
-
-	io.Pforan("here = %+v\n", fem)
+	analysis := NewFEM("data/bh14.sim", "", true, true, false, false, chk.Verbose)
 
 	// run simulation
-	err := fem.Run()
+	err := analysis.Run()
 	if err != nil {
 		tst.Errorf("Run failed:\n%v", err)
 		return
@@ -184,7 +182,7 @@ func Test_bh14b(tst *testing.T) {
 	chk.PrintTitle("bh14b. using SolveOneStage")
 
 	// start simulation
-	fem := NewFEM("data/bh14.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/bh14.sim", "", true, false, false, false, chk.Verbose)
 
 	// allocate domain and others
 	if !Alloc(true) {

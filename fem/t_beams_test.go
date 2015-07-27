@@ -18,24 +18,24 @@ func Test_beam01(tst *testing.T) {
 	chk.PrintTitle("beam01")
 
 	// fem
-	fem := NewFEM("data/beam01.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/beam01.sim", "", true, false, false, false, chk.Verbose)
 
 	// set stage
-	err := fem.SetStage(0)
+	err := analysis.SetStage(0)
 	if err != nil {
 		tst.Errorf("SetStage failed:\n%v", err)
 		return
 	}
 
 	// initialise solution vectors
-	err = fem.ZeroStage(0, true)
+	err = analysis.ZeroStage(0, true)
 	if err != nil {
 		tst.Errorf("ZeroStage failed:\n%v", err)
 		return
 	}
 
 	// domain
-	dom := fem.Domains[0]
+	dom := analysis.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 2)

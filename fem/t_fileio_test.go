@@ -17,10 +17,10 @@ func Test_fileio01(tst *testing.T) {
 	chk.PrintTitle("fileio01")
 
 	// start
-	fem := NewFEM("data/bh16.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/bh16.sim", "", true, false, false, false, chk.Verbose)
 
 	// domain A
-	domsA := NewDomains(fem.Sim, fem.DynCfs, fem.HydSta, 0, 1, false)
+	domsA := NewDomains(analysis.Sim, analysis.DynCfs, analysis.HydSta, 0, 1, false)
 	if len(domsA) == 0 {
 		tst.Errorf("NewDomains failed\n")
 		return
@@ -45,7 +45,7 @@ func Test_fileio01(tst *testing.T) {
 	}
 
 	// domain B
-	domsB := NewDomains(fem.Sim, fem.DynCfs, fem.HydSta, 0, 1, false)
+	domsB := NewDomains(analysis.Sim, analysis.DynCfs, analysis.HydSta, 0, 1, false)
 	if len(domsB) == 0 {
 		tst.Errorf("NewDomains failed\n")
 		return
@@ -59,7 +59,7 @@ func Test_fileio01(tst *testing.T) {
 	io.Pfpink("domB.Sol.Y (before) = %v\n", domB.Sol.Y)
 
 	// read file
-	err = domB.ReadSol(fem.Sim.DirOut, fem.Sim.Key, fem.Sim.EncType, tidx)
+	err = domB.ReadSol(analysis.Sim.DirOut, analysis.Sim.Key, analysis.Sim.EncType, tidx)
 	if err != nil {
 		tst.Errorf("ReadSol failed:\n%v", err)
 		return

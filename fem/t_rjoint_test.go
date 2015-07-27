@@ -16,19 +16,19 @@ func Test_rjoint01(tst *testing.T) {
 	chk.PrintTitle("rjoint01. curved line in 3D")
 
 	// initialisation
-	fem := NewFEM("data/rjoint01.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/rjoint01.sim", "", true, false, false, false, chk.Verbose)
 
 	// callback to check consistent tangent operators
 	eid := 2 // rjoint element
 	if true {
-		rjoint_DebugKb(fem, &testKb{
+		rjoint_DebugKb(analysis, &testKb{
 			tst: tst, eid: eid, tol: 1e-8, verb: chk.Verbose,
 			ni: -1, nj: -1, itmin: 1, itmax: -1, tmin: -1, tmax: -1,
 		})
 	}
 
 	// run simulation
-	err := fem.Run()
+	err := analysis.Run()
 	if err != nil {
 		tst.Errorf("Run failed:\n%v", err)
 		return

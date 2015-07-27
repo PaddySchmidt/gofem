@@ -53,22 +53,22 @@ func Test_p01a(tst *testing.T) {
 	chk.PrintTitle("p01a")
 
 	// start simulation
-	fem := NewFEM("data/p01.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/p01.sim", "", true, false, false, false, chk.Verbose)
 
 	// set stage
-	err := fem.SetStage(0)
+	err := analysis.SetStage(0)
 	if err != nil {
 		tst.Errorf("SetStage failed:\n%v", err)
 	}
 
 	// initialise solution vectros
-	err = fem.ZeroStage(0, true)
+	err = analysis.ZeroStage(0, true)
 	if err != nil {
 		tst.Errorf("ZeroStage failed:\n%v", err)
 	}
 
 	// domain
-	dom := fem.Domains[0]
+	dom := analysis.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 27)
@@ -150,10 +150,10 @@ func Test_p01b(tst *testing.T) {
 	chk.PrintTitle("p01b")
 
 	// run simulation
-	fem := NewFEM("data/p01.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/p01.sim", "", true, false, false, false, chk.Verbose)
 
 	// run simulation
-	err := fem.Run()
+	err := analysis.Run()
 	if err != nil {
 		tst.Errorf("Run failed:\n%v", err)
 		return
@@ -168,18 +168,18 @@ func Test_p02(tst *testing.T) {
 	chk.PrintTitle("p02")
 
 	// run simulation
-	fem := NewFEM("data/p02.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/p02.sim", "", true, false, false, false, chk.Verbose)
 
 	// for debugging Kb
 	if true {
-		p_DebugKb(fem, &testKb{
+		p_DebugKb(analysis, &testKb{
 			tst: tst, eid: 3, tol: 1e-6, verb: chk.Verbose,
 			ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 1000, tmax: 5000,
 		})
 	}
 
 	// run simulation
-	err := fem.Run()
+	err := analysis.Run()
 	if err != nil {
 		tst.Errorf("Run failed:\n%v", err)
 		return

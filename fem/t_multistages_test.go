@@ -16,9 +16,9 @@ func Test_fourlayers01(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("fourlayers01")
 
-	fem := NewFEM("data/fourlayers.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/fourlayers.sim", "", true, false, false, false, chk.Verbose)
 
-	doms := NewDomains(fem.Sim, fem.DynCfs, fem.HydSta, 0, 1, false)
+	doms := NewDomains(analysis.Sim, analysis.DynCfs, analysis.HydSta, 0, 1, false)
 	if len(doms) == 0 {
 		tst.Errorf("NewDomains failed\n")
 		return
