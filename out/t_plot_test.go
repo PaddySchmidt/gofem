@@ -23,12 +23,14 @@ func Test_plot01(tst *testing.T) {
 	datadir := "$GOPATH/src/github.com/cpmech/gofem/fem/data/"
 	simfn := "p02.sim"
 
-	// run FE simulation
-	if !fem.Start(datadir+simfn, true, chk.Verbose, false) {
-		chk.Panic("cannot start FE simulation")
-	}
-	if !fem.RunAll() {
-		chk.Panic("cannot run FE simulation")
+	// start simulation
+	processing := fem.NewFEM(datadir+simfn, "", true, true, false, false, chk.Verbose)
+
+	// run simulation
+	err := processing.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
+		return
 	}
 
 	// start post-processing

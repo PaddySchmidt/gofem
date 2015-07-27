@@ -156,11 +156,6 @@ func (o *FEM) Run() (err error) {
 		}
 	}
 
-	// save summary
-	if o.Summary != nil {
-		err = o.Summary.Save(o.Sim.DirOut, o.Sim.Key, o.Sim.EncType, o.Nproc, o.Proc, o.Verbose)
-	}
-
 	// message
 	if o.Verbose {
 		io.Pf("\n\n")
@@ -169,7 +164,12 @@ func (o *FEM) Run() (err error) {
 				io.Pf("\nfinal time = %v\n", o.Domains[0].Sol.T)
 			}
 		}
-		io.Pfblue2("cpu time   = %v\n", time.Now().Sub(cputime))
+		io.Pflmag("cpu time   = %v\n", time.Now().Sub(cputime))
+	}
+
+	// save summary
+	if o.Summary != nil {
+		err = o.Summary.Save(o.Sim.DirOut, o.Sim.Key, o.Sim.EncType, o.Nproc, o.Proc, o.Verbose)
 	}
 	return
 }

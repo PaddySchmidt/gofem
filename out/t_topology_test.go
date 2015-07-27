@@ -12,22 +12,24 @@ import (
 	"github.com/cpmech/gosl/plt"
 )
 
-func Test_topol01(tst *testing.T) {
+func Test_topo01(tst *testing.T) {
 
 	// test title
 	//verbose()
-	chk.PrintTitle("topol01")
+	chk.PrintTitle("topo01")
 
 	// constants
 	datadir := "data/"
 	simfn := "box.sim"
 
-	// run FE simulation
-	if !fem.Start(datadir+simfn, true, chk.Verbose, false) {
-		chk.Panic("cannot start FE simulation")
-	}
-	if !fem.RunAll() {
-		chk.Panic("cannot run FE simulation")
+	// start simulation
+	processing := fem.NewFEM(datadir+simfn, "", true, true, false, false, chk.Verbose)
+
+	// run simulation
+	err := processing.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
+		return
 	}
 
 	// start post-processing

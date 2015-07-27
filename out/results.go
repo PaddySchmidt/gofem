@@ -69,8 +69,9 @@ func LoadResults(times []float64) {
 	for _, tidx := range TimeInds {
 
 		// input results into domain
-		if !Dom.In(Sum, tidx, true) {
-			chk.Panic("cannot load results into domain; please check log file")
+		err := Dom.Read(Sum, tidx, 0, true)
+		if err != nil {
+			chk.Panic("cannot load results into domain:\n%v", err)
 		}
 		if Dom.Ny != len(Dom.Sol.Y) {
 			chk.Panic("inconsistency of results detected: summary and simulation file might be different")

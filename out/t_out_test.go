@@ -29,15 +29,17 @@ func Test_out01(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("out01")
 
-	// run FE simulation
-	if !fem.Start("data/onequa4.sim", true, chk.Verbose, false) {
-		chk.Panic("cannot start FE simulation")
-	}
-	if !fem.RunAll() {
-		chk.Panic("cannot run FE simulation")
+	// start simulation
+	processing := fem.NewFEM("data/onequa4.sim", "", true, true, false, false, chk.Verbose)
+
+	// run simulation
+	err := processing.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
+		return
 	}
 
-	// start analysis process
+	// start post-processing
 	Start("data/onequa4.sim", 0, 0)
 
 	// define points
@@ -96,7 +98,7 @@ func Test_out01(tst *testing.T) {
 	}
 
 	// check s-keys
-	skeys := fem.StressKeys()
+	skeys := fem.StressKeys(Dom.Sim.Ndim)
 	for _, l := range plabels {
 		for _, p := range Results[l] {
 			//io.Pfgreen("q = %v\n", p)
@@ -169,15 +171,17 @@ func Test_out02(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("out02")
 
-	// run FE simulation
-	if !fem.Start("data/twoqua4.sim", true, chk.Verbose, false) {
-		chk.Panic("cannot start FE simulation")
-	}
-	if !fem.RunAll() {
-		chk.Panic("cannot run FE simulation")
+	// start simulation
+	processing := fem.NewFEM("data/twoqua4.sim", "", true, true, false, false, chk.Verbose)
+
+	// run simulation
+	err := processing.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
+		return
 	}
 
-	// start analysis process
+	// start post-processing
 	Start("data/twoqua4.sim", 0, 0)
 
 	// get second ip coordinates

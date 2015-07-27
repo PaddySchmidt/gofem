@@ -26,8 +26,9 @@ type ResultsMap map[string]Points
 var (
 
 	// data set by Start
-	Sum       *fem.Summary     // summary
-	Dom       *fem.Domain      // FE domain
+	Analysis  *fem.FEM         // the fem structure
+	Sum       *fem.Summary     // [from Analysis] summary
+	Dom       *fem.Domain      // [from Analysis] FE domain
 	Ipoints   []*fem.OutIpData // all integration points. ipid == index in Ipoints
 	Cid2ips   [][]int          // [ncells][nip] maps cell id to index in Ipoints
 	Ipkey2ips map[string][]int // maps ip keys to indices in Ipoints
@@ -55,31 +56,21 @@ var (
 // Start starts handling of results given a simulation input file
 func Start(simfnpath string, stageIdx, regionIdx int) {
 
-	// start FE global structure
-	fem.Global.LogPrefix = "out_"
-	erasefiles := false
-	verbose := false
-	allowParallel := false
-	if !fem.Start(simfnpath, erasefiles, verbose, allowParallel) {
-		chk.Panic("cannot start analysis process with simfnpath=%q\n", simfnpath)
-	}
+	// fem structure
+	Analysis = fem.NewFEM(simfnpath, "", false, false, true, false, false)
+	Dom = Analysis.Domains[regionIdx]
+	Sum = Analysis.Summary
 
-	// read summary
-	Sum = new(fem.Summary)
-	if !Sum.Read(fem.Global.Dirout, fem.Global.Fnkey) {
-		chk.Panic("cannot read summary file for simulation=%q\n", simfnpath)
-	}
-
-	// allocate domain
-	distr := false
-	Dom = fem.NewDomain(fem.Global.Sim.Regions[regionIdx], distr)
-	if !Dom.SetStage(stageIdx, fem.Global.Sim.Stages[stageIdx], distr) {
-		chk.Panic("cannot allocate domain\n")
+	// set stage
+	err := Analysis.SetStage(stageIdx)
+	if err != nil {
+		chk.Panic("cannot set stage:\n%v", err)
 	}
 
 	// initialise solution vectors
-	if !Dom.SetIniVals(fem.Global.Sim.Stages[stageIdx], false) {
-		chk.Panic("SetIniVals failed\n")
+	err = Analysis.ZeroStage(stageIdx, true)
+	if err != nil {
+		chk.Panic("cannot initialise solution vectors:\n%v", err)
 	}
 
 	// clear previous data
@@ -102,7 +93,7 @@ func Start(simfnpath string, stageIdx, regionIdx int) {
 		xi = append(xi, m.Zmin-δ)
 		xf = append(xf, m.Zmax+δ)
 	}
-	err := NodBins.Init(xi, xf, Ndiv)
+	err = NodBins.Init(xi, xf, Ndiv)
 	if err != nil {
 		chk.Panic("cannot initialise bins for nodes: %v", err)
 	}
