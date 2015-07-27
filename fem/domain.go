@@ -301,15 +301,13 @@ func (o *Domain) SetStage(stgidx int) (err error) {
 		}
 	}
 
-	// face boundary conditions
-	/*
-		for cidx, fcs := range o.FaceConds {
-			cell := o.Msh.Cells[cidx]
-			for _, fc := range fcs {
-				lverts := fc.LocalVerts
-				gverts := o.faceLocal2globalVerts(lverts, cell)
+	// face essential boundary conditions
+	for _, cellsAndFaces := range o.Msh.FaceTag2cells {
+		for _, pair := range cellsAndFaces {
+			cell := pair.C
+			for _, fc := range cell.FaceBcs {
 				var enodes []*Node
-				for _, v := range gverts {
+				for _, v := range fc.GlobalVerts {
 					enodes = append(enodes, o.Vid2node[v])
 				}
 				if o.YandC[fc.Cond] {
@@ -318,10 +316,9 @@ func (o *Domain) SetStage(stgidx int) (err error) {
 						return chk.Err("setting of essential boundary conditions failed:\n%v", err)
 					}
 				}
-
 			}
 		}
-	*/
+	}
 
 	// vertex bounday conditions
 	for _, nc := range stg.NodeBcs {
