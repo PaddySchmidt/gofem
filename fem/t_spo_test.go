@@ -145,14 +145,12 @@ func Test_spo751b(tst *testing.T) {
 	fem := NewFEM("data/spo751.sim", "", true, true, false, false, chk.Verbose)
 
 	// for debugging Kb
-	/*
-		if true {
-			defer u_DebugKb(&testKb{
-				tst: tst, eid: 3, tol: 1e-5, verb: chk.Verbose,
-				ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 0.89, tmax: 0.96,
-			})()
-		}
-	*/
+	if true {
+		u_DebugKb(fem, &testKb{
+			tst: tst, eid: 3, tol: 1e-5, verb: chk.Verbose,
+			ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 0.89, tmax: 0.96,
+		})
+	}
 
 	// run simulation
 	err := fem.Run()

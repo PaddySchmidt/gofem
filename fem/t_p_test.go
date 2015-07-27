@@ -171,14 +171,12 @@ func Test_p02(tst *testing.T) {
 	fem := NewFEM("data/p02.sim", "", true, false, false, false, chk.Verbose)
 
 	// for debugging Kb
-	/*
-		if true {
-			defer p_DebugKb(&testKb{
-				tst: tst, eid: 3, tol: 1e-6, verb: chk.Verbose,
-				ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 1000, tmax: 5000,
-			})()
-		}
-	*/
+	if true {
+		p_DebugKb(fem, &testKb{
+			tst: tst, eid: 3, tol: 1e-6, verb: chk.Verbose,
+			ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 1000, tmax: 5000,
+		})
+	}
 
 	// run simulation
 	err := fem.Run()

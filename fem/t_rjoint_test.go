@@ -19,15 +19,13 @@ func Test_rjoint01(tst *testing.T) {
 	fem := NewFEM("data/rjoint01.sim", "", true, false, false, false, chk.Verbose)
 
 	// callback to check consistent tangent operators
-	/*
-		eid := 2 // rjoint element
-		if true {
-			defer rjoint_DebugKb(&testKb{
-				tst: tst, eid: eid, tol: 1e-8, verb: chk.Verbose,
-				ni: -1, nj: -1, itmin: 1, itmax: -1, tmin: -1, tmax: -1,
-			})()
-		}
-	*/
+	eid := 2 // rjoint element
+	if true {
+		rjoint_DebugKb(fem, &testKb{
+			tst: tst, eid: eid, tol: 1e-8, verb: chk.Verbose,
+			ni: -1, nj: -1, itmin: 1, itmax: -1, tmin: -1, tmax: -1,
+		})
+	}
 
 	// run simulation
 	err := fem.Run()

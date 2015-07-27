@@ -78,14 +78,12 @@ func Test_frees01b(tst *testing.T) {
 	fem := NewFEM("data/frees01.sim", "", true, true, false, false, chk.Verbose)
 
 	// for debugging Kb
-	/*
-		if true {
-			defer p_DebugKb(&testKb{
-				tst: tst, eid: 14, tol: 1e-5, verb: chk.Verbose,
-				ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 200, tmax: 200,
-			})()
-		}
-	*/
+	if true {
+		p_DebugKb(fem, &testKb{
+			tst: tst, eid: 14, tol: 1e-5, verb: chk.Verbose,
+			ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 200, tmax: 200,
+		})
+	}
 
 	// run simulation
 	err := fem.Run()

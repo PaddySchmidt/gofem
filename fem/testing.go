@@ -9,6 +9,8 @@ import (
 	"math"
 	"testing"
 
+	"github.com/cpmech/gofem/mporous"
+	"github.com/cpmech/gofem/msolid"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/num"
@@ -178,18 +180,9 @@ type testKb struct {
 	Yold  []float64 // auxiliary array
 }
 
-/*
 // p_DebugKb defines a global function to debug Kb for p-elements
-//  Note: it returns a function to reset the global function
-func p_DebugKb(o *testKb) (resetDebugKb func()) {
-
-	// define reset function
-	resetDebugKb = func() {
-		Global.DebugKb = nil
-	}
-
-	// define debug function
-	Global.DebugKb = func(d *Domain, it int) {
+func p_DebugKb(fem *FEM, o *testKb) {
+	fem.DebugKb = func(d *Domain, it int) {
 
 		elem := d.Elems[o.eid]
 		if e, ok := elem.(*ElemP); ok {
@@ -240,20 +233,11 @@ func p_DebugKb(o *testKb) (resetDebugKb func()) {
 			o.check("Kff", d, e, e.Fmap, e.Fmap, e.Kff, restore)
 		}
 	}
-	return
 }
 
 // u_DebugKb defines a global function to debug Kb for u-elements
-//  Note: it returns a function to reset the global function
-func u_DebugKb(o *testKb) (resetDebugKb func()) {
-
-	// define reset function
-	resetDebugKb = func() {
-		Global.DebugKb = nil
-	}
-
-	// define debug function
-	Global.DebugKb = func(d *Domain, it int) {
+func u_DebugKb(fem *FEM, o *testKb) {
+	fem.DebugKb = func(d *Domain, it int) {
 
 		elem := d.Elems[o.eid]
 		if e, ok := elem.(*ElemU); ok {
@@ -305,16 +289,8 @@ func u_DebugKb(o *testKb) (resetDebugKb func()) {
 }
 
 // up_DebugKb defines a global function to debug Kb for up-elements
-//  Note: it returns a function to reset the global function
-func up_DebugKb(o *testKb) (resetDebugKb func()) {
-
-	// define reset function
-	resetDebugKb = func() {
-		Global.DebugKb = nil
-	}
-
-	// define debug function
-	Global.DebugKb = func(d *Domain, it int) {
+func up_DebugKb(fem *FEM, o *testKb) {
+	fem.DebugKb = func(d *Domain, it int) {
 
 		elem := d.Elems[o.eid]
 		if e, ok := elem.(*ElemUP); ok {
@@ -380,16 +356,8 @@ func up_DebugKb(o *testKb) (resetDebugKb func()) {
 }
 
 // rjoint_DebugKb defines a global function to debug Kb for rjoint-elements
-//  Note: it returns a function to reset the global function
-func rjoint_DebugKb(o *testKb) (resetDebugKb func()) {
-
-	// define reset function
-	resetDebugKb = func() {
-		Global.DebugKb = nil
-	}
-
-	// define debug function
-	Global.DebugKb = func(d *Domain, it int) {
+func rjoint_DebugKb(fem *FEM, o *testKb) {
+	fem.DebugKb = func(d *Domain, it int) {
 
 		elem := d.Elems[o.eid]
 		if e, ok := elem.(*Rjoint); ok {
@@ -444,7 +412,6 @@ func rjoint_DebugKb(o *testKb) (resetDebugKb func()) {
 	}
 	return
 }
-*/
 
 // skip skips test based on it and/or t
 func (o testKb) skip() bool {

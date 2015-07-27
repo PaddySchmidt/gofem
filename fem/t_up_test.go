@@ -262,15 +262,13 @@ func Test_up01b(tst *testing.T) {
 	// start simulation
 	fem := NewFEM("data/up01.sim", "", true, false, false, false, chk.Verbose)
 
-	/*
-		// for debugging Kb
-		if true {
-			defer up_DebugKb(&testKb{
-				tst: tst, eid: 3, tol: 1e-8, verb: chk.Verbose,
-				ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 800, tmax: 1000,
-			})()
-		}
-	*/
+	// for debugging Kb
+	if true {
+		up_DebugKb(fem, &testKb{
+			tst: tst, eid: 3, tol: 1e-8, verb: chk.Verbose,
+			ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 800, tmax: 1000,
+		})
+	}
 
 	// run simulation
 	err := fem.Run()
