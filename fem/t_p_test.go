@@ -53,17 +53,22 @@ func Test_p01a(tst *testing.T) {
 	chk.PrintTitle("p01a")
 
 	// start simulation
-	if !Start("data/p01.sim", true, chk.Verbose, false) {
-		tst.Errorf("Start failed\n")
-		return
+	fem := NewFEM("data/p01.sim", "", true, false, false, false, chk.Verbose)
+
+	// set stage
+	err := fem.SetStage(0)
+	if err != nil {
+		tst.Errorf("SetStage failed:\n%v", err)
 	}
 
-	// allocate domain and set stage
-	dom, _, ok := AllocSetAndInit(0, false, false)
-	if !ok {
-		tst.Errorf("AllocSetAndInit failed\n")
-		return
+	// initialise solution vectros
+	err = fem.ZeroStage(0, true)
+	if err != nil {
+		tst.Errorf("ZeroStage failed:\n%v", err)
 	}
+
+	// domain
+	dom := fem.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 27)
@@ -121,7 +126,7 @@ func Test_p01a(tst *testing.T) {
 		z := nod.Vert.C[1]
 		eq := nod.Dofs[0].Eq
 		pl := dom.Sol.Y[eq]
-		plC, _, _ := Global.HydroSt.Calc(z)
+		plC, _, _ := dom.HydSta.Calc(z)
 		chk.Scalar(tst, io.Sf("nod %3d : pl(@ %4g)= %6g", nod.Vert.Id, z, pl), 1e-17, pl, plC)
 	}
 
@@ -132,7 +137,7 @@ func Test_p01a(tst *testing.T) {
 		for idx, ip := range e.IpsElem {
 			s := e.States[idx]
 			z := e.Shp.IpRealCoords(e.X, ip)[1]
-			_, ρLC, _ := Global.HydroSt.Calc(z)
+			_, ρLC, _ := dom.HydSta.Calc(z)
 			chk.Scalar(tst, io.Sf("sl(@ %18g)= %18g", z, s.A_sl), 1e-17, s.A_sl, 1)
 			chk.Scalar(tst, io.Sf("ρL(@ %18g)= %18g", z, s.A_ρL), 1e-13, s.A_ρL, ρLC)
 		}
@@ -145,14 +150,12 @@ func Test_p01b(tst *testing.T) {
 	chk.PrintTitle("p01b")
 
 	// run simulation
-	if !Start("data/p01.sim", true, chk.Verbose, false) {
-		tst.Errorf("Start failed\n")
-		return
-	}
+	fem := NewFEM("data/p01.sim", "", true, false, false, false, chk.Verbose)
 
 	// run simulation
-	if !RunAll() {
-		tst.Errorf("RunAll failed\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 		return
 	}
 
@@ -165,22 +168,22 @@ func Test_p02(tst *testing.T) {
 	chk.PrintTitle("p02")
 
 	// run simulation
-	if !Start("data/p02.sim", true, chk.Verbose, false) {
-		tst.Errorf("Start failed\n")
-		return
-	}
+	fem := NewFEM("data/p02.sim", "", true, false, false, false, chk.Verbose)
 
 	// for debugging Kb
-	if true {
-		defer p_DebugKb(&testKb{
-			tst: tst, eid: 3, tol: 1e-6, verb: chk.Verbose,
-			ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 1000, tmax: 5000,
-		})()
-	}
+	/*
+		if true {
+			defer p_DebugKb(&testKb{
+				tst: tst, eid: 3, tol: 1e-6, verb: chk.Verbose,
+				ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 1000, tmax: 5000,
+			})()
+		}
+	*/
 
 	// run simulation
-	if !RunAll() {
-		tst.Errorf("RunAll failed\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 		return
 	}
 }

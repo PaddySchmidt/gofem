@@ -57,16 +57,22 @@ func Test_up01a(tst *testing.T) {
 	chk.PrintTitle("up01a")
 
 	// start simulation
-	if !Start("data/up01.sim", true, chk.Verbose, false) {
-		chk.Panic("cannot start simulation")
+	fem := NewFEM("data/up01.sim", "", true, false, false, false, chk.Verbose)
+
+	// set stage
+	err := fem.SetStage(0)
+	if err != nil {
+		tst.Errorf("SetStage failed:\n%v", err)
 	}
 
-	// allocate domain and set stage
-	dom, _, ok := AllocSetAndInit(0, false, false)
-	if !ok {
-		tst.Errorf("AllocSetAndInit failed\n")
-		return
+	// initialise solution vectros
+	err = fem.ZeroStage(0, true)
+	if err != nil {
+		tst.Errorf("ZeroStage failed:\n%v", err)
 	}
+
+	// domain
+	dom := fem.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 27)
@@ -163,7 +169,7 @@ func Test_up01a(tst *testing.T) {
 			case "uy":
 				chk.Scalar(tst, io.Sf("nod %3d : uy(@ %4g)= %6g", nod.Vert.Id, z, u), 1e-17, u, 0)
 			case "pl":
-				plC, _, _ := Global.HydroSt.Calc(z)
+				plC, _, _ := dom.HydSta.Calc(z)
 				chk.Scalar(tst, io.Sf("nod %3d : pl(@ %4g)= %6g", nod.Vert.Id, z, u), 1e-13, u, plC)
 			}
 		}
@@ -254,20 +260,21 @@ func Test_up01b(tst *testing.T) {
 	chk.PrintTitle("up01b")
 
 	// start simulation
-	if !Start("data/up01.sim", true, chk.Verbose, false) {
-		chk.Panic("cannot start simulation")
-	}
+	fem := NewFEM("data/up01.sim", "", true, false, false, false, chk.Verbose)
 
-	// for debugging Kb
-	if true {
-		defer up_DebugKb(&testKb{
-			tst: tst, eid: 3, tol: 1e-8, verb: chk.Verbose,
-			ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 800, tmax: 1000,
-		})()
-	}
+	/*
+		// for debugging Kb
+		if true {
+			defer up_DebugKb(&testKb{
+				tst: tst, eid: 3, tol: 1e-8, verb: chk.Verbose,
+				ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 800, tmax: 1000,
+			})()
+		}
+	*/
 
 	// run simulation
-	if !RunAll() {
-		chk.Panic("cannot run simulation\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 	}
 }

@@ -18,16 +18,22 @@ func Test_frees01a(tst *testing.T) {
 	chk.PrintTitle("frees01a")
 
 	// start simulation
-	if !Start("data/frees01.sim", true, chk.Verbose, false) {
-		chk.Panic("cannot start FE simulation")
+	fem := NewFEM("data/frees01.sim", "", true, false, false, false, chk.Verbose)
+
+	// set stage
+	err := fem.SetStage(0)
+	if err != nil {
+		tst.Errorf("SetStage failed:\n%v", err)
 	}
 
-	// allocate domain and set stage
-	dom, _, ok := AllocSetAndInit(0, false, false)
-	if !ok {
-		tst.Errorf("AllocSetAndInit failed\n")
-		return
+	// initialise solution vectros
+	err = fem.ZeroStage(0, true)
+	if err != nil {
+		tst.Errorf("ZeroStage failed:\n%v", err)
 	}
+
+	// domain
+	dom := fem.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 62)
@@ -69,20 +75,21 @@ func Test_frees01b(tst *testing.T) {
 	chk.PrintTitle("frees01b")
 
 	// start simulation
-	if !Start("data/frees01.sim", true, chk.Verbose, false) {
-		chk.Panic("cannot start simulation")
-	}
+	fem := NewFEM("data/frees01.sim", "", true, true, false, false, chk.Verbose)
 
 	// for debugging Kb
-	if true {
-		defer p_DebugKb(&testKb{
-			tst: tst, eid: 14, tol: 1e-5, verb: chk.Verbose,
-			ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 200, tmax: 200,
-		})()
-	}
+	/*
+		if true {
+			defer p_DebugKb(&testKb{
+				tst: tst, eid: 14, tol: 1e-5, verb: chk.Verbose,
+				ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 200, tmax: 200,
+			})()
+		}
+	*/
 
 	// run simulation
-	if !RunAll() {
-		chk.Panic("cannot run simulation\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 	}
 }

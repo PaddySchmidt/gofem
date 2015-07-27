@@ -36,17 +36,22 @@ func Test_phi01(tst *testing.T) {
 	chk.PrintTitle("phi01")
 
 	// start simulation
-	if !Start("data/phi01.sim", true, chk.Verbose, false) {
-		tst.Errorf("test failed\n")
-		return
+	fem := NewFEM("data/phi01.sim", "", true, false, false, false, chk.Verbose)
+
+	// set stage
+	err := fem.SetStage(0)
+	if err != nil {
+		tst.Errorf("SetStage failed:\n%v", err)
 	}
 
-	// allocate domain and set stage
-	dom, _, ok := AllocSetAndInit(0, false, false)
-	if !ok {
-		tst.Errorf("AllocSetAndInit failed\n")
-		return
+	// initialise solution vectros
+	err = fem.ZeroStage(0, true)
+	if err != nil {
+		tst.Errorf("ZeroStage failed:\n%v", err)
 	}
+
+	// domain
+	dom := fem.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 25)
@@ -82,14 +87,12 @@ func Test_phi02(tst *testing.T) {
 	chk.PrintTitle("phi02")
 
 	// run simulation
-	if !Start("data/phi02.sim", true, chk.Verbose, false) {
-		tst.Errorf("test failed\n")
-		return
-	}
+	fem := NewFEM("data/phi02.sim", "", true, false, false, false, chk.Verbose)
 
 	// run simulation
-	if !RunAll() {
-		tst.Errorf("test failed\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 		return
 	}
 

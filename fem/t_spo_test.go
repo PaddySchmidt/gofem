@@ -172,7 +172,7 @@ func Test_spo751b(tst *testing.T) {
 	}
 }
 
-func Test_spo751re(tst *testing.T) {
+func test_spo751re(tst *testing.T) {
 
 	//verbose()
 	chk.PrintTitle("spo751re. Richardson extrapolation")
