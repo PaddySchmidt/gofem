@@ -110,10 +110,6 @@ func (o *Domain) Clean() {
 
 // NewDomains returns domains
 func NewDomains(sim *inp.Simulation, dyncfs *DynCoefs, hydsta *HydroStatic, proc, nproc int, distr bool) (doms []*Domain) {
-	linsolName := sim.LinSol.Name
-	if distr && nproc > 1 {
-		linsolName = "mumps"
-	}
 	doms = make([]*Domain, len(sim.Regions))
 	for i, reg := range sim.Regions {
 		doms[i] = new(Domain)
@@ -127,7 +123,7 @@ func NewDomains(sim *inp.Simulation, dyncfs *DynCoefs, hydsta *HydroStatic, proc
 				chk.Panic("number of processors must be equal to the number of partitions defined in mesh file. %d != %d", nproc, len(reg.Msh.Part2cells))
 			}
 		}
-		doms[i].LinSol = la.GetSolver(linsolName)
+		doms[i].LinSol = la.GetSolver(sim.LinSol.Name)
 		doms[i].DynCfs = dyncfs
 		doms[i].HydSta = hydsta
 	}

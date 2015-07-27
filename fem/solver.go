@@ -77,12 +77,17 @@ func NewFEM(simfilepath, alias string, erasePrev, readSummary, allowParallel, ve
 
 	// multiprocessing data
 	nproc, distr := 1, false
-	if allowParallel {
-		if mpi.IsOn() {
+	if mpi.IsOn() {
+		if allowParallel {
 			o.Proc = mpi.Rank()
 			nproc = mpi.Size()
 			distr = nproc > 1
+			if nproc > 1 {
+				o.Sim.LinSol.Name = "mumps"
+			}
 		}
+	} else {
+		o.Sim.LinSol.Name = "umfpack"
 	}
 	o.Verbose = verbose && (o.Proc == 0)
 
