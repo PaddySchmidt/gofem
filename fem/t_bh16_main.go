@@ -32,16 +32,11 @@ func main() {
 	mpi.Start(false)
 
 	// start global variables and log
-	if !fem.Start("data/bh16.sim", true, true) {
-		tst.Error("Start failed\n")
-		return
-	}
-
-	// make sure to flush log
-	defer fem.End()
+	analysis := fem.NewFEM("data/bh16.sim", "", true, true, false, true, true)
 
 	// run simulation
-	if !fem.Run() {
+	err := analysis.Run()
+	if err != nil {
 		tst.Error("Run failed\n")
 		return
 	}
