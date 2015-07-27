@@ -17,18 +17,19 @@ func Test_fileio01(tst *testing.T) {
 	chk.PrintTitle("fileio01")
 
 	// start
-	if !Start("data/bh16.sim", true, chk.Verbose, false) {
-		tst.Errorf("test failed\n")
-	}
+	fem := NewFEM("data/bh16.sim", "", true, false, false, false, chk.Verbose)
 
 	// domain A
-	distr := false
-	domA := NewDomain(Global.Sim.Regions[0], distr)
-	if domA == nil {
-		tst.Errorf("test failed\n")
+	domsA := NewDomains(fem.Sim, fem.DynCfs, fem.HydSta, 0, 1, false)
+	if len(domsA) == 0 {
+		tst.Errorf("NewDomains failed\n")
+		return
 	}
-	if !domA.SetStage(0, Global.Sim.Stages[0], distr) {
-		tst.Errorf("test failed\n")
+	domA := domsA[0]
+	err := domA.SetStage(0)
+	if err != nil {
+		tst.Errorf("SetStage failed\n%v", err)
+		return
 	}
 	for i, _ := range domA.Sol.Y {
 		domA.Sol.Y[i] = float64(i)
@@ -37,26 +38,30 @@ func Test_fileio01(tst *testing.T) {
 
 	// write file
 	tidx := 123
-	if !domA.SaveSol(tidx) {
-		tst.Errorf("test failed")
+	err = domA.SaveSol(tidx, true)
+	if err != nil {
+		tst.Errorf("SaveSol failed:\n%v", err)
 		return
 	}
-	dir, fnk := Global.Dirout, Global.Fnkey
-	io.Pfblue2("file %v written\n", out_nod_path(dir, fnk, tidx, Global.Rank))
 
 	// domain B
-	domB := NewDomain(Global.Sim.Regions[0], distr)
-	if domB == nil {
-		tst.Errorf("test failed\n")
+	domsB := NewDomains(fem.Sim, fem.DynCfs, fem.HydSta, 0, 1, false)
+	if len(domsB) == 0 {
+		tst.Errorf("NewDomains failed\n")
+		return
 	}
-	if !domB.SetStage(0, Global.Sim.Stages[0], distr) {
-		tst.Errorf("test failed")
+	domB := domsB[0]
+	err = domB.SetStage(0)
+	if err != nil {
+		tst.Errorf("SetStage failed\n%v", err)
+		return
 	}
 	io.Pfpink("domB.Sol.Y (before) = %v\n", domB.Sol.Y)
 
 	// read file
-	if !domB.ReadSol(dir, fnk, tidx) {
-		tst.Errorf("test failed")
+	err = domB.ReadSol(fem.Sim.DirOut, fem.Sim.Key, fem.Sim.EncType, tidx)
+	if err != nil {
+		tst.Errorf("ReadSol failed:\n%v", err)
 		return
 	}
 	io.Pfgreen("domB.Sol.Y (after) = %v\n", domB.Sol.Y)

@@ -38,17 +38,22 @@ func Test_sg52a(tst *testing.T) {
 	chk.PrintTitle("sg52a")
 
 	// start simulation
-	if !Start("data/sg52.sim", true, chk.Verbose, false) {
-		tst.Errorf("test failed\n")
-		return
+	fem := NewFEM("data/sg52.sim", "", true, false, false, false, chk.Verbose)
+
+	// set stage
+	err := fem.SetStage(0)
+	if err != nil {
+		tst.Errorf("SetStage failed:\n%v", err)
 	}
 
-	// allocate domain and set stage
-	dom, _, ok := AllocSetAndInit(0, false, false)
-	if !ok {
-		tst.Errorf("AllocSetAndInit failed\n")
-		return
+	// initialise solution vectros
+	err = fem.ZeroStage(0, true)
+	if err != nil {
+		tst.Errorf("ZeroStage failed:\n%v", err)
 	}
+
+	// domain
+	dom := fem.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 9)
@@ -136,14 +141,12 @@ func Test_sg52b(tst *testing.T) {
 	chk.PrintTitle("sg52b")
 
 	// run simulation
-	if !Start("data/sg52.sim", true, chk.Verbose, false) {
-		tst.Errorf("test failed\n")
-		return
-	}
+	fem := NewFEM("data/sg52.sim", "", true, false, false, false, chk.Verbose)
 
 	// run simulation
-	if !RunAll() {
-		tst.Errorf("test failed\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 		return
 	}
 
@@ -161,14 +164,12 @@ func Test_sg57(tst *testing.T) {
 	chk.PrintTitle("sg57")
 
 	// run simulation
-	if !Start("data/sg57.sim", true, chk.Verbose, false) {
-		tst.Errorf("test failed\n")
-		return
-	}
+	fem := NewFEM("data/sg57.sim", "", true, false, false, false, chk.Verbose)
 
 	// run simulation
-	if !RunAll() {
-		tst.Errorf("test failed\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 		return
 	}
 
@@ -186,14 +187,12 @@ func Test_sg511(tst *testing.T) {
 	chk.PrintTitle("sg511")
 
 	// run simulation
-	if !Start("data/sg511.sim", true, chk.Verbose, false) {
-		tst.Errorf("test failed\n")
-		return
-	}
+	fem := NewFEM("data/sg511.sim", "", true, false, false, false, chk.Verbose)
 
 	// run simulation
-	if !RunAll() {
-		tst.Errorf("test failed\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 		return
 	}
 
@@ -210,14 +209,12 @@ func Test_sg515(tst *testing.T) {
 	chk.PrintTitle("sg515")
 
 	// run simulation
-	if !Start("data/sg515.sim", true, chk.Verbose, false) {
-		tst.Errorf("test failed\n")
-		return
-	}
+	fem := NewFEM("data/sg515.sim", "", true, false, false, false, chk.Verbose)
 
 	// run simulation
-	if !RunAll() {
-		tst.Errorf("test failed\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 		return
 	}
 
@@ -234,14 +231,12 @@ func Test_sg517(tst *testing.T) {
 	chk.PrintTitle("sg517")
 
 	// run simulation
-	if !Start("data/sg517.sim", true, chk.Verbose, false) {
-		tst.Errorf("test failed\n")
-		return
-	}
+	fem := NewFEM("data/sg517.sim", "", true, false, false, false, chk.Verbose)
 
 	// run simulation
-	if !RunAll() {
-		tst.Errorf("test failed\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 		return
 	}
 
@@ -258,14 +253,12 @@ func Test_sg524(tst *testing.T) {
 	chk.PrintTitle("sg524")
 
 	// run simulation
-	if !Start("data/sg524.sim", true, chk.Verbose, false) {
-		tst.Errorf("test failed\n")
-		return
-	}
+	fem := NewFEM("data/sg524.sim", "", true, false, false, false, chk.Verbose)
 
 	// run simulation
-	if !RunAll() {
-		tst.Errorf("test failed\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 		return
 	}
 
@@ -282,14 +275,12 @@ func Test_sg530(tst *testing.T) {
 	chk.PrintTitle("sg530")
 
 	// run simulation
-	if !Start("data/sg530.sim", true, chk.Verbose, false) {
-		tst.Errorf("test failed\n")
-		return
-	}
+	fem := NewFEM("data/sg530.sim", "", true, false, false, false, chk.Verbose)
 
 	// run simulation
-	if !RunAll() {
-		tst.Errorf("test failed\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 		return
 	}
 

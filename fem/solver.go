@@ -53,10 +53,11 @@ func (o *FEM) Clean() {
 //   simfilepath   -- simulation (.sim) filename including full path
 //   alias         -- word to be appended to simulation key; e.g. when running multiple FE solutions
 //   erasePrev     -- erase previous results files
+//   saveSummary   -- save summary
 //   readSummary   -- ready summary of previous simulation
 //   allowParallel -- allow parallel execution; otherwise, run in serial mode regardless whether MPI is on or not
 //   verbose       -- show messages
-func NewFEM(simfilepath, alias string, erasePrev, readSummary, allowParallel, verbose bool) (o *FEM) {
+func NewFEM(simfilepath, alias string, erasePrev, saveSummary, readSummary, allowParallel, verbose bool) (o *FEM) {
 
 	// new FEM object
 	o = new(FEM)
@@ -68,8 +69,10 @@ func NewFEM(simfilepath, alias string, erasePrev, readSummary, allowParallel, ve
 	}
 
 	// read summary of previous simulation
-	if readSummary {
+	if saveSummary || readSummary {
 		o.Summary = new(Summary)
+	}
+	if readSummary {
 		err := o.Summary.Read(o.Sim.DirOut, o.Sim.Key, o.Sim.EncType)
 		if err != nil {
 			chk.Panic("cannot ready summary:\n%v", err)
@@ -125,16 +128,8 @@ func (o *FEM) Run() (err error) {
 		return
 	}
 
-	// benchmarking
-	cputime := time.Now()
-	defer func() {
-		if o.Verbose {
-			io.Pf("\nfinal time = %v\n", o.Domains[0].Sol.T)
-			io.Pfblue2("cpu time   = %v\n", time.Now().Sub(cputime))
-		}
-	}()
-
 	// loop over stages
+	cputime := time.Now()
 	for stgidx, stg := range o.Sim.Stages {
 
 		// skip stage?
@@ -161,9 +156,20 @@ func (o *FEM) Run() (err error) {
 		}
 	}
 
-	// save results
+	// save summary
 	if o.Summary != nil {
 		err = o.Summary.Save(o.Sim.DirOut, o.Sim.Key, o.Sim.EncType, o.Nproc, o.Proc, o.Verbose)
+	}
+
+	// message
+	if o.Verbose {
+		io.Pf("\n\n")
+		if len(o.Domains) > 0 {
+			if o.Domains[0].Sol != nil {
+				io.Pf("\nfinal time = %v\n", o.Domains[0].Sol.T)
+			}
+		}
+		io.Pfblue2("cpu time   = %v\n", time.Now().Sub(cputime))
 	}
 	return
 }

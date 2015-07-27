@@ -41,17 +41,22 @@ func Test_spo751a(tst *testing.T) {
 	chk.PrintTitle("spo751a")
 
 	// start simulation
-	if !Start("data/spo751.sim", true, chk.Verbose, false) {
-		tst.Errorf("test failed\n")
-		return
+	fem := NewFEM("data/spo751.sim", "", true, false, false, false, chk.Verbose)
+
+	// set stage
+	err := fem.SetStage(0)
+	if err != nil {
+		tst.Errorf("SetStage failed:\n%v", err)
 	}
 
-	// allocate domain and set stage
-	dom, _, ok := AllocSetAndInit(0, false, false)
-	if !ok {
-		tst.Errorf("AllocSetAndInit failed\n")
-		return
+	// initialise solution vectros
+	err = fem.ZeroStage(0, true)
+	if err != nil {
+		tst.Errorf("ZeroStage failed:\n%v", err)
 	}
+
+	// domain
+	dom := fem.Domains[0]
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 23)
@@ -137,22 +142,22 @@ func Test_spo751b(tst *testing.T) {
 	chk.PrintTitle("spo751b")
 
 	// run simulation
-	if !Start("data/spo751.sim", true, chk.Verbose, false) {
-		tst.Errorf("test failed\n")
-		return
-	}
+	fem := NewFEM("data/spo751.sim", "", true, false, false, false, chk.Verbose)
 
 	// for debugging Kb
-	if true {
-		defer u_DebugKb(&testKb{
-			tst: tst, eid: 3, tol: 1e-5, verb: chk.Verbose,
-			ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 0.89, tmax: 0.96,
-		})()
-	}
+	/*
+		if true {
+			defer u_DebugKb(&testKb{
+				tst: tst, eid: 3, tol: 1e-5, verb: chk.Verbose,
+				ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 0.89, tmax: 0.96,
+			})()
+		}
+	*/
 
 	// run simulation
-	if !RunAll() {
-		tst.Errorf("test failed\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 		return
 	}
 
@@ -173,14 +178,12 @@ func Test_spo751re(tst *testing.T) {
 	chk.PrintTitle("spo751re. Richardson extrapolation")
 
 	// run simulation
-	if !Start("data/spo751re.sim", true, chk.Verbose, false) {
-		io.Pfred("start failed\n")
-		return
-	}
+	fem := NewFEM("data/spo751re.sim", "", true, false, false, false, chk.Verbose)
 
 	// run simulation
-	if !RunAll() {
-		io.Pfred("run failed\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 	}
 
 	// TODO: add check here

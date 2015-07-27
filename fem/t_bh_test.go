@@ -32,17 +32,23 @@ func Test_bh16a(tst *testing.T) {
 	chk.PrintTitle("bh16a")
 
 	// start simulation
-	if !Start("data/bh16.sim", true, chk.Verbose, false) {
-		tst.Errorf("Start failed\n")
-		return
+	fem := NewFEM("data/bh16.sim", "", true, false, false, false, chk.Verbose)
+
+	// set stage
+	err := fem.SetStage(0)
+	if err != nil {
+		tst.Errorf("SetStage failed:\n%v", err)
 	}
 
-	// allocate domain and set stage
-	dom, _, ok := AllocSetAndInit(0, false, false)
-	if !ok {
-		tst.Errorf("AllocSetAndInit failed\n")
-		return
+	// initialise solution vectros
+	err = fem.ZeroStage(0, true)
+	if err != nil {
+		tst.Errorf("ZeroStage failed:\n%v", err)
 	}
+
+	// domain
+	dom := fem.Domains[0]
+	io.Pforan("dom.elems = %v\n", dom.Elems)
 
 	// nodes and elements
 	chk.IntAssert(len(dom.Nodes), 6)
@@ -129,14 +135,12 @@ func Test_bh16b(tst *testing.T) {
 	chk.PrintTitle("bh16b")
 
 	// start simulation
-	if !Start("data/bh16.sim", true, chk.Verbose, false) {
-		tst.Errorf("Start failed\n")
-		return
-	}
+	fem := NewFEM("data/bh16.sim", "", true, true, false, false, chk.Verbose)
 
 	// run simulation
-	if !RunAll() {
-		tst.Errorf("RunAll failed\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 		return
 	}
 
@@ -150,18 +154,18 @@ func Test_bh16b(tst *testing.T) {
 
 func Test_bh14a(tst *testing.T) {
 
-	//verbose()
+	verbose()
 	chk.PrintTitle("bh14a. using RunAll")
 
 	// start simulation
-	if !Start("data/bh14.sim", true, chk.Verbose, false) {
-		tst.Errorf("Start failed\n")
-		return
-	}
+	fem := NewFEM("data/bh14.sim", "", true, false, false, false, chk.Verbose)
+
+	io.Pforan("here = %+v\n", fem)
 
 	// run simulation
-	if !RunAll() {
-		tst.Errorf("RunAll failed\n")
+	err := fem.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
 		return
 	}
 
@@ -173,16 +177,14 @@ func Test_bh14a(tst *testing.T) {
 	TestingCompareResultsU(tst, "data/bh14.sim", "cmp/bh14.cmp", tolK, tolu, tols, skipK, chk.Verbose)
 }
 
+/*
 func Test_bh14b(tst *testing.T) {
 
 	//verbose()
 	chk.PrintTitle("bh14b. using SolveOneStage")
 
 	// start simulation
-	if !Start("data/bh14.sim", true, chk.Verbose, false) {
-		tst.Errorf("Start failed\n")
-		return
-	}
+	fem := NewFEM("data/bh14.sim", "", true, false, false, false, chk.Verbose)
 
 	// allocate domain and others
 	if !Alloc(true) {
@@ -212,3 +214,4 @@ func Test_bh14b(tst *testing.T) {
 	tols := 1e-17
 	TestingCompareResultsU(tst, "data/bh14.sim", "cmp/bh14.cmp", tolK, tolu, tols, skipK, chk.Verbose)
 }
+*/

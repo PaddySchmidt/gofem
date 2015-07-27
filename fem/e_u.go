@@ -131,7 +131,7 @@ func init() {
 		var err error
 		o.IpsElem, o.IpsFace, err = GetIntegrationPoints(edat.Nip, edat.Nipf, cell.Type)
 		if err != nil {
-			chk.Panic("cannot allocate integration points with nip=%d and nipf=%d:\n%v", edat.Nip, edat.Nipf, err)
+			chk.Panic("cannot allocate integration points of solid element with nip=%d and nipf=%d:\n%v", edat.Nip, edat.Nipf, err)
 		}
 		nip := len(o.IpsElem)
 
