@@ -18,7 +18,7 @@ import (
 type Rod struct {
 
 	// basic data
-	Cid  int         // cell/element id
+	Cell *inp.Cell   // the cell structure
 	X    [][]float64 // matrix of nodal coordinates [ndim][nnode]
 	Shp  *shp.Shape  // shape structure
 	Nu   int         // total number of unknowns == 2 * nsn
@@ -90,7 +90,7 @@ func init() {
 
 		// basic data
 		var o Rod
-		o.Cid = cell.Id
+		o.Cell = cell
 		o.X = x
 		o.Shp = shp.Get(cell.Type)
 		o.Ndim = sim.Ndim
@@ -145,7 +145,7 @@ func init() {
 // implementation ///////////////////////////////////////////////////////////////////////////////////
 
 // Id returns the cell Id
-func (o Rod) Id() int { return o.Cid }
+func (o Rod) Id() int { return o.Cell.Id }
 
 // SetEqs set equations
 func (o *Rod) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {

@@ -143,7 +143,7 @@ func init() {
 // implementation ///////////////////////////////////////////////////////////////////////////////////
 
 // Id returns the cell Id
-func (o ElemUP) Id() int { return o.U.Id() }
+func (o ElemUP) Id() int { return o.Cell.Id }
 
 // SetEqs set equations
 func (o *ElemUP) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {

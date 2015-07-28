@@ -20,7 +20,7 @@ import (
 type ElemPhi struct {
 
 	// basic data
-	Cid  int         // cell/element id
+	Cell *inp.Cell   // the cell structure
 	X    [][]float64 // [ndim][nnode] matrix of nodal coordinates
 	Shp  *shp.Shape  // shape structure
 	Nu   int         // total number of unknowns == number of vertices
@@ -69,7 +69,7 @@ func init() {
 
 		// basic data
 		var o ElemPhi
-		o.Cid = cell.Id
+		o.Cell = cell
 		o.X = x
 		o.Shp = shp.Get(cell.Type) // cell.Type: e.g. "tri6", "qua8"
 		o.Nu = o.Shp.Nverts
@@ -97,9 +97,7 @@ func init() {
 // implementation ///////////////////////////////////////////////////////////////////////////////////
 
 // Id returns the cell Id
-func (o *ElemPhi) Id() int {
-	return o.Cid
-}
+func (o *ElemPhi) Id() int { return o.Cell.Id }
 
 // SetEqs set equations
 func (o *ElemPhi) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {

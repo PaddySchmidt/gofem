@@ -18,7 +18,7 @@ import (
 type Beam struct {
 
 	// basic data
-	Cid  int         // cell/element id
+	Cell *inp.Cell   // the cell structure
 	X    [][]float64 // matrix of nodal coordinates [ndim][nnode]
 	Nu   int         // total number of unknowns == 2 * nsn
 	Ndim int         // space dimension
@@ -93,7 +93,7 @@ func init() {
 
 		// basic data
 		var o Beam
-		o.Cid = cell.Id
+		o.Cell = cell
 		o.X = x
 		ndof := 3 * (ndim - 1)
 		o.Nu = ndof * ndim
@@ -207,7 +207,7 @@ func init() {
 }
 
 // Id returns the cell Id
-func (o Beam) Id() int { return o.Cid }
+func (o Beam) Id() int { return o.Cell.Id }
 
 // SetEqs set equations [2][?]. Format of eqs == format of info.Dofs
 func (o *Beam) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {

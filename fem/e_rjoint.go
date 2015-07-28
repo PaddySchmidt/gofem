@@ -55,7 +55,7 @@ type Rjoint struct {
 	// basic data
 	Sim  *inp.Simulation // simulation
 	Edat *inp.ElemData   // element data; stored in allocator to be used in Connect
-	Cid  int             // cell/element id
+	Cell *inp.Cell       // the cell structure
 	Ny   int             // total number of dofs == rod.Nu + sld.Nu
 	Ndim int             // space dimension
 
@@ -120,14 +120,14 @@ func init() {
 		var o Rjoint
 		o.Sim = sim
 		o.Edat = edat
-		o.Cid = cell.Id
+		o.Cell = cell
 		o.Ndim = sim.Ndim
 		return &o
 	}
 }
 
 // Id returns the cell Id
-func (o Rjoint) Id() int { return o.Cid }
+func (o Rjoint) Id() int { return o.Cell.Id }
 
 // Connect connects rod/solid elements in this Rjoint
 func (o *Rjoint) Connect(cid2elem []Elem, c *inp.Cell) (nnzK int, err error) {

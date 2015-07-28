@@ -26,7 +26,7 @@ import (
 type ElemP struct {
 
 	// basic data
-	Cid  int         // cell/element id
+	Cell *inp.Cell   // the cell structure
 	X    [][]float64 // matrix of nodal coordinates [ndim][nnode]
 	Shp  *shp.Shape  // shape structure
 	Np   int         // total number of unknowns == number of vertices
@@ -135,7 +135,7 @@ func init() {
 
 		// basic data
 		var o ElemP
-		o.Cid = cell.Id
+		o.Cell = cell
 		o.X = x
 		o.Shp = shp.Get(cell.Type)
 		o.Np = o.Shp.Nverts
@@ -235,7 +235,7 @@ func init() {
 // implementation ///////////////////////////////////////////////////////////////////////////////////
 
 // Id returns the cell Id
-func (o ElemP) Id() int { return o.Cid }
+func (o ElemP) Id() int { return o.Cell.Id }
 
 // SetEqs sets equations
 func (o *ElemP) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
