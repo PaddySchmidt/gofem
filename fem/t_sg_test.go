@@ -157,7 +157,7 @@ func Test_sg52b(tst *testing.T) {
 	tolK := 1e-9
 	tolu := 1e-17
 	tols := 1.56e-15
-	TestingCompareResultsU(tst, "data/sg52.sim", "cmp/sg52.cmp", tolK, tolu, tols, skipK, chk.Verbose)
+	TestingCompareResultsU(tst, "data/sg52.sim", "cmp/sg52.cmp", "", tolK, tolu, tols, skipK, chk.Verbose)
 }
 
 func Test_sg57(tst *testing.T) {
@@ -180,7 +180,7 @@ func Test_sg57(tst *testing.T) {
 	tolK := 0.35
 	tolu := 2e-9
 	tols := 0.0002
-	TestingCompareResultsU(tst, "data/sg57.sim", "cmp/sg57.cmp", tolK, tolu, tols, skipK, chk.Verbose)
+	TestingCompareResultsU(tst, "data/sg57.sim", "cmp/sg57.cmp", "", tolK, tolu, tols, skipK, chk.Verbose)
 }
 
 func Test_sg511(tst *testing.T) {
@@ -203,7 +203,7 @@ func Test_sg511(tst *testing.T) {
 	tolK := 0.1
 	tolu := 3e-14
 	tols := 1.56e-7
-	TestingCompareResultsU(tst, "data/sg511.sim", "cmp/sg511.cmp", tolK, tolu, tols, skipK, chk.Verbose)
+	TestingCompareResultsU(tst, "data/sg511.sim", "cmp/sg511.cmp", "", tolK, tolu, tols, skipK, chk.Verbose)
 }
 
 func Test_sg515(tst *testing.T) {
@@ -226,7 +226,7 @@ func Test_sg515(tst *testing.T) {
 	tolK := 0.15
 	tolu := 3e-13
 	tols := 3e-8
-	TestingCompareResultsU(tst, "data/sg515.sim", "cmp/sg515.cmp", tolK, tolu, tols, skipK, chk.Verbose)
+	TestingCompareResultsU(tst, "data/sg515.sim", "cmp/sg515.cmp", "", tolK, tolu, tols, skipK, chk.Verbose)
 }
 
 func Test_sg517(tst *testing.T) {
@@ -249,7 +249,7 @@ func Test_sg517(tst *testing.T) {
 	tolK := 0.0036
 	tolu := 1e-6
 	tols := 1e-4
-	TestingCompareResultsU(tst, "data/sg517.sim", "cmp/sg517.cmp", tolK, tolu, tols, skipK, chk.Verbose)
+	TestingCompareResultsU(tst, "data/sg517.sim", "cmp/sg517.cmp", "", tolK, tolu, tols, skipK, chk.Verbose)
 }
 
 func Test_sg524(tst *testing.T) {
@@ -272,7 +272,7 @@ func Test_sg524(tst *testing.T) {
 	tolK := 1e-17
 	tolu := 1e-8
 	tols := 1e-7
-	TestingCompareResultsU(tst, "data/sg524.sim", "cmp/sg524.cmp", tolK, tolu, tols, skipK, chk.Verbose)
+	TestingCompareResultsU(tst, "data/sg524.sim", "cmp/sg524.cmp", "", tolK, tolu, tols, skipK, chk.Verbose)
 }
 
 func Test_sg530(tst *testing.T) {
@@ -295,5 +295,5 @@ func Test_sg530(tst *testing.T) {
 	tolK := 1e-17
 	tolu := 1e-17
 	tols := 1e-15
-	TestingCompareResultsU(tst, "data/sg530.sim", "cmp/sg530.cmp", tolK, tolu, tols, skipK, chk.Verbose)
+	TestingCompareResultsU(tst, "data/sg530.sim", "cmp/sg530.cmp", "", tolK, tolu, tols, skipK, chk.Verbose)
 }

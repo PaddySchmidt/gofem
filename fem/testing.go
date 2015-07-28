@@ -39,10 +39,10 @@ type T_results struct {
 type T_results_set []*T_results
 
 // testing_compare_results_u compares results with u-formulation
-func TestingCompareResultsU(tst *testing.T, simfilepath, cmpfname string, tolK, tolu, tols float64, skipK, verbose bool) {
+func TestingCompareResultsU(tst *testing.T, simfilepath, cmpfname, alias string, tolK, tolu, tols float64, skipK, verbose bool) {
 
 	// FEM structure
-	fem := NewFEM(simfilepath, "", false, false, true, false, verbose)
+	fem := NewFEM(simfilepath, alias, false, false, true, false, verbose)
 
 	// set stage
 	err := fem.SetStage(0)

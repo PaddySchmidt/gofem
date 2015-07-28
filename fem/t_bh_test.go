@@ -151,7 +151,7 @@ func Test_bh16b(tst *testing.T) {
 	tolK := 1e-12
 	tolu := 1e-15
 	tols := 1e-12
-	TestingCompareResultsU(tst, "data/bh16.sim", "cmp/bh16.cmp", tolK, tolu, tols, skipK, chk.Verbose)
+	TestingCompareResultsU(tst, "data/bh16.sim", "cmp/bh16.cmp", "", tolK, tolu, tols, skipK, chk.Verbose)
 }
 
 func Test_bh14a(tst *testing.T) {
@@ -174,7 +174,7 @@ func Test_bh14a(tst *testing.T) {
 	tolK := 1e-17
 	tolu := 1e-15
 	tols := 1e-17
-	TestingCompareResultsU(tst, "data/bh14.sim", "cmp/bh14.cmp", tolK, tolu, tols, skipK, chk.Verbose)
+	TestingCompareResultsU(tst, "data/bh14.sim", "cmp/bh14.cmp", "", tolK, tolu, tols, skipK, chk.Verbose)
 }
 
 func Test_bh14b(tst *testing.T) {
@@ -204,5 +204,5 @@ func Test_bh14b(tst *testing.T) {
 	tolK := 1e-17
 	tolu := 1e-15
 	tols := 1e-17
-	TestingCompareResultsU(tst, "data/bh14.sim", "cmp/bh14.cmp", tolK, tolu, tols, skipK, chk.Verbose)
+	TestingCompareResultsU(tst, "data/bh14.sim", "cmp/bh14.cmp", "", tolK, tolu, tols, skipK, chk.Verbose)
 }
