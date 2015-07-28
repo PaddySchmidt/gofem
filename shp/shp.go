@@ -5,7 +5,10 @@
 // package shp implements shape structures/routines
 package shp
 
-import "github.com/cpmech/gosl/la"
+import (
+	"github.com/cpmech/gosl/la"
+	"github.com/cpmech/gosl/utl"
+)
 
 // constants
 const MINDET = 1.0e-14 // minimum determinant allowed for dxdR
@@ -52,15 +55,62 @@ type Shape struct {
 	dxfdRf [][]float64 // [gndim][gndim-1] derivatives of real coordinates w.r.t natural coordinates
 }
 
+// GetCopy returns a new copy of this shape structure
+func (o Shape) GetCopy() *Shape {
+
+	// new structure
+	var p Shape
+
+	// geometry
+	p.Type = o.Type
+	p.Func = o.Func
+	p.FaceFunc = o.FaceFunc
+	p.BasicType = o.BasicType
+	p.FaceType = o.FaceType
+	p.Gndim = o.Gndim
+	p.Nverts = o.Nverts
+	p.VtkCode = o.VtkCode
+	p.FaceNverts = o.FaceNverts
+	p.FaceLocalV = utl.IntsClone(o.FaceLocalV)
+	p.NatCoords = la.MatClone(o.NatCoords)
+
+	// geometry: for seams (3D-edges)
+	p.SeamType = o.SeamType
+	p.SeamLocalV = utl.IntsClone(o.SeamLocalV)
+
+	// scratchpad: volume
+	p.S = la.VecClone(o.S)
+	p.G = la.MatClone(o.G)
+	p.J = o.J
+	p.dSdR = la.MatClone(o.dSdR)
+	p.dxdR = la.MatClone(o.dxdR)
+	p.dRdx = la.MatClone(o.dRdx)
+
+	// scratchpad: line
+	p.Jvec3d = la.VecClone(o.Jvec3d)
+	p.Gvec = la.VecClone(o.Gvec)
+
+	// scratchpad: face
+	p.Sf = la.VecClone(o.Sf)
+	p.Fnvec = la.VecClone(o.Fnvec)
+	p.dSfdRf = la.MatClone(o.dSfdRf)
+	p.dxfdRf = la.MatClone(o.dxfdRf)
+	return &p
+}
+
 // factory holds all Shapes available
 var factory = make(map[string]*Shape)
 
 // Get returns an existent Shape structure
-//  Note: returns nil on errors
-func Get(geoType string) *Shape {
+//  Note: 1) returns nil on errors
+//        2) use goroutineId > 0 to get a copy
+func Get(geoType string, goroutineId int) *Shape {
 	s, ok := factory[geoType]
 	if !ok {
 		return nil
+	}
+	if goroutineId > 0 {
+		return s.GetCopy()
 	}
 	return s
 }
