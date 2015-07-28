@@ -61,7 +61,7 @@ func main() {
 
 	// analysis data
 	readSummary := false
-	analysis := fem.NewFEM(fnamepath, alias, erasePrev, saveSummary, readSummary, allowParallel, verbose)
+	analysis := fem.NewFEM(fnamepath, alias, erasePrev, saveSummary, readSummary, allowParallel, verbose, 0)
 
 	// run simulation
 	err := analysis.Run()

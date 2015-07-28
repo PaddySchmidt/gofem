@@ -88,7 +88,7 @@ func main() {
 	io.Pf("%v\n", in)
 
 	// load simulation
-	sim := inp.ReadSim(in.Dir+"/"+in.SimFn, "", false)
+	sim := inp.ReadSim(in.Dir+"/"+in.SimFn, "", false, 0)
 	if sim == nil {
 		io.PfRed("cannot load simulation\n")
 		return

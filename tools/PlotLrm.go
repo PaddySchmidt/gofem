@@ -42,7 +42,7 @@ func main() {
 	))
 
 	// load simulation
-	sim := inp.ReadSim(simfn, "lrm", false)
+	sim := inp.ReadSim(simfn, "lrm", false, 0)
 	if sim == nil {
 		io.PfRed("cannot load simulation\n")
 		return
