@@ -13,7 +13,7 @@ import (
 func main() {
 
 	// filename
-	filename, fnkey := io.Args0toFilename("d2-simple-flux", ".sim", true)
+	filename, fnkey := io.ArgToFilename(0, "d2-simple-flux", ".sim", true)
 
 	// start analysis process
 	out.Extrap = []string{"nwlx", "nwly"}

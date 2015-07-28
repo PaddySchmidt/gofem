@@ -15,7 +15,7 @@ import (
 func main() {
 
 	// filename
-	filename, fnkey := io.Args0toFilename("a-coarse-elast-d2-q9", ".sim", true)
+	filename, fnkey := io.ArgToFilename(0, "a-coarse-elast-d2-q9", ".sim", true)
 
 	// start analysis process
 	out.Start(filename, 0, 0)

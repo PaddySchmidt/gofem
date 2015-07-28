@@ -25,7 +25,7 @@ func solution_uy(t, ta float64) float64 {
 func main() {
 
 	// filename
-	filename, fnkey := io.Args0toFilename("sg111", ".sim", true)
+	filename, fnkey := io.ArgToFilename(0, "sg111", ".sim", true)
 
 	// results
 	out.Start(filename, 0, 0)

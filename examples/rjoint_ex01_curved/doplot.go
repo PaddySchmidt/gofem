@@ -15,7 +15,7 @@ import (
 func main() {
 
 	// filename
-	filename, fnkey := io.Args0toFilename("rjoint01", ".sim", true)
+	filename, fnkey := io.ArgToFilename(0, "rjoint01", ".sim", true)
 
 	// results
 	out.Start(filename, 0, 0)

@@ -11,6 +11,7 @@ import (
 
 	"github.com/cpmech/gofem/ana"
 	"github.com/cpmech/gofem/fem"
+	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/plt"
@@ -19,8 +20,15 @@ import (
 
 func main() {
 
+	// catch errors
+	defer func() {
+		if err := recover(); err != nil {
+			io.PfRed("ERROR: %v\n", err)
+		}
+	}()
+
 	// filename
-	filename, fnkey := io.Args0toFilename("spo751", ".sim", true)
+	filename, fnkey := io.ArgToFilename(0, "spo751", ".sim", true)
 
 	// constants
 	nidx := 20 // selected node at outer surface
@@ -51,15 +59,17 @@ func main() {
 	R_ana, Sr_ana, St_ana := sol.CalcStresses(Psel, np)
 
 	// fem
-	if !fem.Start(filename, false, false, false) {
-		io.PfRed("Start failed\n")
-		return
+	analysis := fem.NewFEM(filename, "", false, false, true, false, true)
+	err := analysis.SetStage(0)
+	if err != nil {
+		chk.Panic("SetStage failed:\n%v", err)
 	}
-	dom, sum, ok := fem.AllocSetAndInit(0, true, true)
-	if !ok {
-		io.PfRed("AllocSetAndInit failed\n")
-		return
+	err = analysis.ZeroStage(0, true)
+	if err != nil {
+		chk.Panic("ZeroStage failed:\n%v", err)
 	}
+	dom := analysis.Domains[0]
+	sum := analysis.Summary
 
 	// gofem results
 	nto := len(sum.OutTimes)
@@ -72,9 +82,9 @@ func main() {
 	for tidx, t := range sum.OutTimes {
 
 		// read results from file
-		if !dom.In(sum, tidx, true) {
-			io.PfRed("cannot read solution\n")
-			return
+		err = dom.Read(sum, tidx, 0, true)
+		if err != nil {
+			chk.Panic("cannot read solution\n%v", err)
 		}
 
 		// collect results for load versus displacement plot

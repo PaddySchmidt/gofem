@@ -15,7 +15,7 @@ import (
 func main() {
 
 	// filename
-	filename, fnkey := io.Args0toFilename("onepulse-qua9co.sim", ".sim", true)
+	filename, fnkey := io.ArgToFilename(0, "onepulse-qua9co.sim", ".sim", true)
 
 	// start analysis process
 	out.Start(filename, 0, 0)
