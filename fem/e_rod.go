@@ -92,7 +92,7 @@ func init() {
 		var o Rod
 		o.Cell = cell
 		o.X = x
-		o.Shp = shp.Get(cell.Type)
+		o.Shp = shp.Get(cell.Type, sim.GoroutineId)
 		o.Ndim = sim.Ndim
 		o.Nu = o.Ndim * o.Shp.Nverts
 

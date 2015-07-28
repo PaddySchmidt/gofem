@@ -237,25 +237,27 @@ type Simulation struct {
 	Stages    []*Stage   `json:"stages"`    // stores all stages
 
 	// derived
-	DirOut     string   // directory to save results
-	Key        string   // simulation key; e.g. mysim01.sim => mysim01 or mysim01-alias
-	EncType    string   // encoder type
-	MatParams  *MatDb   // materials' parameters
-	Ndim       int      // space dimension
-	MaxElev    float64  // maximum elevation
-	Gravity    fun.Func // first stage: gravity constant function
-	WaterRho0  float64  // first stage: intrinsic density of water corresponding to pressure pl=0
-	WaterBulk  float64  // first stage: bulk modulus of water
-	WaterLevel float64  // first stage: water level == max(Wlevel, MaxElev)
+	GoroutineId int      // id of goroutine to avoid race problems
+	DirOut      string   // directory to save results
+	Key         string   // simulation key; e.g. mysim01.sim => mysim01 or mysim01-alias
+	EncType     string   // encoder type
+	MatParams   *MatDb   // materials' parameters
+	Ndim        int      // space dimension
+	MaxElev     float64  // maximum elevation
+	Gravity     fun.Func // first stage: gravity constant function
+	WaterRho0   float64  // first stage: intrinsic density of water corresponding to pressure pl=0
+	WaterBulk   float64  // first stage: bulk modulus of water
+	WaterLevel  float64  // first stage: water level == max(Wlevel, MaxElev)
 }
 
 // Simulation //////////////////////////////////////////////////////////////////////////////////////
 
 // ReadSim reads all simulation data from a .sim JSON file
-func ReadSim(simfilepath, alias string, erasefiles bool) *Simulation {
+func ReadSim(simfilepath, alias string, erasefiles bool, goroutineId int) *Simulation {
 
 	// new sim
 	var o Simulation
+	o.GoroutineId = goroutineId
 
 	// read file
 	b, err := io.ReadFile(simfilepath)
@@ -317,7 +319,7 @@ func ReadSim(simfilepath, alias string, erasefiles bool) *Simulation {
 	for i, reg := range o.Regions {
 
 		// read mesh
-		reg.Msh = ReadMsh(dir, reg.Mshfile)
+		reg.Msh = ReadMsh(dir, reg.Mshfile, goroutineId)
 		if reg.Msh == nil {
 			chk.Panic("ReadSim: cannot read mesh file\n")
 		}

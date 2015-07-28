@@ -16,7 +16,7 @@ func Test_fourlayers01(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("fourlayers01")
 
-	analysis := NewFEM("data/fourlayers.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/fourlayers.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	doms := NewDomains(analysis.Sim, analysis.DynCfs, analysis.HydSta, 0, 1, false)
 	if len(doms) == 0 {

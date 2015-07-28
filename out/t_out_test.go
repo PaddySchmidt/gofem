@@ -30,7 +30,7 @@ func Test_out01(tst *testing.T) {
 	chk.PrintTitle("out01")
 
 	// start simulation
-	processing := fem.NewFEM("data/onequa4.sim", "", true, true, false, false, chk.Verbose)
+	processing := fem.NewFEM("data/onequa4.sim", "", true, true, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := processing.Run()
@@ -172,7 +172,7 @@ func Test_out02(tst *testing.T) {
 	chk.PrintTitle("out02")
 
 	// start simulation
-	processing := fem.NewFEM("data/twoqua4.sim", "", true, true, false, false, chk.Verbose)
+	processing := fem.NewFEM("data/twoqua4.sim", "", true, true, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := processing.Run()

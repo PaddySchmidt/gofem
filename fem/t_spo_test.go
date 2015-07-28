@@ -41,7 +41,7 @@ func Test_spo751a(tst *testing.T) {
 	chk.PrintTitle("spo751a")
 
 	// start simulation
-	analysis := NewFEM("data/spo751.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/spo751.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// set stage
 	err := analysis.SetStage(0)
@@ -144,7 +144,7 @@ func Test_spo751b(tst *testing.T) {
 	chk.PrintTitle("spo751b")
 
 	// run simulation
-	analysis := NewFEM("data/spo751.sim", "", true, true, false, false, chk.Verbose)
+	analysis := NewFEM("data/spo751.sim", "", true, true, false, false, chk.Verbose, 0)
 
 	// for debugging Kb
 	if true {
@@ -178,7 +178,7 @@ func Test_spo751re(tst *testing.T) {
 	chk.PrintTitle("spo751re. Richardson extrapolation")
 
 	// run simulation
-	analysis := NewFEM("data/spo751re.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/spo751re.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := analysis.Run()

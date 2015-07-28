@@ -18,7 +18,7 @@ func Test_frees01a(tst *testing.T) {
 	chk.PrintTitle("frees01a")
 
 	// start simulation
-	analysis := NewFEM("data/frees01.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/frees01.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// set stage
 	err := analysis.SetStage(0)
@@ -77,7 +77,7 @@ func Test_frees01b(tst *testing.T) {
 	chk.PrintTitle("frees01b")
 
 	// start simulation
-	analysis := NewFEM("data/frees01.sim", "", true, true, false, false, chk.Verbose)
+	analysis := NewFEM("data/frees01.sim", "", true, true, false, false, chk.Verbose, 0)
 
 	// for debugging Kb
 	if true {

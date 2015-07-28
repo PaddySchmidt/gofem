@@ -71,7 +71,7 @@ func init() {
 		var o ElemPhi
 		o.Cell = cell
 		o.X = x
-		o.Shp = shp.Get(cell.Type) // cell.Type: e.g. "tri6", "qua8"
+		o.Shp = shp.Get(cell.Type, sim.GoroutineId) // cell.Type: e.g. "tri6", "qua8"
 		o.Nu = o.Shp.Nverts
 		o.Ndim = sim.Ndim
 

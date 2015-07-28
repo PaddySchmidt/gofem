@@ -42,7 +42,7 @@ type T_results_set []*T_results
 func TestingCompareResultsU(tst *testing.T, simfilepath, cmpfname, alias string, tolK, tolu, tols float64, skipK, verbose bool) {
 
 	// FEM structure
-	fem := NewFEM(simfilepath, alias, false, false, true, false, verbose)
+	fem := NewFEM(simfilepath, alias, false, false, true, false, verbose, 0)
 
 	// set stage
 	err := fem.SetStage(0)

@@ -57,7 +57,7 @@ func Test_up01a(tst *testing.T) {
 	chk.PrintTitle("up01a")
 
 	// start simulation
-	analysis := NewFEM("data/up01.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/up01.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// set stage
 	err := analysis.SetStage(0)
@@ -262,7 +262,7 @@ func Test_up01b(tst *testing.T) {
 	chk.PrintTitle("up01b")
 
 	// start simulation
-	analysis := NewFEM("data/up01.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/up01.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// for debugging Kb
 	if true {

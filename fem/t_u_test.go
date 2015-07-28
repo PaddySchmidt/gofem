@@ -19,7 +19,7 @@ func Test_sigini01(tst *testing.T) {
 	chk.PrintTitle("sigini01. zero displacements. initial stresses")
 
 	// fem
-	analysis := NewFEM("data/sigini01.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/sigini01.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// set stage
 	err := analysis.SetStage(0)
@@ -70,7 +70,7 @@ func Test_sigini02(tst *testing.T) {
 	chk.PrintTitle("sigini02. initial stresses. run simulation")
 
 	// fem
-	analysis := NewFEM("data/sigini02.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/sigini02.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := analysis.Run()

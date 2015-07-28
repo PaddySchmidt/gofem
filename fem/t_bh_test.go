@@ -32,7 +32,7 @@ func Test_bh16a(tst *testing.T) {
 	chk.PrintTitle("bh16a")
 
 	// start simulation
-	analysis := NewFEM("data/bh16.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/bh16.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// set stage
 	err := analysis.SetStage(0)
@@ -137,7 +137,7 @@ func Test_bh16b(tst *testing.T) {
 	chk.PrintTitle("bh16b")
 
 	// start simulation
-	analysis := NewFEM("data/bh16.sim", "", true, true, false, false, chk.Verbose)
+	analysis := NewFEM("data/bh16.sim", "", true, true, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := analysis.Run()
@@ -160,7 +160,7 @@ func Test_bh14a(tst *testing.T) {
 	chk.PrintTitle("bh14a. using RunAll")
 
 	// start simulation
-	analysis := NewFEM("data/bh14.sim", "", true, true, false, false, chk.Verbose)
+	analysis := NewFEM("data/bh14.sim", "", true, true, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := analysis.Run()
@@ -183,7 +183,7 @@ func Test_bh14b(tst *testing.T) {
 	chk.PrintTitle("bh14b. using SolveOneStage")
 
 	// start simulation
-	analysis := NewFEM("data/bh14.sim", "", true, true, false, false, chk.Verbose)
+	analysis := NewFEM("data/bh14.sim", "", true, true, false, false, chk.Verbose, 0)
 
 	// set stage
 	err := analysis.SetStage(0)
@@ -205,4 +205,50 @@ func Test_bh14b(tst *testing.T) {
 	tolu := 1e-15
 	tols := 1e-17
 	TestingCompareResultsU(tst, "data/bh14.sim", "cmp/bh14.cmp", "", tolK, tolu, tols, skipK, chk.Verbose)
+}
+
+func Test_bh14c(tst *testing.T) {
+
+	//verbose()
+	chk.PrintTitle("bh14c. using go-routines")
+
+	// channels
+	nch := 2
+	done := make(chan int, nch)
+
+	// allocate structures and set stage
+	analyses := make([]*FEM, nch)
+	for i := 0; i < nch; i++ {
+		analyses[i] = NewFEM("data/bh14.sim", io.Sf("ch%d", i), true, true, false, false, false, i)
+		err := analyses[i].SetStage(0)
+		if err != nil {
+			tst.Errorf("SetStage failed:\n%v", err)
+			return
+		}
+	}
+
+	// run all analyses
+	for i := 0; i < nch; i++ {
+		go func(analysis *FEM) {
+			err := analysis.SolveOneStage(0, true)
+			if err != nil {
+				io.Pfred("SolveOneStage failed:\n%v", err)
+			}
+			done <- 1
+		}(analyses[i])
+	}
+
+	// wait
+	for i := 0; i < nch; i++ {
+		<-done
+	}
+
+	// check
+	skipK := false
+	tolK := 1e-17
+	tolu := 1e-15
+	tols := 1e-17
+	for i := 0; i < nch; i++ {
+		TestingCompareResultsU(tst, "data/bh14.sim", "cmp/bh14.cmp", io.Sf("ch%d", i), tolK, tolu, tols, skipK, chk.Verbose)
+	}
 }

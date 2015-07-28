@@ -57,7 +57,7 @@ var (
 func Start(simfnpath string, stageIdx, regionIdx int) {
 
 	// fem structure
-	Analysis = fem.NewFEM(simfnpath, "", false, false, true, false, false)
+	Analysis = fem.NewFEM(simfnpath, "", false, false, true, false, false, 0)
 	Dom = Analysis.Domains[regionIdx]
 	Sum = Analysis.Summary
 

@@ -137,7 +137,7 @@ func init() {
 		var o ElemP
 		o.Cell = cell
 		o.X = x
-		o.Shp = shp.Get(cell.Type)
+		o.Shp = shp.Get(cell.Type, sim.GoroutineId)
 		o.Np = o.Shp.Nverts
 		o.Ndim = sim.Ndim
 

@@ -36,7 +36,7 @@ func Test_phi01(tst *testing.T) {
 	chk.PrintTitle("phi01")
 
 	// start simulation
-	analysis := NewFEM("data/phi01.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/phi01.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// set stage
 	err := analysis.SetStage(0)
@@ -89,7 +89,7 @@ func Test_phi02(tst *testing.T) {
 	chk.PrintTitle("phi02")
 
 	// run simulation
-	analysis := NewFEM("data/phi02.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/phi02.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := analysis.Run()

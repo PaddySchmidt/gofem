@@ -18,7 +18,7 @@ func Test_beam01(tst *testing.T) {
 	chk.PrintTitle("beam01")
 
 	// fem
-	analysis := NewFEM("data/beam01.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/beam01.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// set stage
 	err := analysis.SetStage(0)

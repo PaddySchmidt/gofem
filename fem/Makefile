@@ -27,3 +27,6 @@ p01: debug
 
 bench:
 	go test -run=XXX -bench=. -benchtime=5s
+
+race:
+	go test -race -test.run="bh14c"

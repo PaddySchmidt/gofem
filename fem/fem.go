@@ -50,13 +50,13 @@ type FEM struct {
 //   readSummary   -- ready summary of previous simulation
 //   allowParallel -- allow parallel execution; otherwise, run in serial mode regardless whether MPI is on or not
 //   verbose       -- show messages
-func NewFEM(simfilepath, alias string, erasePrev, saveSummary, readSummary, allowParallel, verbose bool) (o *FEM) {
+func NewFEM(simfilepath, alias string, erasePrev, saveSummary, readSummary, allowParallel, verbose bool, goroutineId int) (o *FEM) {
 
 	// new FEM object
 	o = new(FEM)
 
 	// read input data
-	o.Sim = inp.ReadSim(simfilepath, alias, erasePrev)
+	o.Sim = inp.ReadSim(simfilepath, alias, erasePrev, goroutineId)
 	if o.Sim == nil {
 		chk.Panic("cannot ready simulation input data")
 	}

@@ -16,7 +16,7 @@ func Test_rjoint01(tst *testing.T) {
 	chk.PrintTitle("rjoint01. curved line in 3D")
 
 	// initialisation
-	analysis := NewFEM("data/rjoint01.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/rjoint01.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// callback to check consistent tangent operators
 	eid := 2 // rjoint element

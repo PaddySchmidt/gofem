@@ -38,7 +38,7 @@ func Test_sg52a(tst *testing.T) {
 	chk.PrintTitle("sg52a")
 
 	// start simulation
-	analysis := NewFEM("data/sg52.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/sg52.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// set stage
 	err := analysis.SetStage(0)
@@ -143,7 +143,7 @@ func Test_sg52b(tst *testing.T) {
 	chk.PrintTitle("sg52b")
 
 	// run simulation
-	analysis := NewFEM("data/sg52.sim", "", true, true, false, false, chk.Verbose)
+	analysis := NewFEM("data/sg52.sim", "", true, true, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := analysis.Run()
@@ -166,7 +166,7 @@ func Test_sg57(tst *testing.T) {
 	chk.PrintTitle("sg57")
 
 	// run simulation
-	analysis := NewFEM("data/sg57.sim", "", true, true, false, false, chk.Verbose)
+	analysis := NewFEM("data/sg57.sim", "", true, true, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := analysis.Run()
@@ -189,7 +189,7 @@ func Test_sg511(tst *testing.T) {
 	chk.PrintTitle("sg511")
 
 	// run simulation
-	analysis := NewFEM("data/sg511.sim", "", true, true, false, false, chk.Verbose)
+	analysis := NewFEM("data/sg511.sim", "", true, true, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := analysis.Run()
@@ -212,7 +212,7 @@ func Test_sg515(tst *testing.T) {
 	chk.PrintTitle("sg515")
 
 	// run simulation
-	analysis := NewFEM("data/sg515.sim", "", true, true, false, false, chk.Verbose)
+	analysis := NewFEM("data/sg515.sim", "", true, true, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := analysis.Run()
@@ -235,7 +235,7 @@ func Test_sg517(tst *testing.T) {
 	chk.PrintTitle("sg517")
 
 	// run simulation
-	analysis := NewFEM("data/sg517.sim", "", true, true, false, false, chk.Verbose)
+	analysis := NewFEM("data/sg517.sim", "", true, true, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := analysis.Run()
@@ -258,7 +258,7 @@ func Test_sg524(tst *testing.T) {
 	chk.PrintTitle("sg524")
 
 	// run simulation
-	analysis := NewFEM("data/sg524.sim", "", true, true, false, false, chk.Verbose)
+	analysis := NewFEM("data/sg524.sim", "", true, true, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := analysis.Run()
@@ -281,7 +281,7 @@ func Test_sg530(tst *testing.T) {
 	chk.PrintTitle("sg530")
 
 	// run simulation
-	analysis := NewFEM("data/sg530.sim", "", true, true, false, false, chk.Verbose)
+	analysis := NewFEM("data/sg530.sim", "", true, true, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := analysis.Run()

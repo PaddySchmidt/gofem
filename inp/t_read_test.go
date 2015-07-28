@@ -22,7 +22,7 @@ func Test_msh01(tst *testing.T) {
 
 	chk.PrintTitle("msh01")
 
-	msh := ReadMsh("data", "bh16.msh")
+	msh := ReadMsh("data", "bh16.msh", 0)
 	if msh == nil {
 		tst.Errorf("test failed\n")
 		return
@@ -40,7 +40,7 @@ func Test_sim01(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("sim01")
 
-	sim := ReadSim("data/bh16.sim", "", true)
+	sim := ReadSim("data/bh16.sim", "", true, 0)
 	if sim == nil {
 		tst.Errorf("test failed: check error log\n")
 		return
@@ -63,7 +63,7 @@ func Test_sim02(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("sim01")
 
-	sim := ReadSim("data/frees01.sim", "", true)
+	sim := ReadSim("data/frees01.sim", "", true, 0)
 	if sim == nil {
 		tst.Errorf("test failed: check error log\n")
 		return

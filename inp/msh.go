@@ -90,7 +90,7 @@ type Mesh struct {
 
 // ReadMsh reads a mesh for FE analyses
 //  Note: returns nil on errors
-func ReadMsh(dir, fn string) *Mesh {
+func ReadMsh(dir, fn string, goroutineId int) *Mesh {
 
 	// new mesh
 	var o Mesh
@@ -215,7 +215,7 @@ func ReadMsh(dir, fn string) *Mesh {
 		case "joint":
 			c.IsJoint = true
 		default:
-			c.Shp = shp.Get(c.Type)
+			c.Shp = shp.Get(c.Type, goroutineId)
 			if c.Shp == nil {
 				return nil
 			}

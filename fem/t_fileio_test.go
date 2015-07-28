@@ -17,7 +17,7 @@ func Test_fileio01(tst *testing.T) {
 	chk.PrintTitle("fileio01")
 
 	// start
-	analysis := NewFEM("data/bh16.sim", "", true, false, false, false, chk.Verbose)
+	analysis := NewFEM("data/bh16.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// domain A
 	domsA := NewDomains(analysis.Sim, analysis.DynCfs, analysis.HydSta, 0, 1, false)

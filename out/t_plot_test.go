@@ -24,7 +24,7 @@ func Test_plot01(tst *testing.T) {
 	simfn := "p02.sim"
 
 	// start simulation
-	processing := fem.NewFEM(datadir+simfn, "", true, true, false, false, chk.Verbose)
+	processing := fem.NewFEM(datadir+simfn, "", true, true, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := processing.Run()
