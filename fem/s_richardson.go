@@ -88,6 +88,7 @@ func (o *RichardsonExtrap) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose boo
 	// control
 	t := o.doms[0].Sol.T
 	tout := t + dtoFunc.F(t, nil)
+	steady := o.doms[0].Sim.Data.Steady
 
 	// first output
 	if o.sum != nil {
@@ -117,10 +118,12 @@ func (o *RichardsonExtrap) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose boo
 			return chk.Err("Δt increment is too small: %g < %g", o.Δt, dat.DtMin)
 		}
 
-		// compute dynamic coefficients
-		err = o.dc.CalcBoth(o.Δt)
-		if err != nil {
-			return chk.Err("cannot compute dynamic coefficients:\n%v", err)
+		// dynamic coefficients
+		if !steady {
+			err = o.dc.CalcBoth(o.Δt)
+			if err != nil {
+				return chk.Err("cannot compute dynamic coefficients:\n%v", err)
+			}
 		}
 
 		// check for maximum number of substeps

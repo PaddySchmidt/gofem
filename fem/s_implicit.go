@@ -40,6 +40,7 @@ func (o *SolverImplicit) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose bool,
 	t := o.doms[0].Sol.T
 	dat := o.doms[0].Sim.Solver
 	tout := t + dtoFunc.F(t, nil)
+	steady := o.doms[0].Sim.Data.Steady
 
 	// first output
 	if o.sum != nil {
@@ -72,9 +73,11 @@ func (o *SolverImplicit) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose bool,
 		t += Δt
 
 		// dynamic coefficients
-		err = o.dc.CalcBoth(Δt)
-		if err != nil {
-			return chk.Err("cannot compute dynamic coefficients")
+		if !steady {
+			err = o.dc.CalcBoth(Δt)
+			if err != nil {
+				return chk.Err("cannot compute dynamic coefficients")
+			}
 		}
 
 		// message
