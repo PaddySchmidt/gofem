@@ -41,13 +41,6 @@ type FEM struct {
 	Verbose bool            // show messages
 }
 
-// Clean cleans memory allocated by FEM
-func (o *FEM) Clean() {
-	for _, d := range o.Domains {
-		d.Clean()
-	}
-}
-
 // NewFEM returns a new FEM structure
 //  Input:
 //   simfilepath   -- simulation (.sim) filename including full path
@@ -202,84 +195,32 @@ func (o *FEM) ZeroStage(stgidx int, zeroSol bool) (err error) {
 	return
 }
 
-/*
 // SolveOneStage solves one stage that was already set
 //  Input:
-//   stgidx  -- stage index (in o.Sim.Stages)
-//   zeroSol -- zero vectors in domains.Sol
-func (o *FEM) SolveOneStage(stgidx int, zeroSol bool) (ok bool) {
+//   stgidx    -- stage index (in o.Sim.Stages)
+//   zerostage -- zero vectors in domains.Sol => call ZeroStage
+func (o *FEM) SolveOneStage(stgidx int, zerostage bool) (err error) {
 
-	// current time and stage
-	o.Time = 0.0
+	// clean memory allocated by domains
+	defer func() {
+		for _, d := range o.Domains {
+			d.Clean()
+		}
+	}()
+
+	// zero stage
+	if zerostage {
+		err = o.ZeroStage(stgidx, true)
+		if err != nil {
+			return
+		}
+	}
+
+	// run
 	stg := o.Sim.Stages[stgidx]
-
-	// initialise solution vectors
-	if !o.InitSolution(stgidx, zeroSol) {
-		return
-	}
-
-	// time loop
-	if !o.Solver.Run(stg) {
-		return
-	}
-
-	// success
-	return true
+	err = o.Solver.Run(stg.Control.Tf, stg.Control.DtFunc, stg.Control.DtoFunc, o.Verbose, o.DebugKb)
+	return
 }
-
-
-// CleanUp cleans memory and flush log
-func (o *FEM) CleanUp() {
-
-	// flush log
-	io.WriteFile(io.Sf("%s/%s_p%d.log", o.Data.DirOut, o.Data.LogPrefix+o.Data.FnameKey, o.Rank))
-
-	// domains: clear memory
-	for _, d := range o.Domains {
-		d.End()
-	}
-
-	// summary: save file
-	if o.Summary != nil {
-		o.Summary.Save()
-	}
-}
-
-// AllocSetAndInit allocates domains, summary, solver and sets stage # stgidx
-// and initial values in all domains. It also returns the first domain.
-//  Input:
-//   stgidx      -- stage index
-//   withSummary -- also allocate summary
-//   readSummary -- reads summary back from previous calculation
-//  Output:
-//   dom -- first domain; i.e. dom := o.Domains[0];
-//   sum -- summary, if withSummary is true
-func (o *FEM) AllocSetAndInit(stgidx int, withSummary, readSummary bool) (dom *Domain, sum *Summary, ok bool) {
-
-	// allocate domain and others
-	if !Alloc(withSummary) {
-		return
-	}
-
-	// set stage
-	if !SetStage(stgidx) {
-		return
-	}
-
-	// set initial solution vectors
-	if !InitSolution(stgidx, false) {
-		return
-	}
-
-	// read summary
-	if readSummary {
-	}
-
-	// success
-	return o.Domains[0], o.Summary, true
-}
-
-*/
 
 // auxiliary //////////////////////////////////////////////////////////////////////////////////////
 

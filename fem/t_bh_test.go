@@ -38,12 +38,14 @@ func Test_bh16a(tst *testing.T) {
 	err := analysis.SetStage(0)
 	if err != nil {
 		tst.Errorf("SetStage failed:\n%v", err)
+		return
 	}
 
 	// initialise solution vectros
 	err = analysis.ZeroStage(0, true)
 	if err != nil {
 		tst.Errorf("ZeroStage failed:\n%v", err)
+		return
 	}
 
 	// domain
@@ -175,33 +177,25 @@ func Test_bh14a(tst *testing.T) {
 	TestingCompareResultsU(tst, "data/bh14.sim", "cmp/bh14.cmp", tolK, tolu, tols, skipK, chk.Verbose)
 }
 
-/*
-func Test_bh14b(tst *testing.T) {
+func test_bh14b(tst *testing.T) {
 
 	//verbose()
 	chk.PrintTitle("bh14b. using SolveOneStage")
 
 	// start simulation
-	analysis := NewFEM("data/bh14.sim", "", true, false, false, false, chk.Verbose)
-
-	// allocate domain and others
-	if !Alloc(true) {
-		tst.Errorf("Alloc failed\n")
-		return
-	}
+	analysis := NewFEM("data/bh14.sim", "", true, true, false, false, chk.Verbose)
 
 	// set stage
-	stgidx := 0
-	if !SetStage(stgidx) {
-		tst.Errorf("SetStage failed\n")
+	err := analysis.SetStage(0)
+	if err != nil {
+		tst.Errorf("SetStage failed:\n%v", err)
 		return
 	}
 
 	// run
-	ok := SolveOneStage(stgidx, false)
-	CleanUp()
-	if !ok {
-		tst.Errorf("SolveOneStage failed\n")
+	err = analysis.SolveOneStage(0, true)
+	if err != nil {
+		tst.Error("SolveOneStage failed:\n%v", err)
 		return
 	}
 
@@ -212,4 +206,3 @@ func Test_bh14b(tst *testing.T) {
 	tols := 1e-17
 	TestingCompareResultsU(tst, "data/bh14.sim", "cmp/bh14.cmp", tolK, tolu, tols, skipK, chk.Verbose)
 }
-*/

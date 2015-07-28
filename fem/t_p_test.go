@@ -59,12 +59,14 @@ func Test_p01a(tst *testing.T) {
 	err := analysis.SetStage(0)
 	if err != nil {
 		tst.Errorf("SetStage failed:\n%v", err)
+		return
 	}
 
 	// initialise solution vectros
 	err = analysis.ZeroStage(0, true)
 	if err != nil {
 		tst.Errorf("ZeroStage failed:\n%v", err)
+		return
 	}
 
 	// domain
