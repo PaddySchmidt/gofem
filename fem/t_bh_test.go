@@ -170,14 +170,14 @@ func Test_bh14a(tst *testing.T) {
 	}
 
 	// check
-	skipK := true
+	skipK := false
 	tolK := 1e-17
 	tolu := 1e-15
 	tols := 1e-17
 	TestingCompareResultsU(tst, "data/bh14.sim", "cmp/bh14.cmp", tolK, tolu, tols, skipK, chk.Verbose)
 }
 
-func test_bh14b(tst *testing.T) {
+func Test_bh14b(tst *testing.T) {
 
 	//verbose()
 	chk.PrintTitle("bh14b. using SolveOneStage")
@@ -200,7 +200,7 @@ func test_bh14b(tst *testing.T) {
 	}
 
 	// check
-	skipK := true
+	skipK := false
 	tolK := 1e-17
 	tolu := 1e-15
 	tols := 1e-17

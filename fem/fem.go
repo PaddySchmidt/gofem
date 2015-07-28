@@ -121,8 +121,11 @@ func (o *FEM) Run() (err error) {
 		return
 	}
 
-	// loop over stages
+	// exit commands
 	cputime := time.Now()
+	defer func() { err = o.onexit(cputime, err) }()
+
+	// loop over stages
 	for stgidx, stg := range o.Sim.Stages {
 
 		// skip stage?
@@ -147,22 +150,6 @@ func (o *FEM) Run() (err error) {
 		if err != nil {
 			return
 		}
-	}
-
-	// message
-	if o.Verbose {
-		io.Pf("\n\n")
-		if len(o.Domains) > 0 {
-			if o.Domains[0].Sol != nil {
-				io.Pf("\nfinal time = %v\n", o.Domains[0].Sol.T)
-			}
-		}
-		io.Pflmag("cpu time   = %v\n", time.Now().Sub(cputime))
-	}
-
-	// save summary
-	if o.Summary != nil {
-		err = o.Summary.Save(o.Sim.DirOut, o.Sim.Key, o.Sim.EncType, o.Nproc, o.Proc, o.Verbose)
 	}
 	return
 }
@@ -201,12 +188,9 @@ func (o *FEM) ZeroStage(stgidx int, zeroSol bool) (err error) {
 //   zerostage -- zero vectors in domains.Sol => call ZeroStage
 func (o *FEM) SolveOneStage(stgidx int, zerostage bool) (err error) {
 
-	// clean memory allocated by domains
-	defer func() {
-		for _, d := range o.Domains {
-			d.Clean()
-		}
-	}()
+	// exit commands
+	cputime := time.Now()
+	defer func() { err = o.onexit(cputime, err) }()
 
 	// zero stage
 	if zerostage {
@@ -223,6 +207,38 @@ func (o *FEM) SolveOneStage(stgidx int, zerostage bool) (err error) {
 }
 
 // auxiliary //////////////////////////////////////////////////////////////////////////////////////
+
+// onexit clean domains, prints final message with simulation and cpu times and save summary
+func (o FEM) onexit(cputime time.Time, prevErr error) (err error) {
+
+	// clear domains
+	for _, d := range o.Domains {
+		d.Clean()
+	}
+
+	// show final message
+	if o.Verbose {
+		io.Pf("\n\n")
+		if len(o.Domains) > 0 {
+			if o.Domains[0].Sol != nil {
+				io.Pf("\nfinal time = %v\n", o.Domains[0].Sol.T)
+			}
+		}
+		io.Pflmag("cpu time   = %v\n", time.Now().Sub(cputime))
+	}
+
+	// skip if previous error is not nil
+	if prevErr != nil {
+		err = prevErr
+		return
+	}
+
+	// save summary if previous error is not nil
+	if o.Summary != nil {
+		err = o.Summary.Save(o.Sim.DirOut, o.Sim.Key, o.Sim.EncType, o.Nproc, o.Proc, o.Verbose)
+	}
+	return
+}
 
 // debug_print_p_results print results
 func debug_print_p_results(d *Domain) {

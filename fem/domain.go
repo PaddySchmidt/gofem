@@ -103,9 +103,7 @@ type Domain struct {
 
 // Clean cleans memory allocated by domain
 func (o *Domain) Clean() {
-	if !o.InitLSol {
-		o.LinSol.Clean()
-	}
+	o.LinSol.Clean()
 }
 
 // NewDomains returns domains
