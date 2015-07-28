@@ -464,6 +464,9 @@ func (o *Domain) SetIniVals(stgidx int, zeroSol bool) (err error) {
 			}
 		}
 	}
+
+	// make sure time is zero at the beginning of simulation
+	o.Sol.T = 0
 	return
 }
 
