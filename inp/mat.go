@@ -167,15 +167,13 @@ func MatfileOld2New(dirout string, fnnew, fnold string, convertsymbols bool) {
 	// read file
 	b, err := io.ReadFile(fnold)
 	if err != nil {
-		io.PfRed("cannot open file: %v", err.Error())
-		return
+		chk.Panic("cannot open file: %v", err.Error())
 	}
 
 	// decode
 	err = json.Unmarshal(b, &mats_old)
 	if err != nil {
-		io.PfRed("cannot unmarshal file: %v", err.Error())
-		return
+		chk.Panic("cannot unmarshal file: %v", err.Error())
 	}
 
 	// new data holder

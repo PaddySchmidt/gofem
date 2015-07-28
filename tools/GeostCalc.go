@@ -7,8 +7,6 @@
 package main
 
 import (
-	"flag"
-
 	"github.com/cpmech/gofem/fem"
 	"github.com/cpmech/gofem/inp"
 
@@ -17,35 +15,24 @@ import (
 
 func main() {
 
+	// catch errors
+	defer func() {
+		if err := recover(); err != nil {
+			io.PfRed("ERROR: %v\n", err)
+		}
+	}()
+
 	// input data
-	simfile := "simfile.sim"
-	zmin := 0.0
-	zmax := 3.0
-	npts := 11
-
-	// parse flags
-	flag.Parse()
-	if len(flag.Args()) > 0 {
-		simfile = flag.Arg(0)
-	}
-	if len(flag.Args()) > 1 {
-		zmin = io.Atof(flag.Arg(1))
-	}
-	if len(flag.Args()) > 2 {
-		zmax = io.Atob(flag.Arg(2))
-	}
-	if len(flag.Args()) > 3 {
-		npts = io.Atoi(flag.Arg(3))
-	}
-
-	// print input data
-	io.Pf("\nInput data\n")
-	io.Pf("==========\n")
-	io.Pf("  simfile  = %30s // simulation filename\n", simfile)
-	io.Pf("  zmin     = %30s // min elevation\n", zmin)
-	io.Pf("  zmax     = %30v // max elevation\n", zmax)
-	io.Pf("  npts     = %30v // number of points\n", npts)
-	io.Pf("\n")
+	simfile, _ := io.ArgToFilename(0, "simfile.sim", true)
+	zmin := io.ArgToFloat(1, 0.0)
+	zmax := io.ArgToFloat(2, 3.0)
+	npts := io.ArgToInt(3, 11)
+	io.Pf("\n%s\n", io.ArgsTable(
+		"simulation filename", "simfile", simfile,
+		"min elevation", "zmin", zmin,
+		"max elevation", "zmax", zmax,
+		"number of points", "npts", npts,
+	))
 
 	// sim file
 	sim := inp.ReadSim("", simfile, false)

@@ -5,10 +5,7 @@
 package main
 
 import (
-	"flag"
-
 	"github.com/cpmech/gofem/fem"
-	"github.com/cpmech/gofem/inp"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/mpi"
@@ -16,11 +13,6 @@ import (
 )
 
 func main() {
-
-	// in put data
-	erasefiles := true
-	verbose := true
-	allowParallel := true
 
 	// catch errors
 	defer func() {
@@ -30,16 +22,6 @@ func main() {
 				for i := 8; i > 3; i-- {
 					chk.CallerInfo(i)
 				}
-
-				// print log file
-				if verbose {
-					buf, err := io.ReadFile(inp.LogFile.Name())
-					if err != nil {
-						io.Pfred("cannot read log file:%v\n", err)
-					}
-					io.Pfyel("\n%v\n", string(buf))
-				}
-
 				io.PfRed("ERROR: %v\n", err)
 			}
 		}
@@ -47,47 +29,43 @@ func main() {
 	}()
 	mpi.Start(false)
 
+	// default input parameters
+
+	// read input parameters
+	fnamepath, _ := io.ArgToFilename(0, "", ".sim", true)
+	verbose := io.ArgToBool(1, true)
+	erasePrev := io.ArgToBool(2, true)
+	saveSummary := io.ArgToBool(3, true)
+	allowParallel := io.ArgToBool(4, true)
+	alias := io.ArgToString(5, "")
+
 	// message
-	if mpi.Rank() == 0 {
+	if mpi.Rank() == 0 && verbose {
 		io.PfWhite("\nGofem v3 -- Go Finite Element Method\n\n")
 		io.Pf("Copyright 2015 Dorival Pedroso and Raul Durand. All rights reserved.\n")
 		io.Pf("Use of this source code is governed by a BSD-style\n")
 		io.Pf("license that can be found in the LICENSE file.\n\n")
-	}
 
-	// simulation filenamepath
-	flag.Parse()
-	var fnamepath string
-	if len(flag.Args()) > 0 {
-		fnamepath = flag.Arg(0)
-	} else {
-		chk.Panic("Please, provide a filename. Ex.: cylinder.sim")
-	}
-
-	// check extension
-	if io.FnExt(fnamepath) == "" {
-		fnamepath += ".sim"
-	}
-
-	// other options
-	if len(flag.Args()) > 1 {
-		erasefiles = io.Atob(flag.Arg(1))
-	}
-	if len(flag.Args()) > 2 {
-		verbose = io.Atob(flag.Arg(2))
+		io.Pf("\n%v\n", io.ArgsTable(
+			"filename path", "fnamepath", fnamepath,
+			"show messages", "verbose", verbose,
+			"erase previous results", "erasePrev", erasePrev,
+			"save summary", "saveSummary", saveSummary,
+			"allow parallel run", "allowParallel", allowParallel,
+			"word to add to results", "alias", alias,
+		))
 	}
 
 	// profiling?
 	defer utl.DoProf(false)()
 
-	// start global variables and log
-	if !fem.Start(fnamepath, erasefiles, verbose, allowParallel) {
-		chk.Panic("Start failed\n")
-		return
-	}
+	// analysis data
+	readSummary := false
+	analysis := fem.NewFEM(fnamepath, alias, erasePrev, saveSummary, readSummary, allowParallel, verbose)
 
 	// run simulation
-	if !fem.RunAll() {
-		chk.Panic("Run failed\n")
+	err := analysis.Run()
+	if err != nil {
+		chk.Panic("Run failed:\n%v", err)
 	}
 }

@@ -8,7 +8,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"path"
 
 	"github.com/cpmech/gofem/inp"
@@ -27,6 +26,9 @@ type Input struct {
 	FigEps  bool
 	FigProp float64
 	FigWid  float64
+
+	// derived
+	inpfn string
 }
 
 func (o *Input) PostProcess() {
@@ -42,58 +44,58 @@ func (o *Input) PostProcess() {
 }
 
 func (o Input) String() (l string) {
-	l += "\nInput data\n"
-	l += "==========\n"
-	l += io.Sf("directory with .sim and .pat files : Dir     = %v\n", o.Dir)
-	l += io.Sf("simulation filename                : SimFn   = %v\n", o.SimFn)
-	l += io.Sf("material name                      : MatName = %v\n", o.MatName)
-	l += io.Sf("path filename                      : PathFn  = %v\n", o.PathFn)
-	l += io.Sf("plot set                           : PlotSet = %q\n", o.PlotSet)
-	l += io.Sf("fig: generate .eps instead of .png : FigEps  = %v\n", o.FigEps)
-	l += io.Sf("fig: proportion of figure          : FigProp = %v\n", o.FigProp)
-	l += io.Sf("fig: width  of figure              : FigWid  = %v\n", o.FigWid)
-	l += "\n"
+	l = io.ArgsTable(
+		"input filename", "inpfn", o.inpfn,
+		"directory with .sim and .pat files", "Dir", o.Dir,
+		"simulation filename", "SimFn", o.SimFn,
+		"material name", "MatName", o.MatName,
+		"path filename", "PathFn", o.PathFn,
+		"plot set", "PlotSet", io.Sf("%v", o.PlotSet),
+		"fig: generate .eps instead of .png", "FigEps", o.FigEps,
+		"fig: proportion of figure", "FigProp", o.FigProp,
+		"fig: width  of figure", "FigWid", o.FigWid,
+	)
 	return
 }
 
 func main() {
 
+	// catch errors
+	defer func() {
+		if err := recover(); err != nil {
+			io.PfRed("ERROR: %v\n", err)
+		}
+	}()
+
 	// input data file
-	inpfn := "data/loccmdrv1.inp"
-	flag.Parse()
-	if len(flag.Args()) > 0 {
-		inpfn = flag.Arg(0)
-	}
-	if io.FnExt(inpfn) == "" {
-		inpfn += ".inp"
-	}
+	var in Input
+	in.inpfn, _ = io.ArgToFilename(0, "data/loccmdrv1", ".inp", true)
 
 	// read and parse input data
-	var in Input
-	b, err := io.ReadFile(inpfn)
+	b, err := io.ReadFile(in.inpfn)
 	if err != nil {
-		io.PfRed("cannot read %s\n", inpfn)
+		io.PfRed("cannot read %s\n", in.inpfn)
 		return
 	}
 	err = json.Unmarshal(b, &in)
 	if err != nil {
-		io.PfRed("cannot parse %s\n", inpfn)
+		io.PfRed("cannot parse %s\n", in.inpfn)
 		return
 	}
 	in.PostProcess()
 
-	// print input data
+	// print input table
 	io.Pf("%v\n", in)
 
 	// load simulation
-	sim := inp.ReadSim(in.Dir, in.SimFn, "cmd_", false)
+	sim := inp.ReadSim(in.Dir+"/"+in.SimFn, "", false)
 	if sim == nil {
 		io.PfRed("cannot load simulation\n")
 		return
 	}
 
 	// get material data
-	mat := sim.Mdb.Get(in.MatName)
+	mat := sim.MatParams.Get(in.MatName)
 	if mat == nil {
 		io.PfRed("cannot get material\n")
 		return

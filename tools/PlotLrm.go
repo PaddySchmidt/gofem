@@ -9,7 +9,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"flag"
 	"path"
 
 	"github.com/cpmech/gofem/inp"
@@ -21,50 +20,36 @@ import (
 
 func main() {
 
+	// catch errors
+	defer func() {
+		if err := recover(); err != nil {
+			io.PfRed("ERROR: %v\n", err)
+		}
+	}()
+
 	// input data
-	simfn := "elast.sim"
-	matname := "lrm1"
-	pcmax := 30.0
-	npts := 101
+	simfn, _ := io.ArgToFilename(0, "elast", ".sim", true)
+	matname := io.ArgToString(1, "lrm1")
+	pcmax := io.ArgToFloat(2, 30.0)
+	npts := io.ArgToInt(3, 101)
 
-	// parse flags
-	flag.Parse()
-	if len(flag.Args()) > 0 {
-		simfn = flag.Arg(0)
-	}
-	if len(flag.Args()) > 1 {
-		matname = flag.Arg(1)
-	}
-	if len(flag.Args()) > 2 {
-		pcmax = io.Atof(flag.Arg(2))
-	}
-	if len(flag.Args()) > 3 {
-		npts = io.Atoi(flag.Arg(3))
-	}
-
-	// check extension
-	if io.FnExt(simfn) == "" {
-		simfn += ".sim"
-	}
-
-	// print input data
-	io.Pf("\nInput data\n")
-	io.Pf("==========\n")
-	io.Pf("  simfn   = %30s // simulation filename\n", simfn)
-	io.Pf("  matname = %30s // material name\n", matname)
-	io.Pf("  pcmax   = %30v // max pc\n", pcmax)
-	io.Pf("  npts    = %30v // number of points\n", npts)
-	io.Pf("\n")
+	// print input table
+	io.Pf("\n%s\n", io.ArgsTable(
+		"simulation filename", "simfn", simfn,
+		"material name", "matname", matname,
+		"max pc", "pcmax", pcmax,
+		"number of points", "npts", npts,
+	))
 
 	// load simulation
-	sim := inp.ReadSim("", simfn, "lrm_", false)
+	sim := inp.ReadSim(simfn, "lrm", false)
 	if sim == nil {
 		io.PfRed("cannot load simulation\n")
 		return
 	}
 
 	// get material data
-	mat := sim.Mdb.Get(matname)
+	mat := sim.MatParams.Get(matname)
 	if mat == nil {
 		io.PfRed("cannot get material\n")
 		return

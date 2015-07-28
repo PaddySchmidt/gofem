@@ -7,8 +7,6 @@
 package main
 
 import (
-	"flag"
-
 	"github.com/cpmech/gofem/inp"
 
 	"github.com/cpmech/gosl/io"
@@ -16,30 +14,22 @@ import (
 
 func main() {
 
+	// catch errors
+	defer func() {
+		if err := recover(); err != nil {
+			io.PfRed("ERROR: %v\n", err)
+		}
+	}()
+
 	// input data
-	matOld := "matOld.mat"
-	matNew := "matNew.mat"
-	convSymb := true
-
-	// parse flags
-	flag.Parse()
-	if len(flag.Args()) > 0 {
-		matOld = flag.Arg(0)
-	}
-	if len(flag.Args()) > 1 {
-		matNew = flag.Arg(1)
-	}
-	if len(flag.Args()) > 2 {
-		convSymb = io.Atob(flag.Arg(2))
-	}
-
-	// print input data
-	io.Pf("\nInput data\n")
-	io.Pf("==========\n")
-	io.Pf("  matOld   = %30s // old material filename\n", matOld)
-	io.Pf("  matNew   = %30s // new material filename\n", matNew)
-	io.Pf("  convSymb = %30v // do convert symbols\n", convSymb)
-	io.Pf("\n")
+	matOld := io.ArgToString(0, "matOld.mat")
+	matNew := io.ArgToString(1, "matNew.mat")
+	convSymb := io.ArgToBool(2, true)
+	io.Pf("\n%s\n", io.ArgsTable(
+		"old material filename", "matOld", matOld,
+		"new material filenamen", "matNew", matNew,
+		"do convert symbols", "convSymb", convSymb,
+	))
 
 	// convert old => new
 	inp.MatfileOld2New("", matNew, matOld, convSymb)

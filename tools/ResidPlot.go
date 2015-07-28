@@ -7,7 +7,6 @@
 package main
 
 import (
-	"flag"
 	"math"
 
 	"github.com/cpmech/gofem/out"
@@ -38,38 +37,28 @@ func count_iters(resid *utl.DblSlist) (N []float64) {
 
 func main() {
 
+	// catch errors
+	defer func() {
+		if err := recover(); err != nil {
+			io.PfRed("ERROR: %v\n", err)
+		}
+	}()
+
 	// input data
-	simfnA := "o2elastCO"
-	skip := 0
-	simfnB := ""
-	labelA := ""
-	labelB := ""
-	flag.Parse()
-	if len(flag.Args()) > 0 {
-		simfnA = flag.Arg(0)
-	}
-	if len(flag.Args()) > 1 {
-		skip = io.Atoi(flag.Arg(1))
-	}
-	if len(flag.Args()) > 2 {
-		simfnB = flag.Arg(2)
-	}
-	if len(flag.Args()) > 3 {
-		labelA = flag.Arg(3)
-	}
-	if len(flag.Args()) > 4 {
-		labelB = flag.Arg(4)
-	}
+	simfnA, fnkA := io.ArgToFilename(0, "o2elastCO", ".sim", true)
+	skip := io.ArgToInt(1, 0)
+	simfnB, fnkB := io.ArgToFilename(2, "", ".sim", false)
+	labelA := io.ArgToString(3, "")
+	labelB := io.ArgToString(4, "")
 
 	// print input data
-	io.Pf("\nInput data\n")
-	io.Pf("==========\n")
-	io.Pf("  simfnA = %30s // simulation filename\n", simfnA)
-	io.Pf("  skip   = %30d // number of initial increments to skip\n", skip)
-	io.Pf("  simfnB = %30s // simulation filename for comparison\n", simfnB)
-	io.Pf("  labelA = %30s // label for histogram\n", labelA)
-	io.Pf("  labelB = %30s // label for histogram\n", labelB)
-	io.Pf("\n")
+	io.Pf("\n%s\n", io.ArgsTable(
+		"simulation filename", "simfnA", simfnA,
+		"number of initial increments to skip", "skip", skip,
+		"simulation filename for comparison", "simfnB", simfnB,
+		"label for histogram", "labelA", labelA,
+		"label for histogram", "labelB", labelB,
+	))
 
 	// read residuals
 	residA, fnkA := read_summary(simfnA)

@@ -8,7 +8,6 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"strings"
 
 	"github.com/cpmech/gofem/inp"
@@ -17,39 +16,27 @@ import (
 
 func main() {
 
+	// catch errors
 	defer func() {
 		if err := recover(); err != nil {
-			io.PfRed("Some error has happened: %v\n", err)
+			io.PfRed("ERROR: %v\n", err)
 		}
 	}()
 
 	// input data
-	matfn := "materials.mat"
+	matfn, fnk := io.ArgToFilename(0, "materials", ".mat", true)
+	io.Pf("\n%s\n", io.ArgsTable(
+		"material filename", "matfn", matfn,
+	))
 
+	// skip variables
 	skip := "gref nowet α"
-
-	// parse flags
-	flag.Parse()
-	if len(flag.Args()) > 0 {
-		matfn = flag.Arg(0)
-	}
-	if len(flag.Args()) > 1 {
-		skip = flag.Arg(1)
-	}
 
 	// skip parameters
 	skipp := make(map[string]bool)
 	for _, key := range io.SplitKeys(skip) {
 		skipp[key] = true
 	}
-
-	// file key
-	fnk := io.FnKey(matfn)
-
-	// print input data
-	io.Pforan("Input data\n")
-	io.Pfblue2("  matfn = %v\n", matfn)
-	io.Pfblue2("  skip  = %v\n", skip)
 
 	// Read
 	mdb := inp.ReadMat("", matfn)

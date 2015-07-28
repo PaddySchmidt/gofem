@@ -8,7 +8,6 @@ package main
 
 import (
 	"bytes"
-	"flag"
 
 	"github.com/cpmech/gofem/fem"
 	"github.com/cpmech/gofem/inp"
@@ -55,35 +54,22 @@ func init() {
 
 func main() {
 
+	// catch errors
+	defer func() {
+		if err := recover(); err != nil {
+			io.PfRed("ERROR: %v\n", err)
+		}
+	}()
+
 	// input data
-	simfn := "data/twoqua4.sim"
-	exnwl := false
-	stgidx := 0
-
-	// parse flags
-	flag.Parse()
-	if len(flag.Args()) > 0 {
-		simfn = flag.Arg(0)
-	}
-	if len(flag.Args()) > 1 {
-		exnwl = io.Atob(flag.Arg(1))
-	}
-	if len(flag.Args()) > 2 {
-		stgidx = io.Atoi(flag.Arg(2))
-	}
-
-	// check extension
-	if io.FnExt(simfn) == "" {
-		simfn += ".sim"
-	}
-
-	// print input data
-	io.Pf("\nInput data\n")
-	io.Pf("==========\n")
-	io.Pf("  simfn   = %30s // simulation filename\n", simfn)
-	io.Pf("  exnwl   = %30v // extrapolate nwl\n", exnwl)
-	io.Pf("  stgidx  = %30v // stage index\n", stgidx)
-	io.Pf("\n")
+	simfn, _ := io.ArgToFilename(0, "data/twoqua4", ".sim", true)
+	exnwl := io.ArgToBool(1, false)
+	stgidx := io.ArgToInt(2, 0)
+	io.Pf("\n%s\n", io.ArgsTable(
+		"simulation filename", "simfn", simfn,
+		"extrapolate nwl", "exnwl", exnwl,
+		"stage index", "stgidx", stgidx,
+	))
 
 	// start analysis process
 	out.Start(simfn, stgidx, 0)
@@ -94,9 +80,9 @@ func main() {
 	cells = out.Dom.Msh.Cells
 	nodes = out.Dom.Nodes
 	elems = out.Dom.Elems
-	dirout = fem.Global.Sim.Data.DirOut
-	fnkey = fem.Global.Sim.Data.FnameKey
-	steady = fem.Global.Sim.Data.Steady
+	dirout = out.Dom.Sim.DirOut
+	fnkey = out.Dom.Sim.Key
+	steady = out.Dom.Sim.Data.Steady
 
 	// flags
 	has_u := out.Dom.YandC["ux"]
@@ -106,7 +92,7 @@ func main() {
 	has_nwl := out.Ipkeys["nwlx"]
 	has_p := has_pl || has_pg
 	lbb := has_u && has_p
-	if fem.Global.Sim.Data.NoLBB {
+	if out.Dom.Sim.Data.NoLBB {
 		lbb = false
 	}
 
@@ -154,8 +140,9 @@ func main() {
 	for tidx, t := range out.Sum.OutTimes {
 
 		// input results into domain
-		if !out.Dom.In(out.Sum, tidx, true) {
-			chk.Panic("cannot load results into domain; please check log file")
+		err := out.Dom.Read(out.Sum, tidx, 0, true)
+		if err != nil {
+			chk.Panic("cannot load results into domain\n%v", err)
 		}
 
 		// message
