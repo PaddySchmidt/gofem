@@ -59,7 +59,7 @@ func main() {
 	R_ana, Sr_ana, St_ana := sol.CalcStresses(Psel, np)
 
 	// fem
-	analysis := fem.NewFEM(filename, "", false, false, true, false, true)
+	analysis := fem.NewFEM(filename, "", false, false, true, false, true, 0)
 	err := analysis.SetStage(0)
 	if err != nil {
 		chk.Panic("SetStage failed:\n%v", err)

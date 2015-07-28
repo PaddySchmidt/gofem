@@ -34,7 +34,7 @@ func main() {
 	tols := 1e-04
 
 	var tst testing.T
-	fem.TestingCompareResultsU(&tst, "spo754.sim", "spo754.cmp", tolK, tolu, tols, skipK, verbose)
+	fem.TestingCompareResultsU(&tst, "spo754.sim", "spo754.cmp", "", tolK, tolu, tols, skipK, verbose)
 
 	// save
 	plt.SetForPng(0.8, 400, 200)
