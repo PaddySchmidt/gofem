@@ -107,7 +107,7 @@ func main() {
 
 	// show figure
 	plt.AxisYrange(0, 1)
-	plt.Cross()
+	plt.Cross("")
 	plt.Gll("$p_c$", "$s_{\\ell}$", "")
 	plt.Show()
 }

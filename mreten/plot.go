@@ -48,7 +48,7 @@ func Plot(mdl Model, pc0, sl0, pcf float64, npts int, args1, args2, label string
 // PlotEnd ends plot and show figure, if show==true
 func PlotEnd(show bool) {
 	plt.AxisYrange(0, 1)
-	plt.Cross()
+	plt.Cross("")
 	plt.Gll("$p_c$", "$s_{\\ell}$", "")
 	if show {
 		plt.Show()
