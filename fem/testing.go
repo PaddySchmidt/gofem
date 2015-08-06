@@ -109,6 +109,20 @@ func TestingCompareResultsU(tst *testing.T, simfilepath, cmpfname, alias string,
 					}
 					chk.Matrix(tst, io.Sf("K%d", eid), tolK, e.K, Ksg)
 				}
+				if e, ok := dom.Elems[eid].(*Rod); ok {
+					err = e.AddToKb(dom.Kb, dom.Sol, true)
+					if err != nil {
+						chk.Panic("TestingCompareResultsU: AddToKb failed\n")
+					}
+					chk.Matrix(tst, io.Sf("K%d", eid), tolK, e.K, Ksg)
+				}
+				if e, ok := dom.Elems[eid].(*ElasticRod); ok {
+					err = e.AddToKb(dom.Kb, dom.Sol, true)
+					if err != nil {
+						chk.Panic("TestingCompareResultsU: AddToKb failed\n")
+					}
+					chk.Matrix(tst, io.Sf("K%d", eid), tolK, e.K, Ksg)
+				}
 			}
 		}
 
@@ -153,6 +167,26 @@ func TestingCompareResultsU(tst *testing.T, simfilepath, cmpfname, alias string,
 								chk.AnaNum(tst, "sz ", tols, σ[2], val[3], verbose)
 							}
 						}
+					}
+				}
+				if e, ok := dom.Cid2elem[eid].(*Rod); ok {
+					for ip, val := range sig {
+						if verbose {
+							io.Pfgrey2("ip = %d\n", ip)
+						}
+						σ := e.States[ip].Sig
+						chk.AnaNum(tst, "sig", tols, σ, val[0], verbose)
+					}
+				}
+				if e, ok := dom.Cid2elem[eid].(*ElasticRod); ok {
+					dat := e.OutIpsData()
+					for ip, val := range sig {
+						if verbose {
+							io.Pfgrey2("ip = %d\n", ip)
+						}
+						res := dat[ip].Calc(dom.Sol)
+						σ := res["sig"]
+						chk.AnaNum(tst, "sig", tols, σ, val[0], verbose)
 					}
 				}
 			}

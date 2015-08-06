@@ -35,9 +35,8 @@ type Rod struct {
 	IpsElem []*shp.Ipoint // integration points of element
 
 	// vectors and matrices
-	K   [][]float64 // global K matrix
-	M   [][]float64 // global M matrices
-	Rus []float64   // residual: Rus = fi - fx
+	K [][]float64 // element K matrix
+	M [][]float64 // element M matrix
 
 	// problem variables
 	Umap []int // assembly map (location array/element equations)
@@ -130,7 +129,6 @@ func init() {
 		o.K = la.MatAlloc(o.Nu, o.Nu)
 		o.M = la.MatAlloc(o.Nu, o.Nu)
 		o.ue = make([]float64, o.Nu)
-		o.Rus = make([]float64, o.Nu)
 
 		// scratchpad. computed @ each ip
 		o.grav = make([]float64, o.Ndim)
@@ -172,7 +170,7 @@ func (o *Rod) SetEleConds(key string, f fun.Func, extra string) (err error) {
 	return
 }
 
-// adds -R to global residual vector fb
+// AddToRhs adds -R to global residual vector fb
 func (o Rod) AddToRhs(fb []float64, sol *Solution) (err error) {
 
 	// for each integration point
@@ -202,12 +200,12 @@ func (o Rod) AddToRhs(fb []float64, sol *Solution) (err error) {
 	return
 }
 
-// adds element K to global Jacobian matrix Kb
+// AddToKb adds element K to global Jacobian matrix Kb
 func (o Rod) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
 
 	// zero K matrix
 	la.MatFill(o.K, 0)
-	la.MatFill(o.M, 0)
+	la.MatFill(o.M, 0) // TODO: implement mass matrix
 
 	// for each integration point
 	var E float64
