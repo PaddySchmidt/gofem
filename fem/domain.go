@@ -57,7 +57,7 @@ type Domain struct {
 	HydSta *HydroStatic    // [from FEM] function to compute hydrostatic state
 
 	// stage: nodes (active) and elements (active AND in this processor)
-	Nodes  []*Node // active nodes (for each stage)
+	Nodes  []*Node // active nodes (for each stage). Note: indices in Nodes do NOT correpond to Ids => use Vid2node to access Nodes using Ids.
 	Elems  []Elem  // [procNcells] only active elements in this processor (for each stage)
 	MyCids []int   // [procNcells] the ids of cells in this processor
 
