@@ -171,9 +171,9 @@ func Test_bh14a(tst *testing.T) {
 
 	// check
 	skipK := false
-	tolK := 1e-17
+	tolK := 1e-10
 	tolu := 1e-15
-	tols := 1e-17
+	tols := 1e-13
 	TestingCompareResultsU(tst, "data/bh14.sim", "cmp/bh14.cmp", "", tolK, tolu, tols, skipK, chk.Verbose)
 }
 
@@ -201,9 +201,9 @@ func Test_bh14b(tst *testing.T) {
 
 	// check
 	skipK := false
-	tolK := 1e-17
+	tolK := 1e-10
 	tolu := 1e-15
-	tols := 1e-17
+	tols := 1e-13
 	TestingCompareResultsU(tst, "data/bh14.sim", "cmp/bh14.cmp", "", tolK, tolu, tols, skipK, chk.Verbose)
 }
 
@@ -245,10 +245,33 @@ func Test_bh14c(tst *testing.T) {
 
 	// check
 	skipK := false
-	tolK := 1e-17
+	tolK := 1e-10
 	tolu := 1e-15
-	tols := 1e-17
+	tols := 1e-13
 	for i := 0; i < nch; i++ {
 		TestingCompareResultsU(tst, "data/bh14.sim", "cmp/bh14.cmp", io.Sf("ch%d", i), tolK, tolu, tols, skipK, chk.Verbose)
 	}
+}
+
+func Test_bh14erod(tst *testing.T) {
+
+	//verbose()
+	chk.PrintTitle("bh14erod. using ElasticRod")
+
+	// start simulation
+	analysis := NewFEM("data/bh14erod.sim", "", true, true, false, false, chk.Verbose, 0)
+
+	// run simulation
+	err := analysis.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
+		return
+	}
+
+	// check
+	skipK := false
+	tolK := 1e-10
+	tolu := 1e-15
+	tols := 1e-13
+	TestingCompareResultsU(tst, "data/bh14erod.sim", "cmp/bh14.cmp", "", tolK, tolu, tols, skipK, chk.Verbose)
 }

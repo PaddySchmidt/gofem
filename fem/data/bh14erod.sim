@@ -1,0 +1,32 @@
+{
+  "data" : {
+    "desc"    : "Bhatti Example 1.4 p25",
+    "matfile" : "bh.mat",
+    "steady"  : true,
+    "encoder" : "json"
+  },
+  "functions" : [
+    { "name":"load", "type":"cte", "prms":[ {"n":"c", "v":-150000} ] }
+  ],
+  "regions" : [
+    {
+      "desc"      : "truss",
+      "mshfile"   : "bh14.msh",
+      "elemsdata" : [
+        { "tag":-1, "mat":"B-1.4-M1", "type":"elastrod" },
+        { "tag":-2, "mat":"B-1.4-M2", "type":"elastrod" },
+        { "tag":-3, "mat":"B-1.4-M3", "type":"elastrod" }
+      ]
+    }
+  ],
+  "stages" : [
+    {
+      "desc"    : "apply loading",
+      "nodebcs" : [
+        { "tag":-100, "keys":["ux","uy"], "funcs":["zero","zero"] },
+        { "tag":-200, "keys":["fy"     ], "funcs":["load"] },
+        { "tag":-300, "keys":["ux","uy"], "funcs":["zero","zero"] }
+      ]
+    }
+  ]
+}
