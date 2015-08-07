@@ -13,6 +13,7 @@ import (
 	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/la"
 	"github.com/cpmech/gosl/tsr"
+	"github.com/cpmech/gosl/utl"
 )
 
 // ElemU represents a solid element with displacements u as primary variables
@@ -76,6 +77,21 @@ type ElemU struct {
 	fex []float64 // x-components of external surface forces
 	fey []float64 // y-components of external syrface forces
 	fez []float64 // z-components of external syrface forces
+
+	// contact
+	Nq            int     // number of qbn variables
+	HasContact    bool    // indicates if this element has contact faces
+	Vid2contactId []int   // [nverts] maps local vertex id to index in Qmap
+	ContactId2vid []int   // [nq] maps contact face variable id to local vertex id
+	Qmap          []int   // [nq] map of "qbn" variables (contact face)
+	Macaulay      bool    // contact: use discrete ramp function instead of smooth ramp
+	βrmp          float64 // contact: coefficient for Sramp
+	κ             float64 // contact: κ coefficient to normalise equation for contact face modelling
+
+	// for contact
+	Kuq [][]float64 // [nu][nq] Kuq := dRu/dq consistent tangent matrix
+	Kqu [][]float64 // [nq][nu] Kqu := dRq/du consistent tangent matrix
+	Kqq [][]float64 // [nq][nq] Kqq := dRq/dq consistent tangent matrix
 }
 
 // initialisation ///////////////////////////////////////////////////////////////////////////////////
@@ -107,6 +123,18 @@ func init() {
 
 		// maps
 		info.Y2F = map[string]string{"ux": "fx", "uy": "fy", "uz": "fz"}
+
+		// vertices on faces with contact
+		if len(cell.FaceBcs) > 0 {
+			lverts := cell.FaceBcs.GetVerts("contact")
+			for _, m := range lverts {
+				info.Dofs[m] = append(info.Dofs[m], "qnb")
+			}
+			if len(lverts) > 0 {
+				ykeys = append(ykeys, "qnb")
+				info.Y2F["qnb"] = "nil"
+			}
+		}
 
 		// t1 and t2 variables
 		info.T2vars = ykeys
@@ -196,6 +224,35 @@ func init() {
 			o.NatBcs = append(o.NatBcs, &NaturalBc{fc.Cond, fc.FaceId, fc.Func, fc.Extra})
 		}
 
+		// vertices on faces with contact
+		var contactverts []int
+		if len(cell.FaceBcs) > 0 {
+			lverts := cell.FaceBcs.GetVerts("contact")
+			for _, m := range lverts {
+				contactverts = append(contactverts, m)
+			}
+		}
+		o.Nq = len(contactverts)
+		o.HasContact = o.Nq > 0
+		if o.HasContact {
+
+			// vertices on contact face; numbering
+			o.ContactId2vid = contactverts
+			o.Vid2contactId = utl.IntVals(o.Nu, -1)
+			o.Qmap = make([]int, o.Nq)
+			for μ, m := range o.ContactId2vid {
+				o.Vid2contactId[m] = μ
+			}
+
+			// flags
+			o.Macaulay, o.βrmp, o.κ = GetContactFaceFlags(edat.Extra)
+
+			// allocate coupling matrices
+			o.Kuq = la.MatAlloc(o.Nu, o.Nq)
+			o.Kqu = la.MatAlloc(o.Nq, o.Nu)
+			o.Kqq = la.MatAlloc(o.Nq, o.Nq)
+		}
+
 		// return new element
 		return &o
 	}
@@ -213,6 +270,11 @@ func (o *ElemU) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
 		for i := 0; i < o.Ndim; i++ {
 			r := i + m*o.Ndim
 			o.Umap[r] = eqs[m][i]
+		}
+	}
+	if o.HasContact {
+		for i, m := range o.ContactId2vid {
+			o.Qmap[i] = eqs[m][o.Ndim]
 		}
 	}
 	return

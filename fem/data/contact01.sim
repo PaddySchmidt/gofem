@@ -1,0 +1,34 @@
+{
+  "data" : {
+    "desc"    : "trying smooth contact technique",
+    "matfile" : "simple.mat",
+    "steady"  : true,
+    "showR"   : true,
+    "stat"    : true
+  },
+  "functions" : [
+    { "name":"pres", "type":"lin", "prms":[ {"n":"m", "v":-100} ] }
+  ],
+  "regions" : [
+    {
+      "mshfile"   : "unitsquare4e.msh",
+      "elemsdata" : [
+        { "tag":-1, "mat":"elast", "type":"u" }
+      ]
+    }
+  ],
+  "stages" : [
+    {
+      "desc"    : "apply pressure at surface",
+      "facebcs" : [
+        { "tag":-10, "keys":["uy"], "funcs":["zero"] },
+        { "tag":-13, "keys":["ux"], "funcs":["zero"] },
+        { "tag":-12, "keys":["qn"], "funcs":["pres"] },
+        { "tag":-11, "keys":["contact"], "funcs":["zero"] }
+      ],
+      "control" : {
+        "dt" : 0.1
+      }
+    }
+  ]
+}
