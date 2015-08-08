@@ -444,14 +444,7 @@ func (o *ElemU) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error)
 		}
 	}
 
-	// add K to sparse matrix Kb
-	for i, I := range o.Umap {
-		for j, J := range o.Umap {
-			Kb.Put(I, J, o.K[i][j])
-		}
-	}
-
-	// contribution from contact coupled matrices
+	// add Ks to sparse matrix Kb
 	if o.HasContact {
 		err = o.add_contact_to_jac(sol)
 		if err != nil {
@@ -464,6 +457,17 @@ func (o *ElemU) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error)
 			for j, J := range o.Umap {
 				Kb.Put(I, J, o.Kqu[i][j])
 				Kb.Put(J, I, o.Kuq[j][i])
+			}
+		}
+		for i, I := range o.Umap {
+			for j, J := range o.Umap {
+				Kb.Put(I, J, o.K[i][j])
+			}
+		}
+	} else {
+		for i, I := range o.Umap {
+			for j, J := range o.Umap {
+				Kb.Put(I, J, o.K[i][j])
 			}
 		}
 	}
@@ -713,8 +717,9 @@ func (o *ElemU) add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
 
 				// variables extrapolated to face
 				qb = o.fipvars(iface, sol)
-				//db := 0.0 // TODO
-				//io.Pforan("qb = %v\n", qb)
+				xf := o.Shp.FaceIpRealCoords(o.X, ipf, iface)
+				la.VecAdd(xf, 1, o.us) // add displacement: x = X + u
+				db = o.contact_g(xf)
 
 				// compute residuals
 				coef := ipf.W * o.Thickness
@@ -723,12 +728,12 @@ func (o *ElemU) add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
 				rx = rmp
 				rq = qb - rmp
 				for j, m := range o.Shp.FaceLocalV[iface] {
-					for i := 0; i < o.Ndim; i++ {
-						r := o.Umap[i+m*o.Ndim]
-						fb[r] += coef * Sf[j] * rx * nvec[i] // +fe
-					}
 					μ := o.Vid2contactId[m]
 					fb[o.Qmap[μ]] -= coef * Sf[j] * rq * Jf // -residual
+					for i := 0; i < o.Ndim; i++ {
+						r := o.Umap[i+m*o.Ndim]
+						fb[r] -= coef * Sf[j] * rx * nvec[i] // -extra term
+					}
 				}
 			}
 		}
@@ -752,7 +757,7 @@ func (o ElemU) add_contact_to_jac(sol *Solution) (err error) {
 
 	// compute surface integral
 	var qb, db, Hb float64
-	dδbdu := make([]float64, o.Ndim)
+	dddu := make([]float64, o.Ndim)
 	for _, nbc := range o.NatBcs {
 
 		// loop over ips of face
@@ -775,7 +780,10 @@ func (o ElemU) add_contact_to_jac(sol *Solution) (err error) {
 
 				// variables extrapolated to face
 				qb = o.fipvars(iface, sol)
-				//db := 0.0 // TODO
+				xf := o.Shp.FaceIpRealCoords(o.X, ipf, iface)
+				la.VecAdd(xf, 1, o.us) // add displacement: x = X + u
+				db = o.contact_g(xf)
+				o.contact_dgdx(dddu, xf)
 
 				// compute derivatives
 				Hb = o.rampD1(qb + o.κ*db)
@@ -787,8 +795,10 @@ func (o ElemU) add_contact_to_jac(sol *Solution) (err error) {
 						for k := 0; k < o.Ndim; k++ {
 							r := k + m*o.Ndim
 							c := k + n*o.Ndim
-							o.Kuq[r][ν] -= coef * Sf[i] * Sf[j] * Hb * nvec[k]
-							o.Kqu[μ][c] -= coef * Jf * Sf[i] * Hb * dδbdu[k]
+							val := coef * Sf[i] * Sf[j] * Hb * o.κ * dddu[k] * Jf
+							o.Kuq[r][ν] += coef * Sf[i] * Sf[j] * Hb * nvec[k]
+							o.Kqu[μ][c] -= val
+							o.K[r][c] += val
 						}
 					}
 				}
@@ -799,11 +809,19 @@ func (o ElemU) add_contact_to_jac(sol *Solution) (err error) {
 }
 
 // fipvars computes current values @ face integration points
+// computes also displacements (us) @ face
 func (o *ElemU) fipvars(fidx int, sol *Solution) (qb float64) {
 	Sf := o.Shp.Sf
+	for i := 0; i < o.Ndim; i++ {
+		o.us[i] = 0
+	}
 	for i, m := range o.Shp.FaceLocalV[fidx] {
 		μ := o.Vid2contactId[m]
 		qb += Sf[i] * sol.Y[o.Qmap[μ]]
+		for j := 0; j < o.Ndim; j++ {
+			r := j + m*o.Ndim
+			o.us[j] += Sf[i] * sol.Y[o.Umap[r]]
+		}
 	}
 	return
 }
@@ -822,4 +840,67 @@ func (o *ElemU) rampD1(x float64) float64 {
 		return fun.Heav(x)
 	}
 	return fun.SrampD1(x, o.βrmp)
+}
+
+// TODO: improve these
+func (o ElemU) contact_f(x []float64) float64 {
+	r := make([]float64, 3)
+	o.Shp.InvMap(r, x, o.X)
+	return shp.CellBryDist(o.Cell.Type, r)
+}
+
+func (o ElemU) contact_g(x []float64) float64 {
+	if false {
+		return x[0] - 1.025
+	}
+
+	r := make([]float64, 3)
+	Y := o.get_Y()
+	qua4 := shp.Get("qua4", 0) //o.Sim.GoroutineId)
+	qua4.InvMap(r, x, Y)
+	δ := shp.CellBryDist("qua4", r)
+	return δ
+}
+
+func (o ElemU) contact_dgdx(dgdx, x []float64) {
+	if false {
+		dgdx[0], dgdx[1] = 1.0, 0.0
+	}
+
+	r := make([]float64, 3)
+	Y := o.get_Y()
+	qua4 := shp.Get("qua4", 0) //o.Sim.GoroutineId)
+	qua4.InvMap(r, x, Y)
+	dfdR := make([]float64, 2)
+	shp.CellBryDistDeriv(dfdR, "qua4", r)
+	qua4.CalcAtR(Y, r, true)
+	dgdx[0], dgdx[1] = 0.0, 0.0
+	for i := 0; i < 2; i++ {
+		for k := 0; k < 2; k++ {
+			dgdx[i] += dfdR[k] * qua4.DRdx[k][i]
+		}
+	}
+}
+
+func (o ElemU) get_Y() (Y [][]float64) {
+	test := 3
+	switch test {
+	case 1:
+		m, l := 1.0, 1.0
+		Y = [][]float64{
+			{2.0 / m, 2.0/m + l, l, 0},
+			{0, l / m, 2 + l/m, 2},
+		}
+	case 2:
+		Y = [][]float64{
+			{1.025, 2, 2, 1.025},
+			{0, 0, 2, 2},
+		}
+	case 3:
+		Y = [][]float64{
+			{1.15, 2, 2, 1.025},
+			{0, 0, 2, 2},
+		}
+	}
+	return
 }

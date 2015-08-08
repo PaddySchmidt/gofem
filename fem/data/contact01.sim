@@ -3,31 +3,42 @@
     "desc"    : "trying smooth contact technique",
     "matfile" : "simple.mat",
     "steady"  : true,
-    "showR"   : true,
     "stat"    : true
   },
   "functions" : [
-    { "name":"pres", "type":"lin", "prms":[ {"n":"m", "v":-100} ] }
+    { "name":"pres", "type":"lin", "prms":[ {"n":"m", "v":-100} ] },
+    { "name":"disp", "type":"lin", "prms":[ {"n":"m", "v":-0.4} ] }
   ],
   "regions" : [
     {
-      "mshfile"   : "unitsquare4e.msh",
+      "mshfile_"  : "unitsquare4e.msh",
+      "mshfile"   : "unitsquare4eQua8.msh",
       "elemsdata" : [
-        { "tag":-1, "mat":"elast", "type":"u" }
+        { "tag":-1, "mat":"elast", "type":"u", "extra":"!mac:0 !bet:10 !kap:1", "nip_":4 }
       ]
     }
   ],
+  "solver":{
+    "_atol"  : 1e-6,
+    "_rtol"  : 1e-6,
+    "_fbtol" : 1e-6,
+    "_fbmin" : 1e-6,
+    "showR" : true
+  },
   "stages" : [
     {
       "desc"    : "apply pressure at surface",
       "facebcs" : [
         { "tag":-10, "keys":["uy"], "funcs":["zero"] },
         { "tag":-13, "keys":["ux"], "funcs":["zero"] },
-        { "tag":-12, "keys":["qn"], "funcs":["pres"] },
+        { "atag":-12, "keys":["qn"], "funcs":["pres"] },
+        { "tag":-12, "keys":["uy"], "funcs":["disp"] },
+        { "atag":-11, "keys":["ux"], "funcs":["zero"] },
         { "tag":-11, "keys":["contact"], "funcs":["zero"] }
       ],
       "control" : {
-        "dt" : 0.1
+        "dt" : 0.1,
+        "tf" : 1.0
       }
     }
   ]
