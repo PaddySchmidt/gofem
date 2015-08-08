@@ -352,8 +352,7 @@ func run_iterations(t, Δt float64, d *Domain, dc *DynCoefs, sum *Summary, dbgKb
 
 	// check if iterations diverged
 	if it == dat.NmaxIt {
-		io.PfMag("max number of iterations reached: it = %d\n", it)
-		return
+		err = chk.Err("max number of iterations reached: it = %d\n", it)
 	}
 	return
 }
