@@ -227,15 +227,17 @@ func (o FEM) onexit(cputime time.Time, prevErr error) (err error) {
 		io.Pflmag("cpu time   = %v\n", time.Now().Sub(cputime))
 	}
 
-	// skip if previous error is not nil
-	//if prevErr != nil {
-	//err = prevErr
-	//return
-	//}
-
 	// save summary if previous error is not nil
 	if o.Summary != nil {
 		err = o.Summary.Save(o.Sim.DirOut, o.Sim.Key, o.Sim.EncType, o.Nproc, o.Proc, o.Verbose)
+		if err != nil {
+			return
+		}
+	}
+
+	// skip if previous error is not nil
+	if prevErr != nil {
+		err = prevErr
 	}
 	return
 }
