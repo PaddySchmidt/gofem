@@ -40,9 +40,9 @@ type Shape struct {
 	S    []float64   // [nverts] shape functions
 	G    [][]float64 // [nverts][gndim] G == dSdx. derivative of shape function
 	J    float64     // Jacobian: determinant of dxdr
-	dSdR [][]float64 // [nverts][gndim] derivatives of S w.r.t natural coordinates
-	dxdR [][]float64 // [gndim][gndim] derivatives of real coordinates w.r.t natural coordinates
-	dRdx [][]float64 // [gndim][gndim] dRdx == inverse(dxdR)
+	DSdR [][]float64 // [nverts][gndim] derivatives of S w.r.t natural coordinates
+	DxdR [][]float64 // [gndim][gndim] derivatives of real coordinates w.r.t natural coordinates
+	DRdx [][]float64 // [gndim][gndim] dRdx == inverse(dxdR)
 
 	// scratchpad: line
 	Jvec3d []float64 // Jacobian: norm of dxdr for line elements (size==3)
@@ -51,8 +51,8 @@ type Shape struct {
 	// scratchpad: face
 	Sf     []float64   // [facenverts] shape functions values
 	Fnvec  []float64   // [gndim] face normal vector multiplied by Jf
-	dSfdRf [][]float64 // [facenverts][gndim-1] derivatives of Sf w.r.t natural coordinates
-	dxfdRf [][]float64 // [gndim][gndim-1] derivatives of real coordinates w.r.t natural coordinates
+	DSfdRf [][]float64 // [facenverts][gndim-1] derivatives of Sf w.r.t natural coordinates
+	DxfdRf [][]float64 // [gndim][gndim-1] derivatives of real coordinates w.r.t natural coordinates
 }
 
 // GetCopy returns a new copy of this shape structure
@@ -82,9 +82,9 @@ func (o Shape) GetCopy() *Shape {
 	p.S = la.VecClone(o.S)
 	p.G = la.MatClone(o.G)
 	p.J = o.J
-	p.dSdR = la.MatClone(o.dSdR)
-	p.dxdR = la.MatClone(o.dxdR)
-	p.dRdx = la.MatClone(o.dRdx)
+	p.DSdR = la.MatClone(o.DSdR)
+	p.DxdR = la.MatClone(o.DxdR)
+	p.DRdx = la.MatClone(o.DRdx)
 
 	// scratchpad: line
 	p.Jvec3d = la.VecClone(o.Jvec3d)
@@ -93,8 +93,8 @@ func (o Shape) GetCopy() *Shape {
 	// scratchpad: face
 	p.Sf = la.VecClone(o.Sf)
 	p.Fnvec = la.VecClone(o.Fnvec)
-	p.dSfdRf = la.MatClone(o.dSfdRf)
-	p.dxfdRf = la.MatClone(o.dxfdRf)
+	p.DSfdRf = la.MatClone(o.DSfdRf)
+	p.DxfdRf = la.MatClone(o.DxfdRf)
 	return &p
 }
 
@@ -119,7 +119,7 @@ func Get(geoType string, goroutineId int) *Shape {
 func (o *Shape) IpRealCoords(x [][]float64, ip *Ipoint) (y []float64) {
 	ndim := len(x)
 	y = make([]float64, ndim)
-	o.Func(o.S, o.dSdR, ip.R, ip.S, ip.T, false)
+	o.Func(o.S, o.DSdR, ip.R, ip.S, ip.T, false)
 	for i := 0; i < ndim; i++ {
 		for m := 0; m < o.Nverts; m++ {
 			y[i] += o.S[m] * x[i][m]
@@ -133,7 +133,7 @@ func (o *Shape) IpRealCoords(x [][]float64, ip *Ipoint) (y []float64) {
 func (o *Shape) FaceIpRealCoords(x [][]float64, ipf *Ipoint, idxface int) (y []float64) {
 	ndim := len(x)
 	y = make([]float64, ndim)
-	o.FaceFunc(o.Sf, o.dSfdRf, ipf.R, ipf.S, ipf.T, false)
+	o.FaceFunc(o.Sf, o.DSfdRf, ipf.R, ipf.S, ipf.T, false)
 	for i := 0; i < ndim; i++ {
 		for k, n := range o.FaceLocalV[idxface] {
 			y[i] += o.Sf[k] * x[i][n]
@@ -151,7 +151,7 @@ func (o *Shape) FaceIpRealCoords(x [][]float64, ipf *Ipoint, idxface int) (y []f
 func (o *Shape) CalcAtIp(x [][]float64, ip *Ipoint, derivs bool) (err error) {
 
 	// S and dSdR
-	o.Func(o.S, o.dSdR, ip.R, ip.S, ip.T, derivs)
+	o.Func(o.S, o.DSdR, ip.R, ip.S, ip.T, derivs)
 	if !derivs {
 		return
 	}
@@ -161,7 +161,7 @@ func (o *Shape) CalcAtIp(x [][]float64, ip *Ipoint, derivs bool) (err error) {
 		for i := 0; i < len(x); i++ {
 			o.Jvec3d[i] = 0.0
 			for m := 0; m < o.Nverts; m++ {
-				o.Jvec3d[i] += x[i][m] * o.dSdR[m][0] // dxdR := x * dSdR
+				o.Jvec3d[i] += x[i][m] * o.DSdR[m][0] // dxdR := x * dSdR
 			}
 		}
 
@@ -170,7 +170,7 @@ func (o *Shape) CalcAtIp(x [][]float64, ip *Ipoint, derivs bool) (err error) {
 
 		// calculate G
 		for m := 0; m < o.Nverts; m++ {
-			o.Gvec[m] = o.dSdR[m][0] / o.J
+			o.Gvec[m] = o.DSdR[m][0] / o.J
 		}
 
 		return
@@ -179,21 +179,21 @@ func (o *Shape) CalcAtIp(x [][]float64, ip *Ipoint, derivs bool) (err error) {
 	// dxdR := sum_n x * dSdR   =>  dx_i/dR_j := sum_n x^n_i * dS^n/dR_j
 	for i := 0; i < len(x); i++ {
 		for j := 0; j < o.Gndim; j++ {
-			o.dxdR[i][j] = 0.0
+			o.DxdR[i][j] = 0.0
 			for n := 0; n < o.Nverts; n++ {
-				o.dxdR[i][j] += x[i][n] * o.dSdR[n][j]
+				o.DxdR[i][j] += x[i][n] * o.DSdR[n][j]
 			}
 		}
 	}
 
 	// dRdx := inv(dxdR)
-	o.J, err = la.MatInv(o.dRdx, o.dxdR, MINDET)
+	o.J, err = la.MatInv(o.DRdx, o.DxdR, MINDET)
 	if err != nil {
 		return
 	}
 
 	// G == dSdx := dSdR * dRdx  =>  dS^m/dR_i := sum_i dS^m/dR_i * dR_i/dx_j
-	la.MatMul(o.G, 1, o.dSdR, o.dRdx)
+	la.MatMul(o.G, 1, o.DSdR, o.DRdx)
 	return
 }
 
@@ -226,27 +226,27 @@ func (o *Shape) CalcAtFaceIp(x [][]float64, ipf *Ipoint, idxface int) (err error
 	}
 
 	// Sf and dSfdR
-	o.FaceFunc(o.Sf, o.dSfdRf, ipf.R, ipf.S, ipf.T, true)
+	o.FaceFunc(o.Sf, o.DSfdRf, ipf.R, ipf.S, ipf.T, true)
 
 	// dxfdRf := sum_n x * dSfdRf   =>  dxf_i/dRf_j := sum_n xf^n_i * dSf^n/dRf_j
 	for i := 0; i < len(x); i++ {
 		for j := 0; j < o.Gndim-1; j++ {
-			o.dxfdRf[i][j] = 0.0
+			o.DxfdRf[i][j] = 0.0
 			for k, n := range o.FaceLocalV[idxface] {
-				o.dxfdRf[i][j] += x[i][n] * o.dSfdRf[k][j]
+				o.DxfdRf[i][j] += x[i][n] * o.DSfdRf[k][j]
 			}
 		}
 	}
 
 	// face normal vector
 	if o.Gndim == 2 {
-		o.Fnvec[0] = o.dxfdRf[1][0]
-		o.Fnvec[1] = -o.dxfdRf[0][0]
+		o.Fnvec[0] = o.DxfdRf[1][0]
+		o.Fnvec[1] = -o.DxfdRf[0][0]
 		return
 	}
-	o.Fnvec[0] = o.dxfdRf[1][0]*o.dxfdRf[2][1] - o.dxfdRf[2][0]*o.dxfdRf[1][1]
-	o.Fnvec[1] = o.dxfdRf[2][0]*o.dxfdRf[0][1] - o.dxfdRf[0][0]*o.dxfdRf[2][1]
-	o.Fnvec[2] = o.dxfdRf[0][0]*o.dxfdRf[1][1] - o.dxfdRf[1][0]*o.dxfdRf[0][1]
+	o.Fnvec[0] = o.DxfdRf[1][0]*o.DxfdRf[2][1] - o.DxfdRf[2][0]*o.DxfdRf[1][1]
+	o.Fnvec[1] = o.DxfdRf[2][0]*o.DxfdRf[0][1] - o.DxfdRf[0][0]*o.DxfdRf[2][1]
+	o.Fnvec[2] = o.DxfdRf[0][0]*o.DxfdRf[1][1] - o.DxfdRf[1][0]*o.DxfdRf[0][1]
 	return
 }
 
@@ -273,16 +273,16 @@ func (o *Shape) init_scratchpad() {
 
 	// volume data
 	o.S = make([]float64, o.Nverts)
-	o.dSdR = la.MatAlloc(o.Nverts, o.Gndim)
-	o.dxdR = la.MatAlloc(o.Gndim, o.Gndim)
-	o.dRdx = la.MatAlloc(o.Gndim, o.Gndim)
+	o.DSdR = la.MatAlloc(o.Nverts, o.Gndim)
+	o.DxdR = la.MatAlloc(o.Gndim, o.Gndim)
+	o.DRdx = la.MatAlloc(o.Gndim, o.Gndim)
 	o.G = la.MatAlloc(o.Nverts, o.Gndim)
 
 	// face data
 	if o.Gndim > 1 {
 		o.Sf = make([]float64, o.FaceNverts)
-		o.dSfdRf = la.MatAlloc(o.FaceNverts, o.Gndim-1)
-		o.dxfdRf = la.MatAlloc(o.Gndim, o.Gndim-1)
+		o.DSfdRf = la.MatAlloc(o.FaceNverts, o.Gndim-1)
+		o.DxfdRf = la.MatAlloc(o.Gndim, o.Gndim-1)
 		o.Fnvec = make([]float64, o.Gndim)
 	}
 
