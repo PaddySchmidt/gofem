@@ -43,12 +43,13 @@ import (
 //   Nmat     -- solid shape functions evaluated at rod nodes
 //   Pmat     -- solid shape functions evaluated at rod integration points
 //  References:
-//   [1] R Durand, MM Farias, DM Pedroso. Modelling the strengthening of solids with
-//       incompatible line finite elements, Computers and Structures (2014). Submitted.
-//   [2] R Durand, MM Farias, DM Pedroso, Computing intersections between non-compatible
-//       curves and finite elements, Computational Mechanics (2014). Submitted.
-//   [3] R Durand, MM Farias. A local extrapolation method for finite elements,
-//       Advances in Engineering Software 67 (2014) 1-9.
+//   [1] Durand R, Farias MM, Pedroso DM. Modelling the strengthening of solids with
+//       incompatible line finite elements. Submitted.
+//   [2] Durand R, Farias MM, Pedroso DM. Computing intersections between non-compatible
+//       curves and finite elements. Computational Mechanics, 56(3):463-475; 2015
+//       http://dx.doi.org/10.1007/s00466-015-1181-y
+//   [3] Durand R and Farias MM. A local extrapolation method for finite elements.
+//       Advances in Engineering Software, 67:1-9; 2014
 //       http://dx.doi.org/10.1016/j.advengsoft.2013.07.002
 type Rjoint struct {
 

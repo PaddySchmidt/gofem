@@ -16,11 +16,11 @@ import (
 
 // ElemUP represents an element for porous media based on the u-p formulation [1]
 //  References:
-//   [1] Pedroso DM (2015) A consistent u-p formulation for porous media with hysteresis.
-//       Int Journal for Numerical Methods in Engineering, 101(8) 606-634
+//   [1] Pedroso DM. A consistent u-p formulation for porous media with hysteresis.
+//       Int Journal for Numerical Methods in Engineering, 101(8):606-634; 2015
 //       http://dx.doi.org/10.1002/nme.4808
-//   [2] Pedroso DM (2015) A solution to transient seepage in unsaturated porous media.
-//       Computer Methods in Applied Mechanics and Engineering, 285 791-816,
+//   [2] Pedroso DM. A solution to transient seepage in unsaturated porous media.
+//       Computer Methods in Applied Mechanics and Engineering, 285:791-816; 2015
 //       http://dx.doi.org/10.1016/j.cma.2014.12.009
 type ElemUP struct {
 
