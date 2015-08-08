@@ -33,7 +33,7 @@ func Test_shape01(tst *testing.T) {
 			for i := 0; i < shape.Gndim; i++ {
 				rst[i] = shape.NatCoords[i][n]
 			}
-			shape.Func(shape.S, shape.dSdR, rst[0], rst[1], rst[2], false)
+			shape.Func(shape.S, shape.DSdR, rst[0], rst[1], rst[2], false)
 			io.Pforan("S = %v\n", shape.S)
 			for m := 0; m < shape.Nverts; m++ {
 				if n == m {
@@ -61,7 +61,7 @@ func Test_shape01(tst *testing.T) {
 				rst[i] = shape.NatCoords[i][n]
 			}
 			// analytical
-			shape.Func(shape.S, shape.dSdR, rst[0], rst[1], rst[2], true)
+			shape.Func(shape.S, shape.DSdR, rst[0], rst[1], rst[2], true)
 			// numerical
 			for i := 0; i < shape.Gndim; i++ {
 				dSndRi, _ := num.DerivCentral(func(x float64, args ...interface{}) (Sn float64) {
@@ -71,13 +71,13 @@ func Test_shape01(tst *testing.T) {
 					Sn = S_temp[n]
 					return
 				}, rst[i], h)
-				io.Pfgrey2("  dS%ddR%d @ [% 4.1f % 4.1f % 4.1f] = %v (num: %v)\n", n, i, rst[0], rst[1], rst[2], shape.dSdR[n][i], dSndRi)
+				io.Pfgrey2("  dS%ddR%d @ [% 4.1f % 4.1f % 4.1f] = %v (num: %v)\n", n, i, rst[0], rst[1], rst[2], shape.DSdR[n][i], dSndRi)
 				tol2 := tol
 				if name == "tri15" && n == 11 && i == 1 {
 					tol2 = 1.0e-9
 				}
-				if math.Abs(shape.dSdR[n][i]-dSndRi) > tol2 {
-					tst.Errorf("%s dS%ddR%d failed with err = %g\n", name, n, i, math.Abs(shape.dSdR[n][i]-dSndRi))
+				if math.Abs(shape.DSdR[n][i]-dSndRi) > tol2 {
+					tst.Errorf("%s dS%ddR%d failed with err = %g\n", name, n, i, math.Abs(shape.DSdR[n][i]-dSndRi))
 					return
 				}
 				//chk.Scalar(tst, fmt.Sprintf("dS%ddR%d", n, i), tol2, dSdR[n][i], dSndRi)
@@ -101,7 +101,7 @@ func Test_shape01(tst *testing.T) {
 				for i := 0; i < shape.Gndim; i++ {
 					rst[i] = shape.NatCoords[i][n]
 				}
-				shape.Func(shape.S, shape.dSdR, rst[0], rst[1], rst[2], false)
+				shape.Func(shape.S, shape.DSdR, rst[0], rst[1], rst[2], false)
 				io.Pforan("S = %v\n", shape.S)
 				for m := range shape.FaceLocalV[k] {
 					if n == m {

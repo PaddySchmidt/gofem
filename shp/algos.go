@@ -41,7 +41,7 @@ func (o *Shape) InvMap(r, y []float64, x [][]float64) (err error) {
 	for it = 0; it < INVMAP_NIT; it++ {
 
 		// shape functions and derivatives
-		o.Func(o.S, o.dSdR, r[0], r[1], r[2], derivs)
+		o.Func(o.S, o.DSdR, r[0], r[1], r[2], derivs)
 
 		// residual: e = y - x * S
 		for i := 0; i < o.Gndim; i++ {
@@ -54,15 +54,15 @@ func (o *Shape) InvMap(r, y []float64, x [][]float64) (err error) {
 		// Jmat == dxdR = x * dSdR;
 		for i := 0; i < len(x); i++ {
 			for j := 0; j < o.Gndim; j++ {
-				o.dxdR[i][j] = 0.0
+				o.DxdR[i][j] = 0.0
 				for k := 0; k < o.Nverts; k++ {
-					o.dxdR[i][j] += x[i][k] * o.dSdR[k][j] // dxdR := x * dSdR
+					o.DxdR[i][j] += x[i][k] * o.DSdR[k][j] // dxdR := x * dSdR
 				}
 			}
 		}
 
 		// Jimat == dRdx = Jmat.inverse();
-		o.J, err = la.MatInv(o.dRdx, o.dxdR, MINDET)
+		o.J, err = la.MatInv(o.DRdx, o.DxdR, MINDET)
 		if err != nil {
 			return
 		}
@@ -71,7 +71,7 @@ func (o *Shape) InvMap(r, y []float64, x [][]float64) (err error) {
 		for i := 0; i < o.Gndim; i++ {
 			δr[i] = 0.0
 			for j := 0; j < o.Gndim; j++ {
-				δr[i] += o.dRdx[i][j] * e[j]
+				δr[i] += o.DRdx[i][j] * e[j]
 			}
 		}
 
@@ -142,7 +142,7 @@ func (o *Shape) GetShapeMatAtIps(ips []*Ipoint) (N [][]float64) {
 		r := ips[i].R
 		s := ips[i].S
 		t := ips[i].T
-		o.Func(o.S, o.dSdR, r, s, t, derivs)
+		o.Func(o.S, o.DSdR, r, s, t, derivs)
 		for j := 0; j < o.Nverts; j++ {
 			N[i][j] = o.S[j]
 		}
@@ -222,4 +222,41 @@ func CellBryDist(cellType string, R []float64) float64 {
 	}
 	chk.Panic("cannot handle cellType=%q yet", cellType)
 	return 0 // must not reach this point
+}
+
+func CellBryDistDeriv(dfdR []float64, cellType string, R []float64) {
+	r, s, t := R[0], R[1], 0.0
+	if len(R) > 2 {
+		t = R[2]
+	}
+	bgeo := GetBasicType(cellType) // fundamental geometry of cell
+	if bgeo == "tri3" {
+		chk.Panic("deriv for tri3 is not implemented yet")
+	}
+	if bgeo == "qua4" {
+		dfdR[0] = 0
+		dfdR[1] = 0
+		if math.Abs(r) > math.Abs(s) {
+			if r > 0 {
+				dfdR[0] = -1
+			} else {
+				dfdR[0] = 1
+			}
+		} else {
+			if s > 0 {
+				dfdR[1] = -1
+			} else {
+				dfdR[1] = 1
+			}
+		}
+		return
+	}
+	if bgeo == "hex8" {
+		_ = t
+		chk.Panic("deriv for hex8 is not implemented yet")
+	}
+	if bgeo == "tet4" {
+		chk.Panic("deriv for tet4 is not implemented yet")
+	}
+	chk.Panic("cannot handle cellType=%q yet", cellType) // must not reach this point
 }
