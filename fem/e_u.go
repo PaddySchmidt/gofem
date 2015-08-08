@@ -11,7 +11,6 @@ import (
 
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
-	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/la"
 	"github.com/cpmech/gosl/tsr"
 	"github.com/cpmech/gosl/utl"
@@ -80,11 +79,11 @@ type ElemU struct {
 	fez []float64 // z-components of external syrface forces
 
 	// contact
-	Nq            int     // number of qbn variables
+	Nq            int     // number of qb variables
 	HasContact    bool    // indicates if this element has contact faces
 	Vid2contactId []int   // [nverts] maps local vertex id to index in Qmap
 	ContactId2vid []int   // [nq] maps contact face variable id to local vertex id
-	Qmap          []int   // [nq] map of "qbn" variables (contact face)
+	Qmap          []int   // [nq] map of "qb" variables (contact face)
 	Macaulay      bool    // contact: use discrete ramp function instead of smooth ramp
 	βrmp          float64 // contact: coefficient for Sramp
 	κ             float64 // contact: κ coefficient to normalise equation for contact face modelling
@@ -129,11 +128,11 @@ func init() {
 		if len(cell.FaceBcs) > 0 {
 			lverts := cell.FaceBcs.GetVerts("contact")
 			for _, m := range lverts {
-				info.Dofs[m] = append(info.Dofs[m], "qnb")
+				info.Dofs[m] = append(info.Dofs[m], "qb")
 			}
 			if len(lverts) > 0 {
-				ykeys = append(ykeys, "qnb")
-				info.Y2F["qnb"] = "nil"
+				ykeys = append(ykeys, "qb")
+				info.Y2F["qb"] = "nil"
 			}
 		}
 
@@ -445,21 +444,26 @@ func (o *ElemU) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error)
 		}
 	}
 
-	// add to Kb
-	if o.HasContact {
+	// add K to sparse matrix Kb
+	for i, I := range o.Umap {
+		for j, J := range o.Umap {
+			Kb.Put(I, J, o.K[i][j])
+		}
+	}
 
-		// contribution from contact coupled matrices
+	// contribution from contact coupled matrices
+	if o.HasContact {
 		err = o.add_contact_to_jac(sol)
 		if err != nil {
 			return
 		}
-
-	} else {
-
-		// add K to sparse matrix Kb
-		for i, I := range o.Umap {
+		for i, I := range o.Qmap {
+			for j, J := range o.Qmap {
+				Kb.Put(I, J, o.Kqq[i][j])
+			}
 			for j, J := range o.Umap {
-				Kb.Put(I, J, o.K[i][j])
+				Kb.Put(I, J, o.Kqu[i][j])
+				Kb.Put(J, I, o.Kuq[j][i])
 			}
 		}
 	}
@@ -663,7 +667,7 @@ func (o *ElemU) add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
 	}
 
 	// compute surface integral
-	var res, qbn, dbn, rmp, rx, rq float64
+	var res, qb, db, rmp, rx, rq float64
 	for _, nbc := range o.NatBcs {
 
 		// function evaluation
@@ -708,15 +712,16 @@ func (o *ElemU) add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
 			case "contact":
 
 				// variables extrapolated to face
-				qbn = o.fipvars(iface, sol)
-				io.Pforan("qbn = %v\n", qbn)
+				qb = o.fipvars(iface, sol)
+				//db := 0.0 // TODO
+				//io.Pforan("qb = %v\n", qb)
 
 				// compute residuals
 				coef := ipf.W * o.Thickness
 				Jf := la.VecNorm(nvec)
-				rmp = o.ramp(qbn + o.κ*dbn)
+				rmp = o.ramp(qb + o.κ*db)
 				rx = rmp
-				rq = qbn - rmp
+				rq = qb - rmp
 				for j, m := range o.Shp.FaceLocalV[iface] {
 					for i := 0; i < o.Ndim; i++ {
 						r := o.Umap[i+m*o.Ndim]
@@ -736,69 +741,54 @@ func (o ElemU) add_contact_to_jac(sol *Solution) (err error) {
 
 	// clear matrices
 	for i := 0; i < o.Nq; i++ {
+		for j := 0; j < o.Nq; j++ {
+			o.Kqq[i][j] = 0
+		}
 		for j := 0; j < o.Nu; j++ {
 			o.Kqu[i][j] = 0
 			o.Kuq[j][i] = 0
 		}
-		for j := 0; j < o.Nq; j++ {
-			o.Kqq[i][j] = 0
-		}
 	}
 
 	// compute surface integral
-	nverts := o.Shp.Nverts
-	var qbn dbn, rmp, rmpD float64
-	var drxdpl, drxdfl, drfdpl, drfdfl float64
-	// TODO
-	for idx, nbc := range o.NatBcs {
-
-		// plmax shift
-		shift = nbc.Fcn.F(sol.T, nil)
+	var qb, db, Hb float64
+	dδbdu := make([]float64, o.Ndim)
+	for _, nbc := range o.NatBcs {
 
 		// loop over ips of face
-		for jdx, ipf := range o.IpsFace {
+		for _, ipf := range o.IpsFace {
 
-			// interpolation functions and gradients @ face
-			iface := nbc.IdxFace
-			err = o.Shp.CalcAtFaceIp(o.X, ipf, iface)
-			if err != nil {
-				return
-			}
-			Sf := o.Shp.Sf
-			Jf := la.VecNorm(o.Shp.Fnvec)
-			coef := ipf.W * Jf
-
-			// select natural boundary condition type
+			// contact
 			switch nbc.Key {
-			case "seep":
+			case "contact":
+
+				// interpolation functions and gradients @ face
+				iface := nbc.IdxFace
+				err = o.Shp.CalcAtFaceIp(o.X, ipf, iface)
+				if err != nil {
+					return
+				}
+				Sf := o.Shp.Sf
+				nvec := o.Shp.Fnvec
+				coef := ipf.W * o.Thickness
+				Jf := la.VecNorm(nvec)
 
 				// variables extrapolated to face
-				ρl, pl, fl = o.fipvars(iface, sol)
-				plmax = o.Plmax[idx][jdx] - shift
-				if plmax < 0 {
-					plmax = 0
-				}
+				qb = o.fipvars(iface, sol)
+				//db := 0.0 // TODO
 
 				// compute derivatives
-				g = pl - plmax // Eq. (24)
-				rmp = o.ramp(fl + o.κ*g)
-				rmpD = o.rampD1(fl + o.κ*g)
-				drxdpl = ρl * o.κ * rmpD // first term in Eq. (A.4) (without Sn)
-				drxdfl = ρl * rmpD       // Eq. (A.5) (without Sn)
-				drfdpl = -o.κ * rmpD     // Eq. (A.6) (corrected with κ and without Sn)
-				drfdfl = 1.0 - rmpD      // Eq. (A.7) (without Sn)
+				Hb = o.rampD1(qb + o.κ*db)
 				for i, m := range o.Shp.FaceLocalV[iface] {
-					μ := o.Vid2seepId[m]
+					μ := o.Vid2contactId[m]
 					for j, n := range o.Shp.FaceLocalV[iface] {
-						ν := o.Vid2seepId[n]
-						o.Kuu[m][n] += coef * Sf[i] * Sf[j] * drxdpl
-						o.Kuq[m][ν] += coef * Sf[i] * Sf[j] * drxdfl
-						o.Kqu[μ][n] += coef * Sf[i] * Sf[j] * drfdpl
-						o.Kqq[μ][ν] += coef * Sf[i] * Sf[j] * drfdfl
-					}
-					for n := 0; n < nverts; n++ { // Eqs. (18) and (22)
-						for l, r := range o.Shp.FaceLocalV[iface] {
-							o.Kuu[m][n] += coef * Sf[i] * Sf[l] * o.dρldpl_ex[r][n] * rmp
+						ν := o.Vid2contactId[n]
+						o.Kqq[μ][ν] += coef * Jf * Sf[i] * Sf[j] * (1.0 - Hb)
+						for k := 0; k < o.Ndim; k++ {
+							r := k + m*o.Ndim
+							c := k + n*o.Ndim
+							o.Kuq[r][ν] -= coef * Sf[i] * Sf[j] * Hb * nvec[k]
+							o.Kqu[μ][c] -= coef * Jf * Sf[i] * Hb * dδbdu[k]
 						}
 					}
 				}
@@ -809,11 +799,11 @@ func (o ElemU) add_contact_to_jac(sol *Solution) (err error) {
 }
 
 // fipvars computes current values @ face integration points
-func (o *ElemU) fipvars(fidx int, sol *Solution) (qbn float64) {
+func (o *ElemU) fipvars(fidx int, sol *Solution) (qb float64) {
 	Sf := o.Shp.Sf
 	for i, m := range o.Shp.FaceLocalV[fidx] {
 		μ := o.Vid2contactId[m]
-		qbn += Sf[i] * sol.Y[o.Qmap[μ]]
+		qb += Sf[i] * sol.Y[o.Qmap[μ]]
 	}
 	return
 }

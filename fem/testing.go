@@ -317,6 +317,11 @@ func u_DebugKb(fem *FEM, o *testKb) {
 
 			// check
 			o.check("K", d, e, e.Umap, e.Umap, e.K, restore)
+			if e.HasContact {
+				o.check("Kuq", d, e, e.Umap, e.Qmap, e.Kuq, restore)
+				o.check("Kqu", d, e, e.Qmap, e.Umap, e.Kqu, restore)
+				o.check("Kqq", d, e, e.Qmap, e.Qmap, e.Kqq, restore)
+			}
 		}
 	}
 	return

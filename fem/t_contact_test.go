@@ -101,10 +101,10 @@ func Test_contact01b(tst *testing.T) {
 	analysis := NewFEM("data/contact01.sim", "", true, true, false, false, chk.Verbose, 0)
 
 	// for debugging Kb
-	if false {
-		p_DebugKb(analysis, &testKb{
-			tst: tst, eid: 3, tol: 1e-5, verb: chk.Verbose,
-			ni: 1, nj: 1, itmin: 1, itmax: -1, tmin: 200, tmax: 200,
+	if true {
+		u_DebugKb(analysis, &testKb{
+			tst: tst, eid: 3, tol: 1e-7, verb: chk.Verbose,
+			ni: 1, nj: 1, itmin: -1, itmax: -1, tmin: 0.5, tmax: -1,
 		})
 	}
 
@@ -118,7 +118,8 @@ func Test_contact01b(tst *testing.T) {
 		}
 	}
 
-	if false {
+	// check
+	if true {
 
 		// domain
 		dom := analysis.Domains[0]
