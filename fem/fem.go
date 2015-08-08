@@ -228,10 +228,10 @@ func (o FEM) onexit(cputime time.Time, prevErr error) (err error) {
 	}
 
 	// skip if previous error is not nil
-	if prevErr != nil {
-		err = prevErr
-		return
-	}
+	//if prevErr != nil {
+	//err = prevErr
+	//return
+	//}
 
 	// save summary if previous error is not nil
 	if o.Summary != nil {
