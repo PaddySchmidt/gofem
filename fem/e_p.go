@@ -713,8 +713,9 @@ func (o ElemP) add_natbcs_to_rhs(fb []float64, sol *Solution) (err error) {
 
 			// select natural boundary condition type
 			switch nbc.Key {
+
+			// flux prescribed
 			case "ql":
-				// flux prescribed
 				ρl = 0
 				for i, m := range o.Shp.FaceLocalV[iface] {
 					ρl += Sf[i] * o.ρl_ex[m]
@@ -722,6 +723,8 @@ func (o ElemP) add_natbcs_to_rhs(fb []float64, sol *Solution) (err error) {
 				for i, m := range o.Shp.FaceLocalV[iface] {
 					fb[o.Pmap[m]] -= coef * ρl * tmp * Sf[i]
 				}
+
+			// seepage face
 			case "seep":
 
 				// variables extrapolated to face

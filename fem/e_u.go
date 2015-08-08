@@ -11,6 +11,7 @@ import (
 
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
+	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/la"
 	"github.com/cpmech/gosl/tsr"
 	"github.com/cpmech/gosl/utl"
@@ -444,10 +445,22 @@ func (o *ElemU) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error)
 		}
 	}
 
-	// add K to sparse matrix Kb
-	for i, I := range o.Umap {
-		for j, J := range o.Umap {
-			Kb.Put(I, J, o.K[i][j])
+	// add to Kb
+	if o.HasContact {
+
+		// contribution from contact coupled matrices
+		err = o.add_contact_to_jac(sol)
+		if err != nil {
+			return
+		}
+
+	} else {
+
+		// add K to sparse matrix Kb
+		for i, I := range o.Umap {
+			for j, J := range o.Umap {
+				Kb.Put(I, J, o.K[i][j])
+			}
 		}
 	}
 	return
@@ -650,21 +663,34 @@ func (o *ElemU) add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
 	}
 
 	// compute surface integral
-	for _, load := range o.NatBcs {
-		for _, ip := range o.IpsFace {
-			err = o.Shp.CalcAtFaceIp(o.X, ip, load.IdxFace)
+	var res, qbn, dbn, rmp, rx, rq float64
+	for _, nbc := range o.NatBcs {
+
+		// function evaluation
+		res = nbc.Fcn.F(sol.T, nil)
+
+		// loop over ips of face
+		for _, ipf := range o.IpsFace {
+
+			// interpolation functions and gradients @ face
+			iface := nbc.IdxFace
+			err = o.Shp.CalcAtFaceIp(o.X, ipf, iface)
 			if err != nil {
 				return
 			}
-			switch load.Key {
+			Sf := o.Shp.Sf
+			nvec := o.Shp.Fnvec
+
+			// select natural boundary condition type
+			switch nbc.Key {
+
+			// distributed load
 			case "qn", "qn0", "aqn":
-				coef := ip.W * load.Fcn.F(sol.T, nil) * o.Thickness
-				nvec := o.Shp.Fnvec
-				Sf := o.Shp.Sf
-				if sol.Axisym && load.Key == "aqn" {
-					coef *= o.Shp.AxisymGetRadiusF(o.X, load.IdxFace)
+				coef := ipf.W * res * o.Thickness
+				if sol.Axisym && nbc.Key == "aqn" {
+					coef *= o.Shp.AxisymGetRadiusF(o.X, iface)
 				}
-				for j, m := range o.Shp.FaceLocalV[load.IdxFace] {
+				for j, m := range o.Shp.FaceLocalV[iface] {
 					for i := 0; i < o.Ndim; i++ {
 						r := o.Umap[i+m*o.Ndim]
 						fb[r] += coef * Sf[j] * nvec[i] // +fe
@@ -677,8 +703,133 @@ func (o *ElemU) add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
 						}
 					}
 				}
+
+			// contact
+			case "contact":
+
+				// variables extrapolated to face
+				qbn = o.fipvars(iface, sol)
+				io.Pforan("qbn = %v\n", qbn)
+
+				// compute residuals
+				coef := ipf.W * o.Thickness
+				Jf := la.VecNorm(nvec)
+				rmp = o.ramp(qbn + o.κ*dbn)
+				rx = rmp
+				rq = qbn - rmp
+				for j, m := range o.Shp.FaceLocalV[iface] {
+					for i := 0; i < o.Ndim; i++ {
+						r := o.Umap[i+m*o.Ndim]
+						fb[r] += coef * Sf[j] * rx * nvec[i] // +fe
+					}
+					μ := o.Vid2contactId[m]
+					fb[o.Qmap[μ]] -= coef * Sf[j] * rq * Jf // -residual
+				}
 			}
 		}
 	}
 	return
+}
+
+// add_contact_to_jac adds coupled equations due to contact modelling to Jacobian
+func (o ElemU) add_contact_to_jac(sol *Solution) (err error) {
+
+	// clear matrices
+	for i := 0; i < o.Nq; i++ {
+		for j := 0; j < o.Nu; j++ {
+			o.Kqu[i][j] = 0
+			o.Kuq[j][i] = 0
+		}
+		for j := 0; j < o.Nq; j++ {
+			o.Kqq[i][j] = 0
+		}
+	}
+
+	// compute surface integral
+	nverts := o.Shp.Nverts
+	var qbn dbn, rmp, rmpD float64
+	var drxdpl, drxdfl, drfdpl, drfdfl float64
+	// TODO
+	for idx, nbc := range o.NatBcs {
+
+		// plmax shift
+		shift = nbc.Fcn.F(sol.T, nil)
+
+		// loop over ips of face
+		for jdx, ipf := range o.IpsFace {
+
+			// interpolation functions and gradients @ face
+			iface := nbc.IdxFace
+			err = o.Shp.CalcAtFaceIp(o.X, ipf, iface)
+			if err != nil {
+				return
+			}
+			Sf := o.Shp.Sf
+			Jf := la.VecNorm(o.Shp.Fnvec)
+			coef := ipf.W * Jf
+
+			// select natural boundary condition type
+			switch nbc.Key {
+			case "seep":
+
+				// variables extrapolated to face
+				ρl, pl, fl = o.fipvars(iface, sol)
+				plmax = o.Plmax[idx][jdx] - shift
+				if plmax < 0 {
+					plmax = 0
+				}
+
+				// compute derivatives
+				g = pl - plmax // Eq. (24)
+				rmp = o.ramp(fl + o.κ*g)
+				rmpD = o.rampD1(fl + o.κ*g)
+				drxdpl = ρl * o.κ * rmpD // first term in Eq. (A.4) (without Sn)
+				drxdfl = ρl * rmpD       // Eq. (A.5) (without Sn)
+				drfdpl = -o.κ * rmpD     // Eq. (A.6) (corrected with κ and without Sn)
+				drfdfl = 1.0 - rmpD      // Eq. (A.7) (without Sn)
+				for i, m := range o.Shp.FaceLocalV[iface] {
+					μ := o.Vid2seepId[m]
+					for j, n := range o.Shp.FaceLocalV[iface] {
+						ν := o.Vid2seepId[n]
+						o.Kuu[m][n] += coef * Sf[i] * Sf[j] * drxdpl
+						o.Kuq[m][ν] += coef * Sf[i] * Sf[j] * drxdfl
+						o.Kqu[μ][n] += coef * Sf[i] * Sf[j] * drfdpl
+						o.Kqq[μ][ν] += coef * Sf[i] * Sf[j] * drfdfl
+					}
+					for n := 0; n < nverts; n++ { // Eqs. (18) and (22)
+						for l, r := range o.Shp.FaceLocalV[iface] {
+							o.Kuu[m][n] += coef * Sf[i] * Sf[l] * o.dρldpl_ex[r][n] * rmp
+						}
+					}
+				}
+			}
+		}
+	}
+	return
+}
+
+// fipvars computes current values @ face integration points
+func (o *ElemU) fipvars(fidx int, sol *Solution) (qbn float64) {
+	Sf := o.Shp.Sf
+	for i, m := range o.Shp.FaceLocalV[fidx] {
+		μ := o.Vid2contactId[m]
+		qbn += Sf[i] * sol.Y[o.Qmap[μ]]
+	}
+	return
+}
+
+// ramp implements the ramp function
+func (o *ElemU) ramp(x float64) float64 {
+	if o.Macaulay {
+		return fun.Ramp(x)
+	}
+	return fun.Sramp(x, o.βrmp)
+}
+
+// rampderiv returns the ramp function first derivative
+func (o *ElemU) rampD1(x float64) float64 {
+	if o.Macaulay {
+		return fun.Heav(x)
+	}
+	return fun.SrampD1(x, o.βrmp)
 }

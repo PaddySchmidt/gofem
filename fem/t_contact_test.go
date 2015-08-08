@@ -94,7 +94,7 @@ func Test_contact01a(tst *testing.T) {
 
 func Test_contact01b(tst *testing.T) {
 
-	//verbose()
+	verbose()
 	chk.PrintTitle("contact01b")
 
 	// start simulation
@@ -109,13 +109,16 @@ func Test_contact01b(tst *testing.T) {
 	}
 
 	// TODO:
-	if false {
+	if true {
 
 		// run simulation
 		err := analysis.Run()
 		if err != nil {
 			tst.Errorf("Run failed:\n%v", err)
 		}
+	}
+
+	if false {
 
 		// domain
 		dom := analysis.Domains[0]
