@@ -199,3 +199,27 @@ func (o *Shape) Extrapolator(E [][]float64, ips []*Ipoint) (err error) {
 	}
 	return
 }
+
+// CellBryDist returns the shortest distance between R and the boundary of the cell in natural coordinates
+// TODO: test this
+func CellBryDist(cellType string, R []float64) float64 {
+	r, s, t := R[0], R[1], 0.0
+	if len(R) > 2 {
+		t = R[2]
+	}
+	bgeo := GetBasicType(cellType) // fundamental geometry of cell
+	if bgeo == "tri3" {
+		return min(r, min(s, 1.0-r-s))
+	}
+	if bgeo == "qua4" {
+		return min(1.0-math.Abs(r), 1.0-math.Abs(s))
+	}
+	if bgeo == "hex8" {
+		return min(1.0-math.Abs(r), min(1.0-math.Abs(s), 1.0-math.Abs(t)))
+	}
+	if bgeo == "tet4" {
+		return min(r, min(s, min(t, 1.0-r-s-t)))
+	}
+	chk.Panic("cannot handle cellType=%q yet", cellType)
+	return 0 // must not reach this point
+}
