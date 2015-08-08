@@ -128,6 +128,20 @@ func (o *Shape) IpRealCoords(x [][]float64, ip *Ipoint) (y []float64) {
 	return
 }
 
+// FaceIpRealCoords returns the real coordinates (y) of an integration point @ face
+// TODO: check this function
+func (o *Shape) FaceIpRealCoords(x [][]float64, ipf *Ipoint, idxface int) (y []float64) {
+	ndim := len(x)
+	y = make([]float64, ndim)
+	o.FaceFunc(o.Sf, o.dSfdRf, ipf.R, ipf.S, ipf.T, false)
+	for i := 0; i < ndim; i++ {
+		for k, n := range o.FaceLocalV[idxface] {
+			y[i] += o.Sf[k] * x[i][n]
+		}
+	}
+	return
+}
+
 // CalcAtIp calculates volume data such as S and G at natural coordinate r
 //  Input:
 //   x[ndim][nverts+?] -- coordinates matrix of solid element
