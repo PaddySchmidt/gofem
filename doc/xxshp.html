@@ -69,6 +69,12 @@ package shp implements shape structures/routines
 			
 			
 				
+				<dd><a href="#CellBryDist">func CellBryDist(cellType string, R []float64) float64</a></dd>
+			
+				
+				<dd><a href="#CellBryDistDeriv">func CellBryDistDeriv(dfdR []float64, cellType string, R []float64)</a></dd>
+			
+				
 				<dd><a href="#GetBasicType">func GetBasicType(cellType string) string</a></dd>
 			
 				
@@ -147,7 +153,7 @@ package shp implements shape structures/routines
 				<dd><a href="#Shape">type Shape</a></dd>
 				
 					
-					<dd>&nbsp; &nbsp; <a href="#Get">func Get(geoType string) *Shape</a></dd>
+					<dd>&nbsp; &nbsp; <a href="#Get">func Get(geoType string, goroutineId int) *Shape</a></dd>
 				
 				
 					
@@ -167,6 +173,12 @@ package shp implements shape structures/routines
 				
 					
 					<dd>&nbsp; &nbsp; <a href="#Shape.Extrapolator">func (o *Shape) Extrapolator(E [][]float64, ips []*Ipoint) (err error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Shape.FaceIpRealCoords">func (o *Shape) FaceIpRealCoords(x [][]float64, ipf *Ipoint, idxface int) (y []float64)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Shape.GetCopy">func (o Shape) GetCopy() *Shape</a></dd>
 				
 					
 					<dd>&nbsp; &nbsp; <a href="#Shape.GetIpsNatCoordsMat">func (o *Shape) GetIpsNatCoordsMat(ips []*Ipoint) (ξh [][]float64)</a></dd>
@@ -201,6 +213,8 @@ package shp implements shape structures/routines
 			<span style="font-size:90%">
 			
 				<a href="/src/github.com/cpmech/gofem/shp/algos.go">algos.go</a>
+			
+				<a href="/src/github.com/cpmech/gofem/shp/auxiliary.go">auxiliary.go</a>
 			
 				<a href="/src/github.com/cpmech/gofem/shp/geodefs.go">geodefs.go</a>
 			
@@ -307,6 +321,28 @@ constants
 			
 		
 		
+		
+			
+			
+			<h2 id="CellBryDist">func <a href="https://github.com/cpmech/gofem/blob/master/shp/algos.go?s=4900:4954#L195">CellBryDist</a></h2>
+			<pre>func CellBryDist(cellType <a href="/pkg/builtin/#string">string</a>, R []<a href="/pkg/builtin/#float64">float64</a>) <a href="/pkg/builtin/#float64">float64</a></pre>
+			<p>
+CellBryDist returns the shortest distance between R and the boundary of the cell in natural coordinates
+TODO: test this
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="CellBryDistDeriv">func <a href="https://github.com/cpmech/gofem/blob/master/shp/algos.go?s=5464:5531#L217">CellBryDistDeriv</a></h2>
+			<pre>func CellBryDistDeriv(dfdR []<a href="/pkg/builtin/#float64">float64</a>, cellType <a href="/pkg/builtin/#string">string</a>, R []<a href="/pkg/builtin/#float64">float64</a>)</pre>
+			
+			
+			
+
 		
 			
 			
@@ -614,7 +650,7 @@ Ipoint implements integration point data: natural coordinates and weight
 		
 			
 			
-			<h2 id="Shape">type <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=516:2380#L7">Shape</a></h2>
+			<h2 id="Shape">type <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=551:2415#L10">Shape</a></h2>
 			<pre>type Shape struct {
 
     <span class="comment">// geometry</span>
@@ -635,18 +671,22 @@ Ipoint implements integration point data: natural coordinates and weight
     SeamLocalV [][]<a href="/pkg/builtin/#int">int</a> <span class="comment">// seam (3d-edge) local vertices [nseams][nVertsOnSeam]</span>
 
     <span class="comment">// scratchpad: volume</span>
-    S []<a href="/pkg/builtin/#float64">float64</a>   <span class="comment">// [nverts] shape functions</span>
-    G [][]<a href="/pkg/builtin/#float64">float64</a> <span class="comment">// [nverts][gndim] G == dSdx. derivative of shape function</span>
-    J <a href="/pkg/builtin/#float64">float64</a>     <span class="comment">// Jacobian: determinant of dxdr</span>
+    S    []<a href="/pkg/builtin/#float64">float64</a>   <span class="comment">// [nverts] shape functions</span>
+    G    [][]<a href="/pkg/builtin/#float64">float64</a> <span class="comment">// [nverts][gndim] G == dSdx. derivative of shape function</span>
+    J    <a href="/pkg/builtin/#float64">float64</a>     <span class="comment">// Jacobian: determinant of dxdr</span>
+    DSdR [][]<a href="/pkg/builtin/#float64">float64</a> <span class="comment">// [nverts][gndim] derivatives of S w.r.t natural coordinates</span>
+    DxdR [][]<a href="/pkg/builtin/#float64">float64</a> <span class="comment">// [gndim][gndim] derivatives of real coordinates w.r.t natural coordinates</span>
+    DRdx [][]<a href="/pkg/builtin/#float64">float64</a> <span class="comment">// [gndim][gndim] dRdx == inverse(dxdR)</span>
 
     <span class="comment">// scratchpad: line</span>
     Jvec3d []<a href="/pkg/builtin/#float64">float64</a> <span class="comment">// Jacobian: norm of dxdr for line elements (size==3)</span>
     Gvec   []<a href="/pkg/builtin/#float64">float64</a> <span class="comment">// [nverts] G == dSdx. derivative of shape function</span>
 
     <span class="comment">// scratchpad: face</span>
-    Sf    []<a href="/pkg/builtin/#float64">float64</a> <span class="comment">// [facenverts] shape functions values</span>
-    Fnvec []<a href="/pkg/builtin/#float64">float64</a> <span class="comment">// [gndim] face normal vector multiplied by Jf</span>
-    <span class="comment">// contains filtered or unexported fields</span>
+    Sf     []<a href="/pkg/builtin/#float64">float64</a>   <span class="comment">// [facenverts] shape functions values</span>
+    Fnvec  []<a href="/pkg/builtin/#float64">float64</a>   <span class="comment">// [gndim] face normal vector multiplied by Jf</span>
+    DSfdRf [][]<a href="/pkg/builtin/#float64">float64</a> <span class="comment">// [facenverts][gndim-1] derivatives of Sf w.r.t natural coordinates</span>
+    DxfdRf [][]<a href="/pkg/builtin/#float64">float64</a> <span class="comment">// [gndim][gndim-1] derivatives of real coordinates w.r.t natural coordinates</span>
 }</pre>
 			<p>
 Shape holds geometry data
@@ -663,12 +703,13 @@ Shape holds geometry data
 
 			
 				
-				<h3 id="Get">func <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=2534:2565#L50">Get</a></h3>
-				<pre>func Get(geoType <a href="/pkg/builtin/#string">string</a>) *<a href="#Shape">Shape</a></pre>
+				<h3 id="Get">func <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=3566:3614#L97">Get</a></h3>
+				<pre>func Get(geoType <a href="/pkg/builtin/#string">string</a>, goroutineId <a href="/pkg/builtin/#int">int</a>) *<a href="#Shape">Shape</a></pre>
 				<p>
 Get returns an existent Shape structure
 </p>
-<pre>Note: returns nil on errors
+<pre>Note: 1) returns nil on errors
+      2) use goroutineId &gt; 0 to get a copy
 </pre>
 
 				
@@ -677,7 +718,7 @@ Get returns an existent Shape structure
 
 			
 				
-				<h3 id="Shape.AxisymGetRadius">func (*Shape) <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=5874:5937#L181">AxisymGetRadius</a></h3>
+				<h3 id="Shape.AxisymGetRadius">func (*Shape) <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=7391:7454#L245">AxisymGetRadius</a></h3>
 				<pre>func (o *<a href="#Shape">Shape</a>) AxisymGetRadius(x [][]<a href="/pkg/builtin/#float64">float64</a>) (radius <a href="/pkg/builtin/#float64">float64</a>)</pre>
 				<p>
 AxisymGetRadius returns the x0 == radius for axisymmetric computations
@@ -690,7 +731,7 @@ AxisymGetRadius returns the x0 == radius for axisymmetric computations
 				
 			
 				
-				<h3 id="Shape.AxisymGetRadiusF">func (*Shape) <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=6142:6219#L190">AxisymGetRadiusF</a></h3>
+				<h3 id="Shape.AxisymGetRadiusF">func (*Shape) <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=7659:7736#L254">AxisymGetRadiusF</a></h3>
 				<pre>func (o *<a href="#Shape">Shape</a>) AxisymGetRadiusF(x [][]<a href="/pkg/builtin/#float64">float64</a>, idxface <a href="/pkg/builtin/#int">int</a>) (radius <a href="/pkg/builtin/#float64">float64</a>)</pre>
 				<p>
 AxisymGetRadiusF (face) returns the x0 == radius for axisymmetric computations
@@ -703,7 +744,7 @@ AxisymGetRadiusF (face) returns the x0 == radius for axisymmetric computations
 				
 			
 				
-				<h3 id="Shape.CalcAtFaceIp">func (*Shape) <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=4921:5002#L147">CalcAtFaceIp</a></h3>
+				<h3 id="Shape.CalcAtFaceIp">func (*Shape) <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=6438:6519#L211">CalcAtFaceIp</a></h3>
 				<pre>func (o *<a href="#Shape">Shape</a>) CalcAtFaceIp(x [][]<a href="/pkg/builtin/#float64">float64</a>, ipf *<a href="#Ipoint">Ipoint</a>, idxface <a href="/pkg/builtin/#int">int</a>) (err <a href="/pkg/builtin/#error">error</a>)</pre>
 				<p>
 CalcAtFaceIp calculates face data such as Sf and Fnvec
@@ -721,7 +762,7 @@ Output:
 				
 			
 				
-				<h3 id="Shape.CalcAtIp">func (*Shape) <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=3216:3292#L77">CalcAtIp</a></h3>
+				<h3 id="Shape.CalcAtIp">func (*Shape) <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=4733:4809#L141">CalcAtIp</a></h3>
 				<pre>func (o *<a href="#Shape">Shape</a>) CalcAtIp(x [][]<a href="/pkg/builtin/#float64">float64</a>, ip *<a href="#Ipoint">Ipoint</a>, derivs <a href="/pkg/builtin/#bool">bool</a>) (err <a href="/pkg/builtin/#error">error</a>)</pre>
 				<p>
 CalcAtIp calculates volume data such as S and G at natural coordinate r
@@ -738,7 +779,7 @@ Output:
 				
 			
 				
-				<h3 id="Shape.CalcAtR">func (*Shape) <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=4473:4549#L132">CalcAtR</a></h3>
+				<h3 id="Shape.CalcAtR">func (*Shape) <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=5990:6066#L196">CalcAtR</a></h3>
 				<pre>func (o *<a href="#Shape">Shape</a>) CalcAtR(x [][]<a href="/pkg/builtin/#float64">float64</a>, R []<a href="/pkg/builtin/#float64">float64</a>, derivs <a href="/pkg/builtin/#bool">bool</a>) (err <a href="/pkg/builtin/#error">error</a>)</pre>
 				<p>
 CalcAtR calculates volume data such as S and G at natural coordinate r
@@ -762,6 +803,29 @@ Extrapolator computes the extrapolation matrix for this Shape with a combination
 </p>
 <pre>Note: E[nverts][nip] must be pre-allocated
 </pre>
+
+				
+				
+				
+			
+				
+				<h3 id="Shape.FaceIpRealCoords">func (*Shape) <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=4185:4272#L123">FaceIpRealCoords</a></h3>
+				<pre>func (o *<a href="#Shape">Shape</a>) FaceIpRealCoords(x [][]<a href="/pkg/builtin/#float64">float64</a>, ipf *<a href="#Ipoint">Ipoint</a>, idxface <a href="/pkg/builtin/#int">int</a>) (y []<a href="/pkg/builtin/#float64">float64</a>)</pre>
+				<p>
+FaceIpRealCoords returns the real coordinates (y) of an integration point @ face
+TODO: check this function
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Shape.GetCopy">func (Shape) <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=2471:2502#L49">GetCopy</a></h3>
+				<pre>func (o <a href="#Shape">Shape</a>) GetCopy() *<a href="#Shape">Shape</a></pre>
+				<p>
+GetCopy returns a new copy of this shape structure
+</p>
 
 				
 				
@@ -821,7 +885,7 @@ Output:
 				
 			
 				
-				<h3 id="Shape.IpRealCoords">func (*Shape) <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=2707:2776#L59">IpRealCoords</a></h3>
+				<h3 id="Shape.IpRealCoords">func (*Shape) <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=3802:3871#L109">IpRealCoords</a></h3>
 				<pre>func (o *<a href="#Shape">Shape</a>) IpRealCoords(x [][]<a href="/pkg/builtin/#float64">float64</a>, ip *<a href="#Ipoint">Ipoint</a>) (y []<a href="/pkg/builtin/#float64">float64</a>)</pre>
 				<p>
 IpRealCoords returns the real coordinates (y) of an integration point
@@ -834,7 +898,7 @@ IpRealCoords returns the real coordinates (y) of an integration point
 		
 			
 			
-			<h2 id="ShpFunc">type <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=407:485#L4">ShpFunc</a></h2>
+			<h2 id="ShpFunc">type <a href="https://github.com/cpmech/gofem/blob/master/shp/shp.go?s=442:520#L7">ShpFunc</a></h2>
 			<pre>type ShpFunc func(S []<a href="/pkg/builtin/#float64">float64</a>, dSdR [][]<a href="/pkg/builtin/#float64">float64</a>, r, s, t <a href="/pkg/builtin/#float64">float64</a>, derivs <a href="/pkg/builtin/#bool">bool</a>)</pre>
 			<p>
 ShpFunc is the shape functions callback function
