@@ -41,10 +41,23 @@ func Test_bridge01b(tst *testing.T) {
 	// fem
 	analysis := NewFEM("data/bridge01erod.sim", "", true, true, false, false, chk.Verbose, 0)
 
-	// run simulation
-	err := analysis.Run()
+	// set stage
+	err := analysis.SetStage(0)
 	if err != nil {
-		tst.Errorf("Run failed:\n%v", err)
+		tst.Errorf("SetStage failed:\n%v", err)
+		return
+	}
+
+	// recompute matrices
+	for _, elem := range analysis.Domains[0].Elems {
+		e := elem.(*ElastRod)
+		e.Recompute(true)
+	}
+
+	// run
+	err = analysis.SolveOneStage(0, true)
+	if err != nil {
+		tst.Error("SolveOneStage failed:\n%v", err)
 		return
 	}
 

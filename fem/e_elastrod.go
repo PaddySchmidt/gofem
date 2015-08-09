@@ -242,3 +242,58 @@ func (o *ElastRod) OutIpsData() (data []*OutIpData) {
 	data = append(data, &OutIpData{o.Id(), x, calc})
 	return
 }
+
+// auxiliary ////////////////////////////////////////////////////////////////////////////////////////
+
+// Recompute re-compute matrices after dimensions or parameters are externally changed
+func (o *ElastRod) Recompute(withM bool) {
+
+	// geometry
+	x0 := o.X[0][0]
+	y0 := o.X[1][0]
+	x1 := o.X[0][1]
+	y1 := o.X[1][1]
+	dx := x1 - x0
+	dy := y1 - y0
+	o.L = math.Sqrt(dx*dx + dy*dy)
+
+	// global-to-local transformation matrix
+	c := dx / o.L
+	s := dy / o.L
+	o.T[0][0] = c
+	o.T[0][1] = s
+	o.T[1][2] = c
+	o.T[1][3] = s
+
+	// K matrix
+	α := o.E * o.A / o.L
+	β := o.Rho * o.A * o.L / 6.0
+	o.K[0][0] = +α * c * c
+	o.K[0][1] = +α * c * s
+	o.K[0][2] = -α * c * c
+	o.K[0][3] = -α * c * s
+	o.K[1][0] = +α * c * s
+	o.K[1][1] = +α * s * s
+	o.K[1][2] = -α * c * s
+	o.K[1][3] = -α * s * s
+	o.K[2][0] = -α * c * c
+	o.K[2][1] = -α * c * s
+	o.K[2][2] = +α * c * c
+	o.K[2][3] = +α * c * s
+	o.K[3][0] = -α * c * s
+	o.K[3][1] = -α * s * s
+	o.K[3][2] = +α * c * s
+	o.K[3][3] = +α * s * s
+
+	// M matrix
+	if withM {
+		o.M[0][0] = 2.0 * β
+		o.M[0][2] = 1.0 * β
+		o.M[1][1] = 2.0 * β
+		o.M[1][3] = 1.0 * β
+		o.M[2][0] = 1.0 * β
+		o.M[2][2] = 2.0 * β
+		o.M[3][1] = 1.0 * β
+		o.M[3][3] = 2.0 * β
+	}
+}
