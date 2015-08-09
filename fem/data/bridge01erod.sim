@@ -1,0 +1,36 @@
+{
+  "data" : {
+    "matfile": "bridge01.mat",
+    "steady": true,
+    "showR": false
+  },
+  "linsol" : {
+    "symmetric" : true
+  },
+  "functions" : [
+    { "name":"P320", "type":"cte", "prms":[ {"n":"c", "v":-320} ] },
+    { "name":"P350", "type":"cte", "prms":[ {"n":"c", "v":-350} ] }
+  ],
+  "regions" : [
+    {
+      "mshfile": "bridge01.msh",
+      "elemsdata" : [
+        { "tag":-1, "mat":"M1", "type":"elastrod" },
+        { "tag":-2, "mat":"M2", "type":"elastrod" },
+        { "tag":-3, "mat":"M3", "type":"elastrod" },
+        { "tag":-4, "mat":"M4", "type":"elastrod" }
+      ]
+    }
+  ],
+  "stages" : [
+    {
+      "desc": "apply loads",
+      "nodebcs": [
+        { "tag":-101, "keys":["ux","uy"], "funcs":["zero","zero"] },
+        { "tag":-102, "keys":["fy"],      "funcs":["P320"] },
+        { "tag":-103, "keys":["fy"],      "funcs":["P350"] },
+        { "tag":-104, "keys":["uy"],      "funcs":["zero"] }
+      ]
+    }
+  ]
+}
