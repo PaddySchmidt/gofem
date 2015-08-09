@@ -1,0 +1,40 @@
+{
+  "materials" : [
+    {
+      "name"  : "M1",
+      "model" : "oned-elast",
+      "prms"  : [
+        {"n":"E",   "v":2.1e8 },
+        {"n":"A",   "v":0.003 },
+        {"n":"rho", "v":7.8 }
+      ]
+    },
+    {
+      "name"  : "M2",
+      "model" : "oned-elast",
+      "prms"  : [
+        {"n":"E",   "v":2.1e8 },
+        {"n":"A",   "v":0.003 },
+        {"n":"rho", "v":7.8 }
+      ]
+    },
+    {
+      "name"  : "M3",
+      "model" : "oned-elast",
+      "prms"  : [
+        {"n":"E",   "v":2.1e8 },
+        {"n":"A",   "v":0.003 },
+        {"n":"rho", "v":7.8 }
+      ]
+    },
+    {
+      "name"  : "M4",
+      "model" : "oned-elast",
+      "prms"  : [
+        {"n":"E",   "v":2.1e8 },
+        {"n":"A",   "v":0.003 },
+        {"n":"rho", "v":7.8 }
+      ]
+    }
+  ]
+}

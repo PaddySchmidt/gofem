@@ -1,0 +1,34 @@
+{
+  "verts":[
+    {"id":0, "tag":-101, "c":[ 0.0, 0.0]},
+    {"id":1, "tag":   0, "c":[ 2.0, 0.0]},
+    {"id":2, "tag":-102, "c":[ 4.0, 0.0]},
+    {"id":3, "tag":-103, "c":[ 6.0, 0.0]},
+    {"id":4, "tag":   0, "c":[ 8.0, 0.0]},
+    {"id":5, "tag":-104, "c":[10.0, 0.0]},
+    {"id":6, "tag":   0, "c":[ 2.0, 4.0]},
+    {"id":7, "tag":   0, "c":[ 4.0, 4.0]},
+    {"id":8, "tag":   0, "c":[ 6.0, 4.0]},
+    {"id":9, "tag":   0, "c":[ 8.0, 4.0]}
+  ],
+  "cells":[
+    {"id": 0, "tag":-1, "type":"lin2", "verts":[0,1]},
+    {"id": 1, "tag":-1, "type":"lin2", "verts":[1,2]},
+    {"id": 2, "tag":-1, "type":"lin2", "verts":[2,3]},
+    {"id": 3, "tag":-1, "type":"lin2", "verts":[3,4]},
+    {"id": 4, "tag":-1, "type":"lin2", "verts":[4,5]},
+    {"id": 5, "tag":-2, "type":"lin2", "verts":[0,6]},
+    {"id": 6, "tag":-2, "type":"lin2", "verts":[2,6]},
+    {"id": 7, "tag":-2, "type":"lin2", "verts":[3,7]},
+    {"id": 8, "tag":-2, "type":"lin2", "verts":[2,8]},
+    {"id": 9, "tag":-2, "type":"lin2", "verts":[3,9]},
+    {"id":10, "tag":-2, "type":"lin2", "verts":[5,9]},
+    {"id":11, "tag":-3, "type":"lin2", "verts":[1,6]},
+    {"id":12, "tag":-3, "type":"lin2", "verts":[2,7]},
+    {"id":13, "tag":-3, "type":"lin2", "verts":[3,8]},
+    {"id":14, "tag":-3, "type":"lin2", "verts":[4,9]},
+    {"id":15, "tag":-4, "type":"lin2", "verts":[6,7]},
+    {"id":16, "tag":-4, "type":"lin2", "verts":[7,8]},
+    {"id":17, "tag":-4, "type":"lin2", "verts":[8,9]}
+  ]
+}
