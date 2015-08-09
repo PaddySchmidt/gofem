@@ -25,9 +25,10 @@ type ElasticRod struct {
 	Ndim int         // space dimension
 
 	// parameters and properties
-	E float64 // Young's modulus
-	A float64 // cross-sectional area
-	L float64 // length of rod
+	E   float64 // Young's modulus
+	A   float64 // cross-sectional area
+	L   float64 // length of rod
+	Sig float64 // axial stress (constant) along rod
 
 	// variables for dynamics
 	Rho  float64  // density of solids
@@ -42,10 +43,7 @@ type ElasticRod struct {
 	Umap []int // assembly map (location array/element equations)
 
 	// scratchpad. computed @ each ip
-	grav []float64 // [ndim] gravity vector
-	us   []float64 // [ndim] displacements @ ip
-	fi   []float64 // [nu] internal forces
-	ue   []float64 // local u vector
+	ua []float64 // [2] local axial displacements
 }
 
 // register element
@@ -112,12 +110,7 @@ func init() {
 		// vectors and matrices
 		o.K = la.MatAlloc(o.Nu, o.Nu)
 		o.M = la.MatAlloc(o.Nu, o.Nu)
-		o.ue = make([]float64, o.Nu)
-
-		// scratchpad. computed @ each ip
-		o.grav = make([]float64, o.Ndim)
-		o.us = make([]float64, o.Ndim)
-		o.fi = make([]float64, o.Nu)
+		o.ua = make([]float64, 2)
 
 		// geometry
 		x0 := o.X[0][0]
@@ -192,19 +185,6 @@ func (o *ElasticRod) SetEleConds(key string, f fun.Func, extra string) (err erro
 
 // AddToRhs adds -R to global residual vector fb
 func (o ElasticRod) AddToRhs(fb []float64, sol *Solution) (err error) {
-	/*
-		for m := 0; m < 2; m++ {
-			for i := 0; i < o.Ndim; i++ {
-				r := o.Umap[i+m*o.Ndim]
-				for n := 0; n < 2; n++ {
-					for j := 0; j < o.Ndim; j++ {
-						c := o.Umap[j+n*o.Ndim]
-						fb[r] -= o.K[r][c] * sol.Y[c]
-					}
-				}
-			}
-		}
-	*/
 	for i, I := range o.Umap {
 		for j, J := range o.Umap {
 			fb[I] -= o.K[i][j] * sol.Y[J] // -fi
@@ -225,37 +205,37 @@ func (o ElasticRod) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err er
 
 // Update perform (tangent) update
 func (o *ElasticRod) Update(sol *Solution) (err error) {
+	for i := 0; i < 2; i++ {
+		for j, J := range o.Umap {
+			o.ua[i] += o.T[i][j] * sol.Y[J]
+		}
+	}
+	εa := (o.ua[1] - o.ua[0]) / o.L // axial strain
+	o.Sig = o.E * εa
 	return
 }
 
 // writer ///////////////////////////////////////////////////////////////////////////////////////////
 
 // Encode encodes internal variables
-func (o ElasticRod) Encode(enc Encoder) (err error) {
-	return
+func (o *ElasticRod) Encode(enc Encoder) (err error) {
+	return enc.Encode(o.Sig)
 }
 
 // Decode decodes internal variables
-func (o ElasticRod) Decode(dec Decoder) (err error) {
-	return
+func (o *ElasticRod) Decode(dec Decoder) (err error) {
+	return dec.Decode(&o.Sig)
 }
 
 // OutIpsData returns data from all integration points for output
-func (o ElasticRod) OutIpsData() (data []*OutIpData) {
+func (o *ElasticRod) OutIpsData() (data []*OutIpData) {
 	x := make([]float64, o.Ndim)
 	for i := 0; i < o.Ndim; i++ {
 		x[i] = (o.X[i][0] + o.X[i][1]) / 2.0 // centroid
 	}
 	calc := func(sol *Solution) (vals map[string]float64) {
-		ua := make([]float64, 2) // axial displacements
-		for i := 0; i < 2; i++ {
-			for j, J := range o.Umap {
-				ua[i] += o.T[i][j] * sol.Y[J]
-			}
-		}
-		ea := (ua[1] - ua[0]) / o.L // axial strain
 		vals = make(map[string]float64)
-		vals["sig"] = o.E * ea // axial stress
+		vals["sig"] = o.Sig // axial stress
 		return
 	}
 	data = append(data, &OutIpData{o.Id(), x, calc})
