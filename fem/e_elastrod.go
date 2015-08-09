@@ -14,9 +14,9 @@ import (
 	"github.com/cpmech/gosl/la"
 )
 
-// ElasticRod represents a structural rod element (for axial loads only) with 2 nodes only and
+// ElastRod represents a structural rod element (for axial loads only) with 2 nodes only and
 // simply implemented with constant stiffness matrix; i.e. no numerical integration is needed
-type ElasticRod struct {
+type ElastRod struct {
 
 	// basic data
 	Cell *inp.Cell   // the cell structure
@@ -83,7 +83,7 @@ func init() {
 		}
 
 		// basic data
-		var o ElasticRod
+		var o ElastRod
 		o.Cell = cell
 		o.X = x
 		o.Ndim = sim.Ndim
@@ -153,10 +153,10 @@ func init() {
 // implementation ///////////////////////////////////////////////////////////////////////////////////
 
 // Id returns the cell Id
-func (o *ElasticRod) Id() int { return o.Cell.Id }
+func (o *ElastRod) Id() int { return o.Cell.Id }
 
 // SetEqs set equations
-func (o *ElasticRod) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
+func (o *ElastRod) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
 	o.Umap = make([]int, o.Nu)
 	for m := 0; m < 2; m++ {
 		for i := 0; i < o.Ndim; i++ {
@@ -168,23 +168,23 @@ func (o *ElasticRod) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
 }
 
 // InterpStarVars interpolates star variables to integration points
-func (o *ElasticRod) InterpStarVars(sol *Solution) (err error) {
+func (o *ElastRod) InterpStarVars(sol *Solution) (err error) {
 	// TODO: dynamics
-	chk.Panic("ElasticRod cannot handle dynamics yet")
+	chk.Panic("ElastRod cannot handle dynamics yet")
 	return
 }
 
 // SetEleConds set element conditions
-func (o *ElasticRod) SetEleConds(key string, f fun.Func, extra string) (err error) {
+func (o *ElastRod) SetEleConds(key string, f fun.Func, extra string) (err error) {
 	if key == "g" {
-		chk.Panic("ElasticRod cannot handle gravity yet")
+		chk.Panic("ElastRod cannot handle gravity yet")
 		o.Gfcn = f
 	}
 	return
 }
 
 // AddToRhs adds -R to global residual vector fb
-func (o *ElasticRod) AddToRhs(fb []float64, sol *Solution) (err error) {
+func (o *ElastRod) AddToRhs(fb []float64, sol *Solution) (err error) {
 	for i, I := range o.Umap {
 		for j, J := range o.Umap {
 			fb[I] -= o.K[i][j] * sol.Y[J] // -fi
@@ -194,7 +194,7 @@ func (o *ElasticRod) AddToRhs(fb []float64, sol *Solution) (err error) {
 }
 
 // AddToKb adds element K to global Jacobian matrix Kb
-func (o *ElasticRod) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
+func (o *ElastRod) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
 	for i, I := range o.Umap {
 		for j, J := range o.Umap {
 			Kb.Put(I, J, o.K[i][j])
@@ -204,7 +204,7 @@ func (o *ElasticRod) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err e
 }
 
 // Update perform (tangent) update
-func (o *ElasticRod) Update(sol *Solution) (err error) {
+func (o *ElastRod) Update(sol *Solution) (err error) {
 	for i := 0; i < 2; i++ {
 		o.ua[i] = 0
 		for j, J := range o.Umap {
@@ -219,17 +219,17 @@ func (o *ElasticRod) Update(sol *Solution) (err error) {
 // writer ///////////////////////////////////////////////////////////////////////////////////////////
 
 // Encode encodes internal variables
-func (o *ElasticRod) Encode(enc Encoder) (err error) {
+func (o *ElastRod) Encode(enc Encoder) (err error) {
 	return enc.Encode(o.Sig)
 }
 
 // Decode decodes internal variables
-func (o *ElasticRod) Decode(dec Decoder) (err error) {
+func (o *ElastRod) Decode(dec Decoder) (err error) {
 	return dec.Decode(&o.Sig)
 }
 
 // OutIpsData returns data from all integration points for output
-func (o *ElasticRod) OutIpsData() (data []*OutIpData) {
+func (o *ElastRod) OutIpsData() (data []*OutIpData) {
 	x := make([]float64, o.Ndim)
 	for i := 0; i < o.Ndim; i++ {
 		x[i] = (o.X[i][0] + o.X[i][1]) / 2.0 // centroid

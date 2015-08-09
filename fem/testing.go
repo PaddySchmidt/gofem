@@ -116,7 +116,7 @@ func TestingCompareResultsU(tst *testing.T, simfilepath, cmpfname, alias string,
 					}
 					chk.Matrix(tst, io.Sf("K%d", eid), tolK, e.K, Ksg)
 				}
-				if e, ok := dom.Elems[eid].(*ElasticRod); ok {
+				if e, ok := dom.Elems[eid].(*ElastRod); ok {
 					err = e.AddToKb(dom.Kb, dom.Sol, true)
 					if err != nil {
 						chk.Panic("TestingCompareResultsU: AddToKb failed\n")
@@ -178,7 +178,7 @@ func TestingCompareResultsU(tst *testing.T, simfilepath, cmpfname, alias string,
 						chk.AnaNum(tst, "sig", tols, σ, val[0], verbose)
 					}
 				}
-				if e, ok := dom.Cid2elem[eid].(*ElasticRod); ok {
+				if e, ok := dom.Cid2elem[eid].(*ElastRod); ok {
 					dat := e.OutIpsData()
 					for ip, val := range sig {
 						if verbose {
