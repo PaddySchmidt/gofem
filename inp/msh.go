@@ -152,13 +152,13 @@ func ReadMsh(dir, fn string, goroutineId int) *Mesh {
 		}
 
 		// limits
-		o.Xmin = min(o.Xmin, v.C[0])
-		o.Xmax = max(o.Xmax, v.C[0])
-		o.Ymin = min(o.Ymin, v.C[1])
-		o.Ymax = max(o.Ymax, v.C[1])
+		o.Xmin = utl.Min(o.Xmin, v.C[0])
+		o.Xmax = utl.Max(o.Xmax, v.C[0])
+		o.Ymin = utl.Min(o.Ymin, v.C[1])
+		o.Ymax = utl.Max(o.Ymax, v.C[1])
 		if nd > 2 {
-			o.Zmin = min(o.Zmin, v.C[2])
-			o.Zmax = max(o.Zmax, v.C[2])
+			o.Zmin = utl.Min(o.Zmin, v.C[2])
+			o.Zmax = utl.Max(o.Zmax, v.C[2])
 		}
 	}
 

@@ -40,38 +40,6 @@ func Mmatch(c, φ float64, typ int) (M, qy0 float64, err error) {
 	return
 }
 
-// max returns the max between two floats
-func max(a, b float64) float64 {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-// min returns the min between two floats
-func min(a, b float64) float64 {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-// imax returns the max between two floats
-func imax(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-// imin returns the min between two floats
-func imin(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // SpectralCompose recreates tensor m from its spectral decomposition
 // m   -- 2nd order tensor in Mandel basis
 // λ   -- eigenvalues

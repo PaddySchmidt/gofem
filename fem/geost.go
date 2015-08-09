@@ -11,6 +11,7 @@ import (
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/ode"
+	"github.com/cpmech/gosl/utl"
 )
 
 // geostate holds state @ top of layer
@@ -182,8 +183,8 @@ func (o *Domain) SetGeoSt(stg *inp.Stage) (err error) {
 					if !nodehandled[v] {
 						L[i].Nodes = append(L[i].Nodes, o.Vid2node[v])
 					}
-					L[i].Zmin = min(L[i].Zmin, o.Msh.Verts[v].C[ndim-1])
-					L[i].Zmax = max(L[i].Zmax, o.Msh.Verts[v].C[ndim-1])
+					L[i].Zmin = utl.Min(L[i].Zmin, o.Msh.Verts[v].C[ndim-1])
+					L[i].Zmax = utl.Max(L[i].Zmax, o.Msh.Verts[v].C[ndim-1])
 					nodehandled[v] = true
 				}
 				ctaghandled[c.Tag] = true

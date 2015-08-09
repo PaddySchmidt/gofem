@@ -15,6 +15,7 @@ import (
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/io"
+	"github.com/cpmech/gosl/utl"
 )
 
 // Data holds global data for simulations
@@ -342,9 +343,9 @@ func ReadSim(simfilepath, alias string, erasefiles bool, goroutineId int) *Simul
 				chk.Panic("ReadSim: Ndim value is inconsistent: %d != %d", reg.Msh.Ndim, o.Ndim)
 			}
 			if o.Ndim == 2 {
-				o.MaxElev = max(o.MaxElev, reg.Msh.Ymax)
+				o.MaxElev = utl.Max(o.MaxElev, reg.Msh.Ymax)
 			} else {
-				o.MaxElev = max(o.MaxElev, reg.Msh.Zmax)
+				o.MaxElev = utl.Max(o.MaxElev, reg.Msh.Zmax)
 			}
 		}
 
@@ -362,7 +363,7 @@ func ReadSim(simfilepath, alias string, erasefiles bool, goroutineId int) *Simul
 	}
 
 	// water level
-	o.WaterLevel = max(o.Data.Wlevel, o.MaxElev)
+	o.WaterLevel = utl.Max(o.Data.Wlevel, o.MaxElev)
 
 	// for all stages
 	var t float64
@@ -528,5 +529,5 @@ func (o *SolverData) PostProcess() {
 	}
 
 	// iterations tolerance
-	o.Itol = max(10.0*o.Eps/o.Rtol, min(0.01, math.Sqrt(o.Rtol)))
+	o.Itol = utl.Max(10.0*o.Eps/o.Rtol, utl.Min(0.01, math.Sqrt(o.Rtol)))
 }

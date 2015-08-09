@@ -39,19 +39,3 @@ func ParseKey(key string) (string, int) {
 	}
 	return key, 0
 }
-
-// max returns the max between two floats
-func max(a, b float64) float64 {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-// min returns the min between two floats
-func min(a, b float64) float64 {
-	if a < b {
-		return a
-	}
-	return b
-}

@@ -11,6 +11,7 @@ import (
 	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/la"
+	"github.com/cpmech/gosl/utl"
 )
 
 // RichardsonExtrap solves FEM problem implicitely and with Richardson's extrapolation
@@ -183,7 +184,7 @@ func (o *RichardsonExtrap) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose boo
 		rerr := la.VecRmsError(d.Sol.Y, o.Y_big, atol, rtol, d.Sol.Y) / 3.0
 
 		// step size change
-		m := min(mmax, max(mmin, mfac*math.Pow(1.0/rerr, 1.0/2.0)))
+		m := utl.Min(mmax, utl.Max(mmin, mfac*math.Pow(1.0/rerr, 1.0/2.0)))
 		ΔtNew := m * o.Δt
 
 		// accepted
@@ -225,15 +226,15 @@ func (o *RichardsonExtrap) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose boo
 					if m*o.Δt < ΔtNew {
 						o.ngustaf += 1
 					}
-					ΔtNew = min(ΔtNew, m*o.Δt)
+					ΔtNew = utl.Min(ΔtNew, m*o.Δt)
 				}
 				ΔtOld = o.Δt
-				rerrOld = max(0.9, rerr) // 1e-2
+				rerrOld = utl.Max(0.9, rerr) // 1e-2
 			}
 
 			// next step size
 			if o.reject { // do not alow Δt to grow if previous was a reject
-				ΔtNew = min(o.Δt, ΔtNew)
+				ΔtNew = utl.Min(o.Δt, ΔtNew)
 			}
 			o.reject = false
 			o.Δt = ΔtNew

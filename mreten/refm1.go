@@ -9,6 +9,7 @@ import (
 
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
+	"github.com/cpmech/gosl/utl"
 )
 
 // RefM1 implements a nonlinear liquid retention model based on the concept of references [1,2,3]
@@ -177,7 +178,7 @@ func (o RefM1) J(pc, sl float64, wet bool) (float64, error) {
 		DλbDy = (o.βw*(o.λwb-o.λw) - o.λwb*o.β1) * math.Exp(-o.β1*o.D)
 	} else {
 		o.drying(x, sl)
-		Dβ2bDy := o.α * o.β2 * math.Pow(max(sl, 0.0), o.α-1.0)
+		Dβ2bDy := o.α * o.β2 * math.Pow(utl.Max(sl, 0.0), o.α-1.0)
 		DλbDy = (o.βd*(o.λd-o.λdb) + o.λdb*(o.β2b-Dβ2bDy*o.D)) * math.Exp(-o.β2b*o.D)
 	}
 	return -DλbDy / (1.0 + pc), nil
@@ -207,13 +208,13 @@ func (o *RefM1) Derivs(pc, sl float64, wet bool) (L, Lx, J, Jx, Jy float64, err 
 		o.drying(x, sl)
 		DydDx := -o.λd + o.c1d*o.c2d*math.Exp(o.c1d*x)/(o.βd*(o.c3d+o.c2d*math.Exp(o.c1d*x)))
 		DλbDx = -o.β2b * o.λb * DydDx
-		Dβ2bDy := o.α * o.β2 * math.Pow(max(sl, 0.0), o.α-1.0)
+		Dβ2bDy := o.α * o.β2 * math.Pow(utl.Max(sl, 0.0), o.α-1.0)
 		DλbDy = (o.βd*(o.λd-o.λdb) + o.λdb*(o.β2b-Dβ2bDy*o.D)) * math.Exp(-o.β2b*o.D)
 		D2ydDx2 := o.c1d * o.c1d * o.c2d * o.c3d * math.Exp(o.c1d*x) / (o.βd * math.Pow(o.c3d+o.c2d*math.Exp(o.c1d*x), 2.0))
 		D2λbDx2 = -o.β2b * (DλbDx*DydDx + o.λb*D2ydDx2)
 		D2λbDyDx = -(o.β2b*DλbDy + o.λb*Dβ2bDy) * DydDx
 		DλdbDy := o.λd * math.Exp(-o.βd*o.Dd) * o.βd
-		Dβ2bDy2 := o.α * o.β2 * math.Pow(max(sl, 0.0), o.α-2.0) * (o.α - 1.0)
+		Dβ2bDy2 := o.α * o.β2 * math.Pow(utl.Max(sl, 0.0), o.α-2.0) * (o.α - 1.0)
 		D2λbDy2 = (-o.βd*DλdbDy+DλdbDy*(o.β2b-Dβ2bDy*o.D)+o.λdb*(2.0*Dβ2bDy-Dβ2bDy2*o.D))*math.Exp(-o.β2b*o.D) + (o.βd*(o.λd-o.λdb)+o.λdb*(o.β2b-Dβ2bDy*o.D))*math.Exp(-o.β2b*o.D)*(-Dβ2bDy*o.D+o.β2b)
 	}
 	den := 1.0 + pc
@@ -229,20 +230,20 @@ func (o *RefM1) Derivs(pc, sl float64, wet bool) (L, Lx, J, Jx, Jy float64, err 
 // auxiliary //////////////////////////////////////////////////////////////////////////////////////
 
 func (o *RefM1) drying(x, y float64) {
-	o.Dd = max(y-o.yr, 0.0)
+	o.Dd = utl.Max(y-o.yr, 0.0)
 	o.λdb = o.λd * (1.0 - math.Exp(-o.βd*o.Dd))
 	o.yd = -o.λd*x + math.Log(o.c3d+o.c2d*math.Exp(o.c1d*x))/o.βd
-	o.D = max(o.yd-y, 0.0)
-	o.β2b = o.β2 * math.Pow(max(y, 0.0), o.α)
+	o.D = utl.Max(o.yd-y, 0.0)
+	o.β2b = o.β2 * math.Pow(utl.Max(y, 0.0), o.α)
 	o.λb = o.λdb * math.Exp(-o.β2b*o.D)
 	return
 }
 
 func (o *RefM1) wetting(x, y float64) {
-	o.Dw = max(o.y0-y, 0.0)
+	o.Dw = utl.Max(o.y0-y, 0.0)
 	o.λwb = o.λw * (1.0 - math.Exp(-o.βw*o.Dw))
 	o.yw = -o.λw*x - math.Log(o.c3w+o.c2w*math.Exp(o.c1w*x))/o.βw
-	o.D = max(y-o.yw, 0.0)
+	o.D = utl.Max(y-o.yw, 0.0)
 	o.λb = o.λwb * math.Exp(-o.β1*o.D)
 	return
 }

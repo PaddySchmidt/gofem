@@ -11,6 +11,7 @@ import (
 
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/la"
+	"github.com/cpmech/gosl/utl"
 )
 
 // constants
@@ -209,16 +210,16 @@ func CellBryDist(cellType string, R []float64) float64 {
 	}
 	bgeo := GetBasicType(cellType) // fundamental geometry of cell
 	if bgeo == "tri3" {
-		return min(r, min(s, 1.0-r-s))
+		return utl.Min(r, utl.Min(s, 1.0-r-s))
 	}
 	if bgeo == "qua4" {
-		return min(1.0-math.Abs(r), 1.0-math.Abs(s))
+		return utl.Min(1.0-math.Abs(r), 1.0-math.Abs(s))
 	}
 	if bgeo == "hex8" {
-		return min(1.0-math.Abs(r), min(1.0-math.Abs(s), 1.0-math.Abs(t)))
+		return utl.Min(1.0-math.Abs(r), utl.Min(1.0-math.Abs(s), 1.0-math.Abs(t)))
 	}
 	if bgeo == "tet4" {
-		return min(r, min(s, min(t, 1.0-r-s-t)))
+		return utl.Min(r, utl.Min(s, utl.Min(t, 1.0-r-s-t)))
 	}
 	chk.Panic("cannot handle cellType=%q yet", cellType)
 	return 0 // must not reach this point

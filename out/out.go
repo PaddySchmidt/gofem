@@ -151,8 +151,8 @@ func Start(simfnpath string, stageIdx, regionIdx int) {
 				first = false
 			} else {
 				for j := 0; j < ndim; j++ {
-					IpsMin[j] = min(IpsMin[j], d.X[j])
-					IpsMax[j] = max(IpsMax[j], d.X[j])
+					IpsMin[j] = utl.Min(IpsMin[j], d.X[j])
+					IpsMax[j] = utl.Max(IpsMax[j], d.X[j])
 				}
 			}
 		}

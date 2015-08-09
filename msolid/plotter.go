@@ -158,7 +158,7 @@ func (o *Plotter) Title(text string) {
 func (o *Plotter) Plot(keys []string, res []*State, sts [][]float64, first, last bool) {
 
 	// auxiliary variables
-	nr := imax(len(res), len(sts))
+	nr := utl.Imax(len(res), len(sts))
 	if nr < 1 {
 		return
 	}
@@ -349,8 +349,8 @@ func (o *Plotter) Plot_p_ev(x, y []float64, res []*State, sts [][]float64, last 
 					x1[i] = o.calc_x(res[i].Alp[1])
 				}
 			}
-			xmin = min(xmin, x[i])
-			xmax = max(xmax, x[i])
+			xmin = utl.Min(xmin, x[i])
+			xmax = utl.Max(xmax, x[i])
 		}
 	} else {
 		xmin := o.P[0]
@@ -364,8 +364,8 @@ func (o *Plotter) Plot_p_ev(x, y []float64, res []*State, sts [][]float64, last 
 					x1[i] = res[i].Alp[1]
 				}
 			}
-			xmin = min(xmin, x[i])
-			xmax = max(xmax, x[i])
+			xmin = utl.Min(xmin, x[i])
+			xmax = utl.Max(xmax, x[i])
 		}
 	}
 	if withα {
@@ -465,10 +465,10 @@ func (o *Plotter) Plot_Dgam_f(x, y []float64, res []*State, sts [][]float64, las
 		x[i] = res[i].Dgam
 		ys = o.m.YieldFuncs(res[i])
 		y[i] = ys[0]
-		xmi = min(xmi, x[i])
-		xma = max(xma, x[i])
-		ymi = min(ymi, y[i])
-		yma = max(yma, y[i])
+		xmi = utl.Min(xmi, x[i])
+		xma = utl.Max(xma, x[i])
+		ymi = utl.Min(ymi, y[i])
+		yma = utl.Max(yma, y[i])
 	}
 	//o.DrawRamp(xmi, xma, ymi, yma)
 	plt.Plot(x, y, io.Sf("'r.', ls='%s', clip_on=0, color='%s', marker='%s', label=r'%s'", o.Ls, o.Clr, o.Mrk, o.Lbl))
@@ -501,10 +501,10 @@ func (o *Plotter) Plot_p_q(x, y []float64, res []*State, sts [][]float64, last b
 			xmi, xma = x[i], x[i]
 			ymi, yma = y[i], y[i]
 		} else {
-			xmi = min(xmi, x[i])
-			xma = max(xma, x[i])
-			ymi = min(ymi, y[i])
-			yma = max(yma, y[i])
+			xmi = utl.Min(xmi, x[i])
+			xma = utl.Max(xma, x[i])
+			ymi = utl.Min(ymi, y[i])
+			yma = utl.Max(yma, y[i])
 		}
 		if o.SMPon {
 			x[i], y[i], _ = tsr.M_pq_smp(res[i].Sig, o.SMPa, o.SMPb, o.SMPβ, o.SMPϵ)
@@ -520,11 +520,11 @@ func (o *Plotter) Plot_p_q(x, y []float64, res []*State, sts [][]float64, last b
 			mx, my = tsr.SQ3, tsr.SQ2by3
 		}
 		if o.UsePmin {
-			xmi = min(xmi, o.Pmin*mx)
+			xmi = utl.Min(xmi, o.Pmin*mx)
 		}
 		if o.UsePmax {
-			xma = max(xma, o.Pmax*mx)
-			yma = max(yma, o.Pmax*my)
+			xma = utl.Max(xma, o.Pmax*mx)
+			yma = utl.Max(yma, o.Pmax*my)
 		}
 		xmi, xma, ymi, yma = o.fix_range(xmi, xmi, xma, ymi, yma)
 		if o.PqLims != nil {
@@ -627,15 +627,15 @@ func (o *Plotter) Plot_oct(x, y []float64, res []*State, sts [][]float64, last b
 	for i := 0; i < nr; i++ {
 		σa, σb, _ = tsr.PQW2O(o.P[i], o.Q[i], o.W[i])
 		x[i], y[i] = σa, σb
-		o.maxR = max(o.maxR, math.Sqrt(σa*σa+σb*σb))
+		o.maxR = utl.Max(o.maxR, math.Sqrt(σa*σa+σb*σb))
 		if i == 0 {
 			xmi, xma = x[i], x[i]
 			ymi, yma = y[i], y[i]
 		} else {
-			xmi = min(xmi, x[i])
-			xma = max(xma, x[i])
-			ymi = min(ymi, y[i])
-			yma = max(yma, y[i])
+			xmi = utl.Min(xmi, x[i])
+			xma = utl.Max(xma, x[i])
+			ymi = utl.Min(ymi, y[i])
+			yma = utl.Max(yma, y[i])
 		}
 	}
 	plt.Plot(x, y, io.Sf("'r.', ls='%s', clip_on=0, color='%s', marker='%s', label=r'%s'", o.Ls, o.Clr, o.Mrk, o.Lbl))
@@ -673,7 +673,7 @@ func (o *Plotter) Plot_oct(x, y []float64, res []*State, sts [][]float64, last b
 			v.Dgam = res[k].Dgam
 			σc = tsr.M_p(res[k].Sig) * tsr.SQ3
 			//σc = 30000
-			σcmax = max(σcmax, σc)
+			σcmax = utl.Max(σcmax, σc)
 			for i := 0; i < o.NptsOct; i++ {
 				for j := 0; j < o.NptsOct; j++ {
 					xx[i][j] = xmi + float64(i)*dx
@@ -698,8 +698,8 @@ func (o *Plotter) Plot_oct(x, y []float64, res []*State, sts [][]float64, last b
 				//plt.Plot([]float64{σa,σanew}, []float64{σb,σbnew}, "'k+', ms=3, color='k'")
 				plt.Arrow(σa, σb, σanew, σbnew, io.Sf("sc=%d, fc='%s', ec='%s'", o.ArrWid, o.ClrPC, o.ClrPC))
 			}
-			o.maxR = max(o.maxR, math.Sqrt(σa*σa+σb*σb))
-			o.maxR = max(o.maxR, math.Sqrt(σanew*σanew+σbnew*σbnew))
+			o.maxR = utl.Max(o.maxR, math.Sqrt(σa*σa+σb*σb))
+			o.maxR = utl.Max(o.maxR, math.Sqrt(σanew*σanew+σbnew*σbnew))
 		}
 	}
 	// rosette and settings
@@ -736,10 +736,10 @@ func (o *Plotter) Plot_s3_s1(x, y []float64, res []*State, sts [][]float64, last
 			xmi, xma = x[i], x[i]
 			ymi, yma = y[i], y[i]
 		} else {
-			xmi = min(min(xmi, x[i]), x2[i])
-			xma = max(max(xma, x[i]), x2[i])
-			ymi = min(ymi, y[i])
-			yma = max(yma, y[i])
+			xmi = utl.Min(utl.Min(xmi, x[i]), x2[i])
+			xma = utl.Max(utl.Max(xma, x[i]), x2[i])
+			ymi = utl.Min(ymi, y[i])
+			yma = utl.Max(yma, y[i])
 		}
 	}
 	plt.Plot(x, y, io.Sf("'r.', ls='%s', clip_on=0, color='%s', marker='%s', label=r'$\\sigma_3$ %s'", o.Ls, o.Clr, o.Mrk, o.Lbl))
@@ -749,12 +749,12 @@ func (o *Plotter) Plot_s3_s1(x, y []float64, res []*State, sts [][]float64, last
 	// yield surface
 	if o.WithYs && o.m != nil {
 		if o.UsePmin {
-			xmi = min(xmi, o.Pmin*tsr.SQ2)
-			ymi = min(ymi, o.Pmin)
+			xmi = utl.Min(xmi, o.Pmin*tsr.SQ2)
+			ymi = utl.Min(ymi, o.Pmin)
 		}
 		if o.UsePmax {
-			xma = max(xma, o.Pmax*tsr.SQ2)
-			yma = max(yma, o.Pmax)
+			xma = utl.Max(xma, o.Pmax*tsr.SQ2)
+			yma = utl.Max(yma, o.Pmax)
 		}
 		xmi, xma, ymi, yma = o.fix_range(0, xmi, xma, ymi, yma)
 		if o.S3s1Lims != nil {

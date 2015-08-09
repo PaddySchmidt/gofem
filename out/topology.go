@@ -11,6 +11,7 @@ import (
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/gm"
 	"github.com/cpmech/gosl/la"
+	"github.com/cpmech/gosl/utl"
 )
 
 const DIST_TOL = 1e-6 // tolerance to compare distances or proximity between points
@@ -129,7 +130,7 @@ func NodesOnPlane(ftag int) *PlaneData {
 					xa := Dom.Msh.Verts[a].C
 					xb := Dom.Msh.Verts[b].C
 					for j := 0; j < ndim; j++ {
-						Δx[j] = max(Δx[j], math.Abs(xa[j]-xb[j]))
+						Δx[j] = utl.Max(Δx[j], math.Abs(xa[j]-xb[j]))
 					}
 				}
 				if first {
@@ -197,8 +198,8 @@ func NodesOnPlane(ftag int) *PlaneData {
 			first = false
 		} else {
 			for j := 0; j < 2; j++ {
-				dat.Umin[j] = min(dat.Umin[j], x[dat.Iu[j]])
-				dat.Umax[j] = max(dat.Umax[j], x[dat.Iu[j]])
+				dat.Umin[j] = utl.Min(dat.Umin[j], x[dat.Iu[j]])
+				dat.Umax[j] = utl.Max(dat.Umax[j], x[dat.Iu[j]])
 			}
 		}
 	}
