@@ -116,6 +116,10 @@ func init() {
 				o.Rho = p.V
 			}
 		}
+		ϵp := 1e-9
+		if o.E < ϵp || o.A < ϵp || o.Izz < ϵp || o.Rho < ϵp {
+			chk.Panic("E, A, Izz and rho parameters must be all positive")
+		}
 
 		// vectors and matrices
 		o.T = la.MatAlloc(o.Nu, o.Nu)
