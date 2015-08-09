@@ -32,7 +32,7 @@ func main() {
 	mpi.Start(false)
 
 	// start global variables and log
-	analysis := fem.NewFEM("data/p01.sim", "", true, true, false, true, true)
+	analysis := fem.NewFEM("data/p01.sim", "", true, true, false, true, true, 0)
 
 	// run simulation
 	err := analysis.Run()

@@ -32,7 +32,7 @@ func main() {
 	mpi.Start(false)
 
 	// start global variables and log
-	analysis := fem.NewFEM("data/spo751.sim", "", true, true, false, true, true)
+	analysis := fem.NewFEM("data/spo751.sim", "", true, true, false, true, true, 0)
 
 	// run simulation
 	err := analysis.Run()
@@ -46,5 +46,5 @@ func main() {
 	tolK := 1e-17
 	tolu := 1e-12
 	tols := 1e-14
-	fem.TestingCompareResultsU(&tst, "data/spo751.sim", "cmp/spo751.cmp", tolK, tolu, tols, skipK, true)
+	fem.TestingCompareResultsU(&tst, "data/spo751.sim", "cmp/spo751.cmp", "", tolK, tolu, tols, skipK, true)
 }
