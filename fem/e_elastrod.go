@@ -153,7 +153,7 @@ func init() {
 // implementation ///////////////////////////////////////////////////////////////////////////////////
 
 // Id returns the cell Id
-func (o ElasticRod) Id() int { return o.Cell.Id }
+func (o *ElasticRod) Id() int { return o.Cell.Id }
 
 // SetEqs set equations
 func (o *ElasticRod) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
@@ -184,7 +184,7 @@ func (o *ElasticRod) SetEleConds(key string, f fun.Func, extra string) (err erro
 }
 
 // AddToRhs adds -R to global residual vector fb
-func (o ElasticRod) AddToRhs(fb []float64, sol *Solution) (err error) {
+func (o *ElasticRod) AddToRhs(fb []float64, sol *Solution) (err error) {
 	for i, I := range o.Umap {
 		for j, J := range o.Umap {
 			fb[I] -= o.K[i][j] * sol.Y[J] // -fi
@@ -194,7 +194,7 @@ func (o ElasticRod) AddToRhs(fb []float64, sol *Solution) (err error) {
 }
 
 // AddToKb adds element K to global Jacobian matrix Kb
-func (o ElasticRod) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
+func (o *ElasticRod) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
 	for i, I := range o.Umap {
 		for j, J := range o.Umap {
 			Kb.Put(I, J, o.K[i][j])

@@ -207,7 +207,7 @@ func init() {
 }
 
 // Id returns the cell Id
-func (o Beam) Id() int { return o.Cell.Id }
+func (o *Beam) Id() int { return o.Cell.Id }
 
 // SetEqs set equations [2][?]. Format of eqs == format of info.Dofs
 func (o *Beam) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
@@ -256,7 +256,7 @@ func (o *Beam) InterpStarVars(sol *Solution) (err error) {
 }
 
 // adds -R to global residual vector fb
-func (o Beam) AddToRhs(fb []float64, sol *Solution) (err error) {
+func (o *Beam) AddToRhs(fb []float64, sol *Solution) (err error) {
 
 	// node displacements
 	for i, I := range o.Umap {
@@ -301,7 +301,7 @@ func (o Beam) AddToRhs(fb []float64, sol *Solution) (err error) {
 }
 
 // adds element K to global Jacobian matrix Kb
-func (o Beam) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
+func (o *Beam) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
 	if sol.Steady {
 		for i, I := range o.Umap {
 			for j, J := range o.Umap {
@@ -325,16 +325,16 @@ func (o *Beam) Update(sol *Solution) (err error) {
 }
 
 // Encode encodes internal variables
-func (o Beam) Encode(enc Encoder) (err error) {
+func (o *Beam) Encode(enc Encoder) (err error) {
 	return
 }
 
 // Decode decodes internal variables
-func (o Beam) Decode(dec Decoder) (err error) {
+func (o *Beam) Decode(dec Decoder) (err error) {
 	return
 }
 
 // OutIpsData returns data from all integration points for output
-func (o Beam) OutIpsData() (data []*OutIpData) {
+func (o *Beam) OutIpsData() (data []*OutIpData) {
 	return
 }

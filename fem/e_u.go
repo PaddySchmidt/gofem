@@ -261,7 +261,7 @@ func init() {
 // implementation ///////////////////////////////////////////////////////////////////////////////////
 
 // Id returns the cell Id
-func (o ElemU) Id() int { return o.Cell.Id }
+func (o *ElemU) Id() int { return o.Cell.Id }
 
 // SetEqs set equations
 func (o *ElemU) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
@@ -513,7 +513,7 @@ func (o *ElemU) Update(sol *Solution) (err error) {
 // internal variables ///////////////////////////////////////////////////////////////////////////////
 
 // Ipoints returns the real coordinates of integration points [nip][ndim]
-func (o ElemU) Ipoints() (coords [][]float64) {
+func (o *ElemU) Ipoints() (coords [][]float64) {
 	coords = la.MatAlloc(len(o.IpsElem), o.Ndim)
 	for idx, ip := range o.IpsElem {
 		coords[idx] = o.Shp.IpRealCoords(o.X, ip)
@@ -591,12 +591,12 @@ func (o *ElemU) Ureset(sol *Solution) (err error) {
 // writer ///////////////////////////////////////////////////////////////////////////////////////////
 
 // Encode encodes internal variables
-func (o ElemU) Encode(enc Encoder) (err error) {
+func (o *ElemU) Encode(enc Encoder) (err error) {
 	return enc.Encode(o.States)
 }
 
 // Decode decodes internal variables
-func (o ElemU) Decode(dec Decoder) (err error) {
+func (o *ElemU) Decode(dec Decoder) (err error) {
 	err = dec.Decode(&o.States)
 	if err != nil {
 		return
@@ -605,7 +605,7 @@ func (o ElemU) Decode(dec Decoder) (err error) {
 }
 
 // OutIpsData returns data from all integration points for output
-func (o ElemU) OutIpsData() (data []*OutIpData) {
+func (o *ElemU) OutIpsData() (data []*OutIpData) {
 	keys := StressKeys(o.Ndim)
 	for idx, ip := range o.IpsElem {
 		s := o.States[idx]
@@ -742,7 +742,7 @@ func (o *ElemU) add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
 }
 
 // add_contact_to_jac adds coupled equations due to contact modelling to Jacobian
-func (o ElemU) add_contact_to_jac(sol *Solution) (err error) {
+func (o *ElemU) add_contact_to_jac(sol *Solution) (err error) {
 
 	// clear matrices
 	for i := 0; i < o.Nq; i++ {
@@ -843,13 +843,13 @@ func (o *ElemU) rampD1(x float64) float64 {
 }
 
 // TODO: improve these
-func (o ElemU) contact_f(x []float64) float64 {
+func (o *ElemU) contact_f(x []float64) float64 {
 	r := make([]float64, 3)
 	o.Shp.InvMap(r, x, o.X)
 	return shp.CellBryDist(o.Cell.Type, r)
 }
 
-func (o ElemU) contact_g(x []float64) float64 {
+func (o *ElemU) contact_g(x []float64) float64 {
 	if false {
 		return x[0] - 1.025
 	}
@@ -862,7 +862,7 @@ func (o ElemU) contact_g(x []float64) float64 {
 	return δ
 }
 
-func (o ElemU) contact_dgdx(dgdx, x []float64) {
+func (o *ElemU) contact_dgdx(dgdx, x []float64) {
 	if false {
 		dgdx[0], dgdx[1] = 1.0, 0.0
 	}
@@ -882,7 +882,7 @@ func (o ElemU) contact_dgdx(dgdx, x []float64) {
 	}
 }
 
-func (o ElemU) get_Y() (Y [][]float64) {
+func (o *ElemU) get_Y() (Y [][]float64) {
 	test := 3
 	switch test {
 	case 1:

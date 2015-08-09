@@ -143,7 +143,7 @@ func init() {
 // implementation ///////////////////////////////////////////////////////////////////////////////////
 
 // Id returns the cell Id
-func (o Rod) Id() int { return o.Cell.Id }
+func (o *Rod) Id() int { return o.Cell.Id }
 
 // SetEqs set equations
 func (o *Rod) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
@@ -171,7 +171,7 @@ func (o *Rod) SetEleConds(key string, f fun.Func, extra string) (err error) {
 }
 
 // AddToRhs adds -R to global residual vector fb
-func (o Rod) AddToRhs(fb []float64, sol *Solution) (err error) {
+func (o *Rod) AddToRhs(fb []float64, sol *Solution) (err error) {
 
 	// for each integration point
 	nverts := o.Shp.Nverts
@@ -201,7 +201,7 @@ func (o Rod) AddToRhs(fb []float64, sol *Solution) (err error) {
 }
 
 // AddToKb adds element K to global Jacobian matrix Kb
-func (o Rod) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
+func (o *Rod) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
 
 	// zero K matrix
 	la.MatFill(o.K, 0)
@@ -290,7 +290,7 @@ func (o *Rod) Update(sol *Solution) (err error) {
 // internal variables ///////////////////////////////////////////////////////////////////////////////
 
 // Ipoints returns the real coordinates of integration points [nip][ndim]
-func (o Rod) Ipoints() (coords [][]float64) {
+func (o *Rod) Ipoints() (coords [][]float64) {
 	coords = la.MatAlloc(len(o.IpsElem), o.Ndim)
 	for idx, ip := range o.IpsElem {
 		coords[idx] = o.Shp.IpRealCoords(o.X, ip)
@@ -365,12 +365,12 @@ func (o *Rod) Ureset(sol *Solution) (err error) {
 // writer ///////////////////////////////////////////////////////////////////////////////////////////
 
 // Encode encodes internal variables
-func (o Rod) Encode(enc Encoder) (err error) {
+func (o *Rod) Encode(enc Encoder) (err error) {
 	return enc.Encode(o.States)
 }
 
 // Decode decodes internal variables
-func (o Rod) Decode(dec Decoder) (err error) {
+func (o *Rod) Decode(dec Decoder) (err error) {
 	err = dec.Decode(&o.States)
 	if err != nil {
 		return
@@ -379,7 +379,7 @@ func (o Rod) Decode(dec Decoder) (err error) {
 }
 
 // OutIpsData returns data from all integration points for output
-func (o Rod) OutIpsData() (data []*OutIpData) {
+func (o *Rod) OutIpsData() (data []*OutIpData) {
 	for idx, ip := range o.IpsElem {
 		s := o.States[idx]
 		x := o.Shp.IpRealCoords(o.X, ip)

@@ -128,7 +128,7 @@ func init() {
 }
 
 // Id returns the cell Id
-func (o Rjoint) Id() int { return o.Cell.Id }
+func (o *Rjoint) Id() int { return o.Cell.Id }
 
 // Connect connects rod/solid elements in this Rjoint
 func (o *Rjoint) Connect(cid2elem []Elem, c *inp.Cell) (nnzK int, err error) {
@@ -667,7 +667,7 @@ func (o *Rjoint) Update(sol *Solution) (err error) {
 // internal variables ///////////////////////////////////////////////////////////////////////////////
 
 // Ipoints returns the real coordinates of integration points [nip][ndim]
-func (o Rjoint) Ipoints() (coords [][]float64) {
+func (o *Rjoint) Ipoints() (coords [][]float64) {
 	return o.Rod.Ipoints()
 }
 
@@ -721,12 +721,12 @@ func (o *Rjoint) Ureset(sol *Solution) (err error) {
 // writer ///////////////////////////////////////////////////////////////////////////////////////////
 
 // Encode encodes internal variables
-func (o Rjoint) Encode(enc Encoder) (err error) {
+func (o *Rjoint) Encode(enc Encoder) (err error) {
 	return enc.Encode(o.States)
 }
 
 // Decode decodes internal variables
-func (o Rjoint) Decode(dec Decoder) (err error) {
+func (o *Rjoint) Decode(dec Decoder) (err error) {
 	err = dec.Decode(&o.States)
 	if err != nil {
 		return
@@ -735,7 +735,7 @@ func (o Rjoint) Decode(dec Decoder) (err error) {
 }
 
 // OutIpsData returns data from all integration points for output
-func (o Rjoint) OutIpsData() (data []*OutIpData) {
+func (o *Rjoint) OutIpsData() (data []*OutIpData) {
 	for idx, ip := range o.Rod.IpsElem {
 		s := o.States[idx]
 		x := o.Rod.Shp.IpRealCoords(o.Rod.X, ip)
@@ -752,7 +752,7 @@ func (o Rjoint) OutIpsData() (data []*OutIpData) {
 
 // debugging ////////////////////////////////////////////////////////////////////////////////////////
 
-func (o Rjoint) debug_print_init() {
+func (o *Rjoint) debug_print_init() {
 	sldNn := o.Sld.Shp.Nverts
 	rodNn := o.Rod.Shp.Nverts
 	rodNp := len(o.Rod.IpsElem)
@@ -778,7 +778,7 @@ func (o Rjoint) debug_print_init() {
 	la.PrintMat("e2", o.e2, "%20.13f", false)
 }
 
-func (o Rjoint) debug_print_K() {
+func (o *Rjoint) debug_print_K() {
 	sldNn := o.Sld.Shp.Nverts
 	rodNn := o.Rod.Shp.Nverts
 	K := la.MatAlloc(o.Ny, o.Ny)
@@ -813,7 +813,7 @@ func (o Rjoint) debug_print_K() {
 	la.PrintMat("K", K, "%20.10f", false)
 }
 
-func (o Rjoint) debug_update(idx int, Δwb0, Δwb1, Δwb2, σc float64) {
+func (o *Rjoint) debug_update(idx int, Δwb0, Δwb1, Δwb2, σc float64) {
 	τ := o.States[idx].Sig
 	qn1 := o.States[idx].Phi[0]
 	qn2 := o.States[idx].Phi[1]

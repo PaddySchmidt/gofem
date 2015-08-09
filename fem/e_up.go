@@ -143,7 +143,7 @@ func init() {
 // implementation ///////////////////////////////////////////////////////////////////////////////////
 
 // Id returns the cell Id
-func (o ElemUP) Id() int { return o.Cell.Id }
+func (o *ElemUP) Id() int { return o.Cell.Id }
 
 // SetEqs set equations
 func (o *ElemUP) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
@@ -243,7 +243,7 @@ func (o *ElemUP) InterpStarVars(sol *Solution) (err error) {
 }
 
 // adds -R to global residual vector fb
-func (o ElemUP) AddToRhs(fb []float64, sol *Solution) (err error) {
+func (o *ElemUP) AddToRhs(fb []float64, sol *Solution) (err error) {
 
 	// clear variables
 	if o.P.DoExtrap {
@@ -365,7 +365,7 @@ func (o ElemUP) AddToRhs(fb []float64, sol *Solution) (err error) {
 }
 
 // adds element K to global Jacobian matrix Kb
-func (o ElemUP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
+func (o *ElemUP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
 
 	// clear matrices
 	u_nverts := o.U.Shp.Nverts
@@ -582,7 +582,7 @@ func (o *ElemUP) Update(sol *Solution) (err error) {
 // internal variables ///////////////////////////////////////////////////////////////////////////////
 
 // Ipoints returns the real coordinates of integration points [nip][ndim]
-func (o ElemUP) Ipoints() (coords [][]float64) {
+func (o *ElemUP) Ipoints() (coords [][]float64) {
 	coords = la.MatAlloc(len(o.U.IpsElem), o.Ndim)
 	for idx, ip := range o.U.IpsElem {
 		coords[idx] = o.U.Shp.IpRealCoords(o.U.X, ip)
@@ -689,7 +689,7 @@ func (o *ElemUP) Ureset(sol *Solution) (err error) {
 // writer ///////////////////////////////////////////////////////////////////////////////////////////
 
 // Encode encodes internal variables
-func (o ElemUP) Encode(enc Encoder) (err error) {
+func (o *ElemUP) Encode(enc Encoder) (err error) {
 	err = o.U.Encode(enc)
 	if err != nil {
 		return
@@ -698,7 +698,7 @@ func (o ElemUP) Encode(enc Encoder) (err error) {
 }
 
 // Decode decodes internal variables
-func (o ElemUP) Decode(dec Decoder) (err error) {
+func (o *ElemUP) Decode(dec Decoder) (err error) {
 	err = o.U.Decode(dec)
 	if err != nil {
 		return
@@ -707,7 +707,7 @@ func (o ElemUP) Decode(dec Decoder) (err error) {
 }
 
 // OutIpsData returns data from all integration points for output
-func (o ElemUP) OutIpsData() (data []*OutIpData) {
+func (o *ElemUP) OutIpsData() (data []*OutIpData) {
 	flow := FlowKeys(o.Ndim)
 	sigs := StressKeys(o.Ndim)
 	for idx, ip := range o.U.IpsElem {
@@ -793,7 +793,7 @@ func (o *ElemUP) ipvars(idx int, sol *Solution) (err error) {
 }
 
 // add_natbcs_to_jac adds contribution from natural boundary conditions to Jacobian
-func (o ElemUP) add_natbcs_to_jac(sol *Solution) (err error) {
+func (o *ElemUP) add_natbcs_to_jac(sol *Solution) (err error) {
 
 	// compute surface integral
 	u_nverts := o.U.Shp.Nverts
@@ -847,7 +847,7 @@ func (o ElemUP) add_natbcs_to_jac(sol *Solution) (err error) {
 	return
 }
 
-func (o ElemUP) debug_print_K() {
+func (o *ElemUP) debug_print_K() {
 	la.PrintMat("Kpp", o.P.Kpp, "%20.10f", false)
 	la.PrintMat("Kpf", o.P.Kpf, "%20.10f", false)
 	la.PrintMat("Kfp", o.P.Kfp, "%20.10f", false)
