@@ -12,10 +12,10 @@ import (
 	"github.com/cpmech/gosl/io"
 )
 
-func Test_beam01(tst *testing.T) {
+func Test_beam01a(tst *testing.T) {
 
 	//verbose()
-	chk.PrintTitle("beam01")
+	chk.PrintTitle("beam01a")
 
 	// fem
 	analysis := NewFEM("data/beam01.sim", "", true, false, false, false, chk.Verbose, 0)
@@ -95,4 +95,54 @@ func Test_beam01(tst *testing.T) {
 	sort.Ints(ct_uy_eqs)
 	chk.Ints(tst, "constrained ux equations", ct_ux_eqs, []int{0})
 	chk.Ints(tst, "constrained uy equations", ct_uy_eqs, []int{1, 4})
+}
+
+func Test_beam01b(tst *testing.T) {
+
+	//verbose()
+	chk.PrintTitle("beam01b. simply supported")
+
+	// start simulation
+	analysis := NewFEM("data/beam01.sim", "", true, true, false, false, chk.Verbose, 0)
+
+	// run simulation
+	err := analysis.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
+		return
+	}
+
+	// check
+	dom := analysis.Domains[0]
+	ele := dom.Elems[0].(*Beam)
+	_, M := ele.CalcVandM(dom.Sol, 0.5, 1)
+	qn, L := 15.0, 1.0
+	Mcentre := qn * L * L / 8.0
+	io.Pforan("M = %v (%v)\n", M, Mcentre)
+	chk.Scalar(tst, "M @ centre", 1e-17, M[0], Mcentre)
+}
+
+func Test_beam02(tst *testing.T) {
+
+	//verbose()
+	chk.PrintTitle("beam02. cantilever")
+
+	// start simulation
+	analysis := NewFEM("data/beam02.sim", "", true, true, false, false, chk.Verbose, 0)
+
+	// run simulation
+	err := analysis.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
+		return
+	}
+
+	// check
+	dom := analysis.Domains[0]
+	ele := dom.Elems[0].(*Beam)
+	_, M := ele.CalcVandM(dom.Sol, 0, 1)
+	qn, L := 15.0, 1.0
+	Mleft := -qn * L * L / 2.0
+	io.Pforan("M = %v (%v)\n", M, Mleft)
+	chk.Scalar(tst, "M @ left", 1e-15, M[0], Mleft)
 }

@@ -1,0 +1,30 @@
+{
+  "data" : {
+    "desc"    : "cantilever",
+    "matfile" : "beams.mat",
+    "steady"  : true
+  },
+  "functions" : [
+    { "name":"load", "type":"cte", "prms":[{"n":"c", "v":-15}] }
+  ],
+  "regions" : [
+    {
+      "desc"      : "beam",
+      "mshfile"   : "beam01.msh",
+      "elemsdata" : [
+        { "tag":-1, "mat":"beam01", "type":"beam" }
+      ]
+    }
+  ],
+  "stages" : [
+    {
+      "desc"    : "apply loading",
+      "nodebcs" : [
+        { "tag":-1, "keys":["ux","uy","rz"], "funcs":["zero","zero","zero"] }
+      ],
+      "eleconds" : [
+        { "tag":-1, "keys":["qn"], "funcs":["load"] }
+      ]
+    }
+  ]
+}

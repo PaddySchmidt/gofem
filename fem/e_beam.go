@@ -23,10 +23,11 @@ type Beam struct {
 	Nu   int         // total number of unknowns == 2 * nsn
 	Ndim int         // space dimension
 
-	// parameters
+	// parameters and properties
 	E   float64 // Young's modulus
 	A   float64 // cross-sectional area
 	Izz float64 // Inertia zz
+	L   float64 // length of beam
 
 	// variables for dynamics
 	Rho  float64  // density of solids
@@ -51,6 +52,7 @@ type Beam struct {
 	grav []float64 // [ndim] gravity vector
 	fi   []float64 // [nu] internal forces
 	ue   []float64 // local u vector
+	ua   []float64 // [6] u aligned with beam system
 	ζe   []float64 // local ζ* vector
 	fxl  []float64 // local external force vector
 }
@@ -128,78 +130,13 @@ func init() {
 		o.Ml = la.MatAlloc(o.Nu, o.Nu)
 		o.M = la.MatAlloc(o.Nu, o.Nu)
 		o.ue = make([]float64, o.Nu)
+		o.ua = make([]float64, 6) // TODO: check this
 		o.ζe = make([]float64, o.Nu)
 		o.fxl = make([]float64, o.Nu)
 		o.Rus = make([]float64, o.Nu)
 
-		// T
-		dx := o.X[0][1] - o.X[0][0]
-		dy := o.X[1][1] - o.X[1][0]
-		l := math.Sqrt(dx*dx + dy*dy)
-		c := dx / l
-		s := dy / l
-		o.T[0][0] = c
-		o.T[0][1] = s
-		o.T[1][0] = -s
-		o.T[1][1] = c
-		o.T[2][2] = 1
-		o.T[3][3] = c
-		o.T[3][4] = s
-		o.T[4][3] = -s
-		o.T[4][4] = c
-		o.T[5][5] = 1
-
-		// aux vars
-		ll := l * l
-		m := o.E * o.A / l
-		n := o.E * o.Izz / (ll * l)
-
-		// K
-		o.Kl[0][0] = m
-		o.Kl[0][3] = -m
-		o.Kl[1][1] = 12 * n
-		o.Kl[1][2] = 6 * l * n
-		o.Kl[1][4] = -12 * n
-		o.Kl[1][5] = 6 * l * n
-		o.Kl[2][1] = 6 * l * n
-		o.Kl[2][2] = 4 * ll * n
-		o.Kl[2][4] = -6 * l * n
-		o.Kl[2][5] = 2 * ll * n
-		o.Kl[3][0] = -m
-		o.Kl[3][3] = m
-		o.Kl[4][1] = -12 * n
-		o.Kl[4][2] = -6 * l * n
-		o.Kl[4][4] = 12 * n
-		o.Kl[4][5] = -6 * l * n
-		o.Kl[5][1] = 6 * l * n
-		o.Kl[5][2] = 2 * ll * n
-		o.Kl[5][4] = -6 * l * n
-		o.Kl[5][5] = 4 * ll * n
-		la.MatTrMul3(o.K, 1, o.T, o.Kl, o.T) // K := 1 * trans(T) * Kl * T
-
-		// M
-		m = o.Rho * o.A * l / 420.0
-		o.Ml[0][0] = 140.0 * m
-		o.Ml[0][3] = 70.0 * m
-		o.Ml[1][1] = 156.0 * m
-		o.Ml[1][2] = 22.0 * l * m
-		o.Ml[1][4] = 54.0 * m
-		o.Ml[1][5] = -13.0 * l * m
-		o.Ml[2][1] = 22.0 * l * m
-		o.Ml[2][2] = 4.0 * ll * m
-		o.Ml[2][4] = 13.0 * l * m
-		o.Ml[2][5] = -3.0 * ll * m
-		o.Ml[3][0] = 70.0 * m
-		o.Ml[3][3] = 140.0 * m
-		o.Ml[4][1] = 54.0 * m
-		o.Ml[4][2] = 13.0 * l * m
-		o.Ml[4][4] = 156.0 * m
-		o.Ml[4][5] = -22.0 * l * m
-		o.Ml[5][1] = -13.0 * l * m
-		o.Ml[5][2] = -3.0 * ll * m
-		o.Ml[5][4] = -22.0 * l * m
-		o.Ml[5][5] = 4.0 * ll * m
-		la.MatTrMul3(o.M, 1, o.T, o.Ml, o.T) // M := 1 * trans(T) * Ml * T
+		// compute K and M
+		o.Recompute(true)
 
 		// scratchpad. computed @ each ip
 		o.grav = make([]float64, ndim)
@@ -285,9 +222,7 @@ func (o *Beam) AddToRhs(fb []float64, sol *Solution) (err error) {
 		dx := o.X[0][1] - o.X[0][0]
 		dy := o.X[1][1] - o.X[1][0]
 		l := math.Sqrt(dx*dx + dy*dy)
-		qnL := o.QnL.F(sol.T, nil)
-		qnR := o.QnR.F(sol.T, nil)
-		qt := o.Qt.F(sol.T, nil)
+		qnL, qnR, qt := o.calc_loads(sol.T)
 		o.fxl[0] = qt * l / 2.0
 		o.fxl[1] = l * (7.0*qnL + 3.0*qnR) / 20.0
 		o.fxl[2] = l * l * (3.0*qnL + 2.0*qnR) / 60.0
@@ -340,5 +275,160 @@ func (o *Beam) Decode(dec Decoder) (err error) {
 
 // OutIpsData returns data from all integration points for output
 func (o *Beam) OutIpsData() (data []*OutIpData) {
+	return
+}
+
+// auxiliary ////////////////////////////////////////////////////////////////////////////////////////
+
+// Recompute re-compute matrices after dimensions or parameters are externally changed
+func (o *Beam) Recompute(withM bool) {
+
+	// T
+	dx := o.X[0][1] - o.X[0][0]
+	dy := o.X[1][1] - o.X[1][0]
+	l := math.Sqrt(dx*dx + dy*dy)
+	o.L = l
+	c := dx / l
+	s := dy / l
+	o.T[0][0] = c
+	o.T[0][1] = s
+	o.T[1][0] = -s
+	o.T[1][1] = c
+	o.T[2][2] = 1
+	o.T[3][3] = c
+	o.T[3][4] = s
+	o.T[4][3] = -s
+	o.T[4][4] = c
+	o.T[5][5] = 1
+
+	// aux vars
+	ll := l * l
+	m := o.E * o.A / l
+	n := o.E * o.Izz / (ll * l)
+
+	// K
+	o.Kl[0][0] = m
+	o.Kl[0][3] = -m
+	o.Kl[1][1] = 12 * n
+	o.Kl[1][2] = 6 * l * n
+	o.Kl[1][4] = -12 * n
+	o.Kl[1][5] = 6 * l * n
+	o.Kl[2][1] = 6 * l * n
+	o.Kl[2][2] = 4 * ll * n
+	o.Kl[2][4] = -6 * l * n
+	o.Kl[2][5] = 2 * ll * n
+	o.Kl[3][0] = -m
+	o.Kl[3][3] = m
+	o.Kl[4][1] = -12 * n
+	o.Kl[4][2] = -6 * l * n
+	o.Kl[4][4] = 12 * n
+	o.Kl[4][5] = -6 * l * n
+	o.Kl[5][1] = 6 * l * n
+	o.Kl[5][2] = 2 * ll * n
+	o.Kl[5][4] = -6 * l * n
+	o.Kl[5][5] = 4 * ll * n
+	la.MatTrMul3(o.K, 1, o.T, o.Kl, o.T) // K := 1 * trans(T) * Kl * T
+
+	// M
+	if withM {
+		m = o.Rho * o.A * l / 420.0
+		o.Ml[0][0] = 140.0 * m
+		o.Ml[0][3] = 70.0 * m
+		o.Ml[1][1] = 156.0 * m
+		o.Ml[1][2] = 22.0 * l * m
+		o.Ml[1][4] = 54.0 * m
+		o.Ml[1][5] = -13.0 * l * m
+		o.Ml[2][1] = 22.0 * l * m
+		o.Ml[2][2] = 4.0 * ll * m
+		o.Ml[2][4] = 13.0 * l * m
+		o.Ml[2][5] = -3.0 * ll * m
+		o.Ml[3][0] = 70.0 * m
+		o.Ml[3][3] = 140.0 * m
+		o.Ml[4][1] = 54.0 * m
+		o.Ml[4][2] = 13.0 * l * m
+		o.Ml[4][4] = 156.0 * m
+		o.Ml[4][5] = -22.0 * l * m
+		o.Ml[5][1] = -13.0 * l * m
+		o.Ml[5][2] = -3.0 * ll * m
+		o.Ml[5][4] = -22.0 * l * m
+		o.Ml[5][5] = 4.0 * ll * m
+		la.MatTrMul3(o.M, 1, o.T, o.Ml, o.T) // M := 1 * trans(T) * Ml * T
+	}
+}
+
+// CalcVandM calculate shear force and bending moment @ r
+//  Input:
+//   r         -- natural coordinate   0 ≤ r ≤ L
+//   nstations -- compute many values; otherwise, if nstations<2, compute @ r
+//  Output:
+//   V -- shear force @ stations or r
+//   M -- bending moment @ stations or r
+func (o *Beam) CalcVandM(sol *Solution, r float64, nstations int) (V, M []float64) {
+
+	// node displacements
+	//for i, I := range o.Umap {
+	//o.ue[i] = sol.Y[I]
+	//}
+
+	// aligned displacements
+	for i := 0; i < 6; i++ {
+		o.ua[i] = 0
+		for j, J := range o.Umap {
+			o.ua[i] += o.T[i][j] * sol.Y[J]
+		}
+	}
+
+	// results
+	if nstations < 2 {
+		v, m := o.calc_V_and_M_after_ua(sol.T, r)
+		V, M = []float64{v}, []float64{m}
+		return
+	}
+	V = make([]float64, nstations)
+	M = make([]float64, nstations)
+	dr := o.L / float64(nstations-1)
+	for i := 0; i < nstations; i++ {
+		V[i], M[i] = o.calc_V_and_M_after_ua(sol.T, float64(i)*dr)
+	}
+	return
+}
+
+func (o *Beam) calc_V_and_M_after_ua(time, r float64) (V, M float64) {
+
+	// auxiliary variables
+	l := o.L
+	ll := l * l
+	lll := ll * l
+
+	// shear force
+	V = o.E * o.Izz * ((12.0*o.ua[1])/lll + (6.0*o.ua[2])/ll - (12.0*o.ua[4])/lll + (6.0*o.ua[5])/ll)
+
+	// bending moment
+	M = o.E * o.Izz * (o.ua[1]*((12.0*r)/lll-6.0/ll) + o.ua[2]*((6.0*r)/ll-4.0/l) + o.ua[4]*(6.0/ll-(12.0*r)/lll) + o.ua[5]*((6.0*r)/ll-2.0/l))
+
+	// corrections due to applied loads
+	if o.Hasq {
+		qnL, qnR, _ := o.calc_loads(time)
+		rr := r * r
+		rrr := rr * r
+		V += -(3.0*qnR*ll + 7.0*qnL*ll - 20.0*qnL*r*l - 10.0*qnR*rr + 10.0*qnL*rr) / (20.0 * l)
+		M += (2.0*qnR*lll + 3.0*qnL*lll - 9.0*qnR*r*ll - 21.0*qnL*r*ll + 30.0*qnL*rr*l + 10.0*qnR*rrr - 10.0*qnL*rrr) / (60.0 * l)
+		if qnL > 0.0 {
+			M = -M // swap the sign of M
+		}
+	}
+	return
+}
+
+func (o *Beam) calc_loads(time float64) (qnL, qnR, qt float64) {
+	if o.QnL != nil {
+		qnL = o.QnL.F(time, nil)
+	}
+	if o.QnR != nil {
+		qnR = o.QnR.F(time, nil)
+	}
+	if o.Qt != nil {
+		qt = o.Qt.F(time, nil)
+	}
 	return
 }
