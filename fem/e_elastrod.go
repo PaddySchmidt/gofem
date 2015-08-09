@@ -206,6 +206,7 @@ func (o *ElasticRod) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err e
 // Update perform (tangent) update
 func (o *ElasticRod) Update(sol *Solution) (err error) {
 	for i := 0; i < 2; i++ {
+		o.ua[i] = 0
 		for j, J := range o.Umap {
 			o.ua[i] += o.T[i][j] * sol.Y[J]
 		}
