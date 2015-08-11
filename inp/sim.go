@@ -459,6 +459,28 @@ func (o *Simulation) GetInfo(w goio.Writer) (err error) {
 	return
 }
 
+// GetEleCond returns element condition structure by giving an elem tag
+//  Note: returns nil if not found
+func (o Stage) GetEleCond(elemtag int) *EleCond {
+	for _, ec := range o.EleConds {
+		if elemtag == ec.Tag {
+			return ec
+		}
+	}
+	return nil
+}
+
+// GetNodeBc returns node boundary condition structure by giving a node tag
+//  Note: returns nil if not found
+func (o Stage) GetNodeBc(nodetag int) *NodeBc {
+	for _, nbc := range o.NodeBcs {
+		if nodetag == nbc.Tag {
+			return nbc
+		}
+	}
+	return nil
+}
+
 // GetFaceBc returns face boundary condition structure by giving a face tag
 //  Note: returns nil if not found
 func (o Stage) GetFaceBc(facetag int) *FaceBc {
