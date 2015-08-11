@@ -5,6 +5,7 @@
 package fem
 
 import (
+	"math"
 	"sort"
 	"testing"
 
@@ -145,4 +146,85 @@ func Test_beam02(tst *testing.T) {
 	Mleft := -qn * L * L / 2.0
 	io.Pforan("M = %v (%v)\n", M, Mleft)
 	chk.Scalar(tst, "M @ left", 1e-15, M[0], Mleft)
+}
+
+func Test_beam03(tst *testing.T) {
+
+	//verbose()
+	chk.PrintTitle("beam03. small frame")
+
+	// start simulation
+	analysis := NewFEM("data/beam03.sim", "", true, true, false, false, chk.Verbose, 0)
+
+	// set stage and run
+	set_and_run := func(stgidx int) {
+		err := analysis.SetStage(stgidx)
+		if err != nil {
+			tst.Errorf("SetStage failed:\n%v", err)
+			return
+		}
+		err = analysis.SolveOneStage(stgidx, true)
+		if err != nil {
+			tst.Error("SolveOneStage failed:\n%v", err)
+			return
+		}
+	}
+	set_and_run(0)
+
+	// domain
+	dom := analysis.Domains[0]
+
+	// message
+	io.Pf("\nebc = %v\n", dom.EssenBcs.List(0))
+	io.Pf("fbc = %v\n\n", dom.PtNatBcs.List(0))
+	for _, nod := range dom.Nodes {
+		io.Pf("node # %2d ux=%23.15e uy=%23.15e\n", nod.Vert.Id, dom.Sol.Y[nod.GetEq("ux")], dom.Sol.Y[nod.GetEq("uy")])
+	}
+	io.Pf("\n")
+
+	// define function to check bending moment
+	check_M := func(beamId int, s, Mref, tol float64) {
+		ele := dom.Cid2elem[beamId].(*Beam)
+		_, M := ele.CalcVandM(dom.Sol, s, 1)
+		chk.Scalar(tst, io.Sf("Beam %d: M(s=%g) = %.6f", ele.Id(), s, M[0]), tol, M[0], Mref)
+	}
+
+	// check
+	check_M(0, 0, 0, 1e-13)
+	check_M(0, 1, 34, 1e-13)
+	check_M(1, 0, -20.4, 1e-13)
+	check_M(1, 1, 0, 1e-13)
+	check_M(2, 0, 0, 1e-13)
+	check_M(2, 1, -54.4, 1e-13)
+
+	// problem # 2
+	set_and_run(1)
+	check_M(0, 0, 0, 1e-13)
+	check_M(0, 1, 34, 1e-13)
+	check_M(1, 0, -20.4, 1e-13)
+	check_M(1, 1, 0, 1e-13)
+	check_M(2, 0, 0, 1e-13)
+	check_M(2, 1, 0, 1e-13)
+
+	// problem # 3
+	set_and_run(2)
+	check_M(0, 0, 0, 1e-13)
+	check_M(0, 1, 20, 1e-12)
+	check_M(1, 0, 20, 1e-12)
+	check_M(1, 1, 0, 1e-13)
+	check_M(2, 0, 0, 1e-13)
+	check_M(2, 1, 0, 1e-13)
+
+	// problem # 4
+	set_and_run(3)
+	e0M := func(x float64) float64 { return 5.0752*x - 0.9984*x*x/3.0 - (16.0-x)*0.0624*x*x/6.0 }
+	e1M := func(x float64) float64 { return 1.7472*(10.0-x) - 0.6*0.0624*math.Pow(10.0-x, 3.0)/6.0 }
+	check_M(0, 0, e0M(0), 1e-13)
+	check_M(0, 0.5, e0M(5), 1e-13)
+	check_M(0, 1, e0M(10), 1e-12)
+	check_M(1, 0, e1M(0), 1e-12)
+	check_M(1, 0.5, e1M(5), 1e-12)
+	check_M(1, 1, e1M(10), 1e-13)
+	check_M(2, 0, 0, 1e-13)
+	check_M(2, 1, 0, 1e-13)
 }

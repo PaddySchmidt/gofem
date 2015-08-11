@@ -1,0 +1,70 @@
+{
+  "data" : {
+    "matfile" : "beams.mat",
+    "steady"  : true
+  },
+  "functions" : [
+    { "name":"1_qn", "type":"cte", "prms":[{"n":"c", "v": -1.8   }] },
+    { "name":"1_fy", "type":"cte", "prms":[{"n":"c", "v":-10.0   }] },
+    { "name":"2_fy", "type":"cte", "prms":[{"n":"c", "v":-17.2   }] },
+    { "name":"2_mz", "type":"cte", "prms":[{"n":"c", "v": 54.4   }] },
+    { "name":"3_qn", "type":"cte", "prms":[{"n":"c", "v": -2.0   }] },
+    { "name":"4_qa", "type":"cte", "prms":[{"n":"c", "v": -0.9984}] },
+    { "name":"4_qb", "type":"cte", "prms":[{"n":"c", "v": -0.3744}] },
+    { "name":"4_qc", "type":"cte", "prms":[{"n":"c", "v": -0.3744}] },
+    { "name":"4_qd", "type":"cte", "prms":[{"n":"c", "v":  0.0   }] }
+  ],
+  "regions" : [
+    {
+      "mshfile"   : "beam03.msh",
+      "elemsdata" : [
+        { "tag":-1, "mat":"beam03", "type":"beam" },
+        { "tag":-2, "mat":"beam03", "type":"beam" },
+        { "tag":-3, "mat":"beam03", "type":"beam" }
+      ]
+    }
+  ],
+  "stages" : [
+    {
+      "desc": "1) global uniform distributed load on frame element 2, plus concentrated load on node 3",
+      "nodebcs" : [
+        { "tag":-1, "keys":["ux","uy"], "funcs":["zero","zero"] },
+        { "tag":-2, "keys":["ux"], "funcs":["zero"] },
+        { "tag":-3, "keys":["fy"], "funcs":["1_fy"] }
+      ],
+      "eleconds" : [
+        { "tag":-3, "keys":["qn"], "funcs":["1_qn"] }
+      ]
+    },
+    {
+      "desc": "2) global joint force and moment at node 1",
+      "nodebcs" : [
+        { "tag":-1, "keys":["ux","uy"], "funcs":["zero","zero"] },
+        { "tag":-2, "keys":["ux"], "funcs":["zero"] },
+        { "tag":-4, "keys":["fy","mz"], "funcs":["2_fy","2_mz"] }
+      ]
+    },
+    {
+      "desc": "3) uniformly distributed load on elements 0 and 1",
+      "nodebcs" : [
+        { "tag":-1, "keys":["ux","uy"], "funcs":["zero","zero"] },
+        { "tag":-2, "keys":["ux"], "funcs":["zero"] }
+      ],
+      "eleconds" : [
+        { "tag":-1, "keys":["qn"], "funcs":["3_qn"] },
+        { "tag":-2, "keys":["qn"], "funcs":["3_qn"] }
+      ]
+    },
+    {
+      "desc": "4) trapezoidal load on elements 0 and 1",
+      "nodebcs" : [
+        { "tag":-1, "keys":["ux","uy"], "funcs":["zero","zero"] },
+        { "tag":-2, "keys":["ux"], "funcs":["zero"] }
+      ],
+      "eleconds" : [
+        { "tag":-1, "keys":["qnL","qnR"], "funcs":["4_qa","4_qb"] },
+        { "tag":-2, "keys":["qnL","qnR"], "funcs":["4_qc","4_qd"] }
+      ]
+    }
+  ]
+}

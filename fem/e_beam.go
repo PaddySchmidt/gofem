@@ -356,19 +356,14 @@ func (o *Beam) Recompute(withM bool) {
 	}
 }
 
-// CalcVandM calculate shear force and bending moment @ r
+// CalcVandM calculate shear force and bending moment @ s
 //  Input:
-//   r         -- natural coordinate   0 ≤ r ≤ L
-//   nstations -- compute many values; otherwise, if nstations<2, compute @ r
+//   s         -- natural coordinate   0 ≤ s ≤ 1
+//   nstations -- compute many values; otherwise, if nstations<2, compute @ s
 //  Output:
-//   V -- shear force @ stations or r
-//   M -- bending moment @ stations or r
-func (o *Beam) CalcVandM(sol *Solution, r float64, nstations int) (V, M []float64) {
-
-	// node displacements
-	//for i, I := range o.Umap {
-	//o.ue[i] = sol.Y[I]
-	//}
+//   V -- shear force @ stations or s
+//   M -- bending moment @ stations or s
+func (o *Beam) CalcVandM(sol *Solution, s float64, nstations int) (V, M []float64) {
 
 	// aligned displacements
 	for i := 0; i < 6; i++ {
@@ -380,7 +375,7 @@ func (o *Beam) CalcVandM(sol *Solution, r float64, nstations int) (V, M []float6
 
 	// results
 	if nstations < 2 {
-		v, m := o.calc_V_and_M_after_ua(sol.T, r)
+		v, m := o.calc_V_and_M_after_ua(sol.T, s)
 		V, M = []float64{v}, []float64{m}
 		return
 	}
@@ -393,9 +388,10 @@ func (o *Beam) CalcVandM(sol *Solution, r float64, nstations int) (V, M []float6
 	return
 }
 
-func (o *Beam) calc_V_and_M_after_ua(time, r float64) (V, M float64) {
+func (o *Beam) calc_V_and_M_after_ua(time, s float64) (V, M float64) {
 
 	// auxiliary variables
+	r := s * o.L
 	l := o.L
 	ll := l * l
 	lll := ll * l
