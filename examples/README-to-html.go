@@ -61,7 +61,7 @@ func main() {
 <meta charset="utf-8" />
 
 <style>
-h1 {color:#0064cb; font-family:verdana; font-size:300%;}
+h1 {color:#0064cb; font-family:verdana; font-size:200%;}
 h2 {color:#0064cb}
 h3 {color:#0064cb}
 a:hover {background-color:#5397dc;}
