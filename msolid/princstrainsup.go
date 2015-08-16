@@ -7,6 +7,7 @@ package msolid
 import (
 	"math"
 
+	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/la"
@@ -74,8 +75,16 @@ type PrincStrainsUp struct {
 	ChkSilent bool        // silent check
 }
 
+// Clean cleans allocated resources
+func (o *PrincStrainsUp) Clean() {
+	o.nls.Clean()
+}
+
 // Init initialises this structure
 func (o *PrincStrainsUp) Init(ndim int, prms fun.Prms, mdl EPmodel) (err error) {
+
+	// TODO: remove this
+	chk.Panic("must call Clean in the end")
 
 	// constants
 	o.Fzero = 1e-9
