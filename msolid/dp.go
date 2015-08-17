@@ -25,6 +25,10 @@ func init() {
 	allocators["dp"] = func() Model { return new(DruckerPrager) }
 }
 
+// Clean clean resources
+func (o *DruckerPrager) Clean() {
+}
+
 // Init initialises model
 func (o *DruckerPrager) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 

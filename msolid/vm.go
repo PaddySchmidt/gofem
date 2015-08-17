@@ -23,6 +23,10 @@ func init() {
 	allocators["vm"] = func() Model { return new(VonMises) }
 }
 
+// Clean clean resources
+func (o *VonMises) Clean() {
+}
+
 // Init initialises model
 func (o *VonMises) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 

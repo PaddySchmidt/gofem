@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/cpmech/gofem/inp"
+	"github.com/cpmech/gofem/msolid"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/io"
@@ -210,6 +211,9 @@ func (o *FEM) SolveOneStage(stgidx int, zerostage bool) (err error) {
 
 // onexit clean domains, prints final message with simulation and cpu times and save summary
 func (o FEM) onexit(cputime time.Time, prevErr error) (err error) {
+
+	// clean solid models
+	msolid.CleanModels()
 
 	// clear domains
 	for _, d := range o.Domains {

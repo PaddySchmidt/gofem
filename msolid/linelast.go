@@ -16,6 +16,10 @@ func init() {
 	allocators["lin-elast"] = func() Model { return new(LinElast) }
 }
 
+// Clean clean resources
+func (o *LinElast) Clean() {
+}
+
 // Init initialises model
 func (o *LinElast) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 	return o.SmallElasticity.Init(ndim, pstress, prms)

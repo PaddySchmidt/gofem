@@ -45,46 +45,9 @@ func init() {
 	allocators["smp"] = func() Model { return new(SmpInvs) }
 }
 
-func (o *SmpInvs) calc_auxiliary() {
-
-	o.M = tsr.SmpCalcμ(o.φ, -1, o.b, o.eps1, o.eps2)
-	α := math.Atan(o.M)
-	o.sα = math.Sin(α)
-	o.cα = math.Cos(α)
-	o.shift = o.c / math.Tan(o.φ*math.Pi/180.0)
-
-	switch o.rtyp {
-	case 1: // circle
-		m := o.r/o.sα - o.r
-		if m > o.shift {
-			o.shift = m
-		}
-	case 2: // reference model
-		m := o.r/o.sα - o.r
-		if m > o.shift {
-			o.shift = m
-		}
-		pc := o.r / o.sα
-		pb := pc - o.r
-		pa := 0.0
-		o.RM.Init([]*fun.Prm{
-			&fun.Prm{N: "bet", V: o.βrm},
-			&fun.Prm{N: "lam1", V: 1.0 / o.M},
-			&fun.Prm{N: "ya", V: -pa},
-			&fun.Prm{N: "yb", V: -pb},
-		})
-	case 3: // o2 Bezier
-		pa := 0.0
-		pb := o.r
-		m := pb - pa
-		if m > o.shift {
-			o.shift = m
-		}
-		pemin := 2.0*pb - pa + 1e-7
-		if o.pe < pemin {
-			chk.Panic("pe(%g) must be greater than %g", o.pe, pemin)
-		}
-	}
+// Clean clean resources
+func (o *SmpInvs) Clean() {
+	o.PU.Clean()
 }
 
 // Init initialises model
@@ -377,4 +340,48 @@ func (o SmpInvs) hfcn(p, q float64, args ...interface{}) (d2fdp2, d2fdq2, d2fdpd
 		d2fdq2 = (n*s - n*t*(n-m)*o.M) / (2.0 * s3)
 	}
 	return
+}
+
+// auxiliary ///////////////////////////////////////////////////////////////////////////////////////
+
+func (o *SmpInvs) calc_auxiliary() {
+
+	o.M = tsr.SmpCalcμ(o.φ, -1, o.b, o.eps1, o.eps2)
+	α := math.Atan(o.M)
+	o.sα = math.Sin(α)
+	o.cα = math.Cos(α)
+	o.shift = o.c / math.Tan(o.φ*math.Pi/180.0)
+
+	switch o.rtyp {
+	case 1: // circle
+		m := o.r/o.sα - o.r
+		if m > o.shift {
+			o.shift = m
+		}
+	case 2: // reference model
+		m := o.r/o.sα - o.r
+		if m > o.shift {
+			o.shift = m
+		}
+		pc := o.r / o.sα
+		pb := pc - o.r
+		pa := 0.0
+		o.RM.Init([]*fun.Prm{
+			&fun.Prm{N: "bet", V: o.βrm},
+			&fun.Prm{N: "lam1", V: 1.0 / o.M},
+			&fun.Prm{N: "ya", V: -pa},
+			&fun.Prm{N: "yb", V: -pb},
+		})
+	case 3: // o2 Bezier
+		pa := 0.0
+		pb := o.r
+		m := pb - pa
+		if m > o.shift {
+			o.shift = m
+		}
+		pemin := 2.0*pb - pa + 1e-7
+		if o.pe < pemin {
+			chk.Panic("pe(%g) must be greater than %g", o.pe, pemin)
+		}
+	}
 }

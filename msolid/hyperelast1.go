@@ -42,6 +42,10 @@ func init() {
 	allocators["hyp-elast1"] = func() Model { return new(HyperElast1) }
 }
 
+// Clean clean resources
+func (o *HyperElast1) Clean() {
+}
+
 // Init initialises model
 func (o *HyperElast1) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 

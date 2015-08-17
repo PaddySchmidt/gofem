@@ -39,6 +39,10 @@ func init() {
 	allocators["ogden"] = func() Model { return new(Ogden) }
 }
 
+// Clean clean resources
+func (o *Ogden) Clean() {
+}
+
 // Init initialises model
 func (o *Ogden) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 

@@ -34,6 +34,7 @@ type Model interface {
 	Init(ndim int, pstress bool, prms fun.Prms) error // initialises model
 	GetPrms() fun.Prms                                // gets (an example) of parameters
 	InitIntVars(σ []float64) (*State, error)          // initialises AND allocates internal (secondary) variables
+	Clean()                                           // clean resources as when calling C code
 }
 
 // Small defines rate type solid models for small strain analyses
@@ -52,6 +53,13 @@ type Large interface {
 // SmallStrainUpdater define small-strain models that can update strains for given stresses
 type SmallStrainUpdater interface {
 	StrainUpdate(s *State, Δσ []float64) error // updates strains for given stresses (small strains formulation)
+}
+
+// CleanModels call cleaning routines in all allocated models
+func CleanModels() {
+	for _, m := range _models {
+		m.Clean()
+	}
 }
 
 // GetModel returns (existent or new) solid model

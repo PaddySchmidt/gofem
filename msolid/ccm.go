@@ -38,6 +38,11 @@ func init() {
 	allocators["ccm"] = func() Model { return new(CamClayMod) }
 }
 
+// Clean clean resources
+func (o *CamClayMod) Clean() {
+	o.PU.Clean()
+}
+
 // Init initialises model
 func (o *CamClayMod) Init(ndim int, pstress bool, prms fun.Prms) (err error) {
 
