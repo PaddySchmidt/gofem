@@ -237,7 +237,7 @@ func (o *Domain) SetStage(stgidx int) (err error) {
 			// new element
 			ele, err := NewElem(cell, o.Reg, o.Sim)
 			if err != nil {
-				return chk.Err("new element failed:%\v", err)
+				return chk.Err("new element failed:\n%v", err)
 			}
 			o.Cid2elem[cell.Id] = ele
 			o.Elems = append(o.Elems, ele)
