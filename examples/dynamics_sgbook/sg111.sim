@@ -20,6 +20,9 @@
       ]
     }
   ],
+  "solver" : {
+    "type" : "lin-imp"
+  },
   "stages" : [
     {
       "desc"    : "apply loading",

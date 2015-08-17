@@ -16,6 +16,7 @@
     }
   ],
   "solver" : {
+    "type" : "imp",
     "raym" : 0.005,
     "rayk" : 0.272
   },
