@@ -110,13 +110,15 @@ func init() {
 		edat.Nip = len(o.U.IpsElem)
 		//edat.Nipf = len(o.U.IpsFace) // TODO: check if this is necessary
 
-		// allocate p-element
+		// change cell.Type (LBB)
 		ctype_bkp := cell.Type
+		defer func() { cell.Type = ctype_bkp }()
 		if !sim.Data.NoLBB {
 			cell.Type = shp.GetBasicType(cell.Type)
 		}
+
+		// allocate p-element
 		p_elem := eallocators["p"](sim, cell, edat, x)
-		cell.Type = ctype_bkp
 		if p_elem == nil {
 			chk.Panic("cannot allocate underlying p-element")
 		}
@@ -160,13 +162,15 @@ func (o *ElemUP) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
 		}
 	}
 
-	// p: equations
+	// change cell.Type (LBB)
 	ctype_bkp := o.Cell.Type
+	defer func() { o.Cell.Type = ctype_bkp }()
 	if !o.Sim.Data.NoLBB {
 		o.Cell.Type = shp.GetBasicType(o.Cell.Type)
 	}
+
+	// p: equations
 	p_info := infogetters["p"](o.Sim, o.Cell, o.Edat)
-	o.Cell.Type = ctype_bkp
 	p_nverts := len(p_info.Dofs)
 	p_eqs := make([][]int, p_nverts)
 	for i := 0; i < p_nverts; i++ {
