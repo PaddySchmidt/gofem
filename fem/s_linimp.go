@@ -58,6 +58,7 @@ func (o *SolverLinearImplicit) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose
 	d2ydt2 := o.dom.Sol.D2ydt2
 
 	// time loop
+	first := true
 	var Δt float64
 	var lasttimestep bool
 	for t < tf {
@@ -108,10 +109,11 @@ func (o *SolverLinearImplicit) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose
 		}
 
 		// solve linear problem
-		err := solve_linear_problem(t, Δt, o.dom, o.dc, o.sum)
+		err := solve_linear_problem(t, o.dom, o.dc, o.sum, first)
 		if err != nil {
 			return chk.Err("solve_linear_problem failed:\n%v", err)
 		}
+		first = false
 
 		// update velocity and acceleration
 		if !steady {
@@ -139,10 +141,7 @@ func (o *SolverLinearImplicit) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose
 }
 
 // solve_linear_problem solves the linear problem
-func solve_linear_problem(t, Δt float64, d *Domain, dc *DynCoefs, sum *Summary) (err error) {
-
-	// solver data
-	dat := d.Sim.Solver
+func solve_linear_problem(t float64, d *Domain, dc *DynCoefs, sum *Summary, first bool) (err error) {
 
 	// assemble right-hand side vector (fb) with **negative** of residuals
 	la.VecFill(d.Fb, 0)
@@ -164,8 +163,8 @@ func solve_linear_problem(t, Δt float64, d *Domain, dc *DynCoefs, sum *Summary)
 	// essential boundary conditioins; e.g. constraints
 	d.EssenBcs.AddToRhs(d.Fb, d.Sol)
 
-	// assemble Jacobian matrix
-	if !dat.CteTg { // if not constant-tangent method, assemble always; otherwise just once
+	// assemble and factorise Jacobian matrix just once
+	if first {
 
 		// assemble element matrices
 		d.Kb.Start()
