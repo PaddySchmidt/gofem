@@ -564,9 +564,9 @@ func (o *Plotter) Plot_p_q(x, y []float64, res []*State, sts [][]float64, last b
 					}
 				}
 			}
-			plt.ContourSimple(xx, yy, za, io.Sf("colors=['%s'], levels=[0], linestyles=['%s'], linewidths=[%g], clip_on=0", o.YsClr0, o.YsLs0, o.YsLw0)+o.ArgsYs)
+			plt.ContourSimple(xx, yy, za, false, 8, io.Sf("colors=['%s'], levels=[0], linestyles=['%s'], linewidths=[%g], clip_on=0", o.YsClr0, o.YsLs0, o.YsLw0)+o.ArgsYs)
 			if o.nsurf > 1 {
-				plt.ContourSimple(xx, yy, zb, io.Sf("colors=['%s'], levels=[0], linestyles=['%s'], linewidths=[%g], clip_on=0", o.YsClr1, o.YsLs1, o.YsLw1)+o.ArgsYs)
+				plt.ContourSimple(xx, yy, zb, false, 8, io.Sf("colors=['%s'], levels=[0], linestyles=['%s'], linewidths=[%g], clip_on=0", o.YsClr1, o.YsLs1, o.YsLw1)+o.ArgsYs)
 			}
 		}
 	}
@@ -684,7 +684,7 @@ func (o *Plotter) Plot_oct(x, y []float64, res []*State, sts [][]float64, last b
 					zz[i][j] = ys[0]
 				}
 			}
-			plt.ContourSimple(xx, yy, zz, io.Sf("colors=['%s'], levels=[0], linestyles=['%s'], linewidths=[%g], clip_on=0", o.YsClr0, o.YsLs0, o.YsLw0)+o.ArgsYs)
+			plt.ContourSimple(xx, yy, zz, false, 8, io.Sf("colors=['%s'], levels=[0], linestyles=['%s'], linewidths=[%g], clip_on=0", o.YsClr0, o.YsLs0, o.YsLw0)+o.ArgsYs)
 
 		}
 	}
@@ -779,7 +779,7 @@ func (o *Plotter) Plot_s3_s1(x, y []float64, res []*State, sts [][]float64, last
 					zz[i][j] = ys[0]
 				}
 			}
-			plt.ContourSimple(xx, yy, zz, io.Sf("colors=['%s'], levels=[0], linestyles=['%s'], linewidths=[%g], clip_on=0", o.YsClr0, o.YsLs0, o.YsLw0)+o.ArgsYs)
+			plt.ContourSimple(xx, yy, zz, false, 8, io.Sf("colors=['%s'], levels=[0], linestyles=['%s'], linewidths=[%g], clip_on=0", o.YsClr0, o.YsLs0, o.YsLw0)+o.ArgsYs)
 		}
 	}
 	// predictor-corrector
@@ -833,7 +833,7 @@ func (o *Plotter) DrawRamp(xmi, xma, ymi, yma float64) {
 			zz[i][j] = xx[i][j] - o.Rmpf(xx[i][j]+yy[i][j])
 		}
 	}
-	plt.ContourSimple(xx, yy, zz, "colors=['blue'], linewidths=[2], levels=[0]")
+	plt.ContourSimple(xx, yy, zz, false, 8, "colors=['blue'], linewidths=[2], levels=[0]")
 }
 
 // Save saves figure
