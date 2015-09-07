@@ -10,6 +10,7 @@ import (
 	"github.com/cpmech/gofem/out"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/plt"
+	"github.com/cpmech/gosl/utl"
 )
 
 func main() {
@@ -23,6 +24,7 @@ func main() {
 	// define entities
 	out.Define("A B C D E", out.N{-5, -4, -3, -2, -1})
 	out.Define("a b c d e", out.P{{15, 8}, {13, 8}, {8, 8}, {4, 8}, {0, 0}})
+	out.Define("left-side", out.Along{{0, 0}, {0, 3}})
 
 	// load results
 	out.LoadResults(nil)
@@ -49,17 +51,30 @@ func main() {
 		out.Plot("t", "uy", l, S[i], -1)
 	}
 
+	// sl
 	out.Splot("liquid saturation")
 	for i, l := range []string{"a", "b", "c", "d", "e"} {
 		out.Plot("t", "sl", l, S[i], -1)
 	}
 
+	// sy
 	out.Splot("stresses")
 	for i, l := range []string{"a", "b", "c", "d", "e"} {
 		out.Plot("t", "sy", l, S[i], -1)
 	}
 
+	// pl
+	out.Splot("pressure along column")
+	I, _ := utl.GetITout(out.Times, []float64{0, 1000, 2000, 3000, 4000}, 0.1)
+	for _, i := range I {
+		t := out.Times[i]
+		out.Plot("pl", "y", "left-side", plt.Fmt{L: io.Sf("t=%g", t)}, i)
+	}
+
+	// empty
+	out.Splot("")
+
 	// save
-	plt.SetForPng(1, 500, 200)
+	plt.SetForPng(1.2, 800, 200)
 	out.Draw("/tmp", "up_3mcolumn_dessication_"+fnkey+".png", false, nil)
 }
