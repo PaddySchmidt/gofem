@@ -11,6 +11,7 @@ import (
 
 	"github.com/cpmech/gofem/shp"
 
+	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/utl"
 )
@@ -90,30 +91,32 @@ type Mesh struct {
 
 // ReadMsh reads a mesh for FE analyses
 //  Note: returns nil on errors
-func ReadMsh(dir, fn string, goroutineId int) *Mesh {
+func ReadMsh(dir, fn string, goroutineId int) (o *Mesh, err error) {
 
 	// new mesh
-	var o Mesh
+	o = new(Mesh)
 
 	// read file
 	o.FnamePath = filepath.Join(dir, fn)
 	b, err := io.ReadFile(o.FnamePath)
 	if err != nil {
-		return nil
+		return
 	}
 
 	// decode
 	err = json.Unmarshal(b, &o)
 	if err != nil {
-		return nil
+		return
 	}
 
 	// check
 	if len(o.Verts) < 2 {
-		return nil
+		err = chk.Err("at least 2 vertices are required in mesh\n")
+		return
 	}
 	if len(o.Cells) < 1 {
-		return nil
+		err = chk.Err("at least 1 cell is required in mesh\n")
+		return
 	}
 
 	// vertex related derived data
@@ -131,13 +134,15 @@ func ReadMsh(dir, fn string, goroutineId int) *Mesh {
 
 		// check vertex id
 		if v.Id != i {
-			return nil
+			err = chk.Err("vertices ids must coincide with order in \"verts\" list. %d != %d\n", v.Id, i)
+			return
 		}
 
 		// ndim
 		nd := len(v.C)
 		if nd < 2 || nd > 4 {
-			return nil
+			err = chk.Err("number of space dimensions must be 2 or 3. %d is invalid\n", nd)
+			return
 		}
 		if nd == 3 {
 			if math.Abs(v.C[2]) > Ztol {
@@ -173,10 +178,12 @@ func ReadMsh(dir, fn string, goroutineId int) *Mesh {
 
 		// check id and tag
 		if c.Id != i {
-			return nil
+			err = chk.Err("cells ids must coincide with order in \"verts\" list. %d != %d\n", c.Id, i)
+			return
 		}
 		if c.Tag >= 0 {
-			return nil
+			err = chk.Err("cells tags must be negative. %d is incorrect\n", c.Tag)
+			return
 		}
 
 		// face tags
@@ -217,7 +224,8 @@ func ReadMsh(dir, fn string, goroutineId int) *Mesh {
 		default:
 			c.Shp = shp.Get(c.Type, goroutineId)
 			if c.Shp == nil {
-				return nil
+				chk.Err("cannot allocate \"shape\" structure for cell type = %q\n", c.Type)
+				return
 			}
 		}
 	}
@@ -228,7 +236,7 @@ func ReadMsh(dir, fn string, goroutineId int) *Mesh {
 	}
 
 	// results
-	return &o
+	return
 }
 
 // String returns a JSON representation of *Vert

@@ -320,9 +320,9 @@ func ReadSim(simfilepath, alias string, erasefiles bool, goroutineId int) *Simul
 	for i, reg := range o.Regions {
 
 		// read mesh
-		reg.Msh = ReadMsh(dir, reg.Mshfile, goroutineId)
-		if reg.Msh == nil {
-			chk.Panic("ReadSim: cannot read mesh file\n")
+		reg.Msh, err = ReadMsh(dir, reg.Mshfile, goroutineId)
+		if err != nil {
+			chk.Panic("ReadSim: cannot read mesh file:\n%v", err)
 		}
 
 		// dependent variables
