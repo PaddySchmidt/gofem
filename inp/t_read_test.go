@@ -5,18 +5,12 @@
 package inp
 
 import (
-	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
 )
-
-func init() {
-	log.SetOutput(ioutil.Discard)
-}
 
 func Test_msh01(tst *testing.T) {
 
@@ -42,7 +36,7 @@ func Test_sim01(tst *testing.T) {
 
 	sim := ReadSim("data/bh16.sim", "", true, 0)
 	if sim == nil {
-		tst.Errorf("test failed: check error log\n")
+		tst.Errorf("test failed:\n")
 		return
 	}
 	if chk.Verbose {
@@ -65,7 +59,7 @@ func Test_sim02(tst *testing.T) {
 
 	sim := ReadSim("data/frees01.sim", "", true, 0)
 	if sim == nil {
-		tst.Errorf("test failed: check error log\n")
+		tst.Errorf("test failed:\n")
 		return
 	}
 	if chk.Verbose {
