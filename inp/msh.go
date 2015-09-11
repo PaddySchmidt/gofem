@@ -12,6 +12,7 @@ import (
 	"github.com/cpmech/gofem/shp"
 
 	"github.com/cpmech/gosl/chk"
+	"github.com/cpmech/gosl/gm"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/utl"
 )
@@ -51,6 +52,12 @@ type Cell struct {
 	// specific problems data
 	IsJoint   bool         // cell represents joint element
 	SeepVerts map[int]bool // local vertices ids of vertices on seepage faces
+
+	// NURBS
+	IsNurbs bool      // indicates that this cell was build from a NURBS patch
+	Nrb     int       // index of NURBS patch to which this cell belongs to
+	Span    []int     // knot indices indicating which span this cell is located
+	Nurbs   *gm.Nurbs // the NURBS structure corresponding to Nrb index
 }
 
 // CellFaceId structure
@@ -87,6 +94,10 @@ type Mesh struct {
 	SeamTag2cells map[int][]CellSeamId // seam tag => set of cells
 	Ctype2cells   map[string][]*Cell   // cell type => set of cells
 	Part2cells    map[int][]*Cell      // partition number => set of cells
+
+	// NURBS
+	Nurbss  []gm.NurbsD // all NURBS data (read from file)
+	PtNurbs []*gm.Nurbs // all NURBS' structures (allocated here)
 }
 
 // ReadMsh reads a mesh for FE analyses
@@ -119,6 +130,14 @@ func ReadMsh(dir, fn string, goroutineId int) (o *Mesh, err error) {
 		return
 	}
 
+	// variables for NURBS
+	var controlpts [][]float64
+	has_nurbs := false
+	if len(o.Nurbss) > 0 {
+		controlpts = make([][]float64, len(o.Verts))
+		has_nurbs = true
+	}
+
 	// vertex related derived data
 	o.Ndim = 2
 	o.Xmin = o.Verts[0].C[0]
@@ -141,7 +160,7 @@ func ReadMsh(dir, fn string, goroutineId int) (o *Mesh, err error) {
 		// ndim
 		nd := len(v.C)
 		if nd < 2 || nd > 4 {
-			err = chk.Err("number of space dimensions must be 2 or 3. %d is invalid\n", nd)
+			err = chk.Err("number of space dimensions must be 2, 3 or 4 (NURBS). %d is invalid\n", nd)
 			return
 		}
 		if nd == 3 {
@@ -165,6 +184,22 @@ func ReadMsh(dir, fn string, goroutineId int) (o *Mesh, err error) {
 			o.Zmin = utl.Min(o.Zmin, v.C[2])
 			o.Zmax = utl.Max(o.Zmax, v.C[2])
 		}
+
+		// control points to initialise NURBS
+		if has_nurbs {
+			controlpts[i] = make([]float64, 4)
+			for j := 0; j < 4; j++ {
+				controlpts[i][j] = v.C[j]
+			}
+		}
+	}
+
+	// allocate NURBSs
+	o.PtNurbs = make([]*gm.Nurbs, len(o.Nurbss))
+	for i, d := range o.Nurbss {
+		o.PtNurbs[i] = new(gm.Nurbs)
+		o.PtNurbs[i].Init(d.Gnd, d.Ords, d.Knots)
+		o.PtNurbs[i].SetControl(controlpts, d.Ctrls)
 	}
 
 	// derived data
@@ -221,10 +256,13 @@ func ReadMsh(dir, fn string, goroutineId int) (o *Mesh, err error) {
 		switch c.Type {
 		case "joint":
 			c.IsJoint = true
+		case "nurbs":
+			c.IsNurbs = true
+			c.Nurbs = o.PtNurbs[c.Nrb]
 		default:
 			c.Shp = shp.Get(c.Type, goroutineId)
 			if c.Shp == nil {
-				chk.Err("cannot allocate \"shape\" structure for cell type = %q\n", c.Type)
+				err = chk.Err("cannot allocate \"shape\" structure for cell type = %q\n", c.Type)
 				return
 			}
 		}
