@@ -16,9 +16,9 @@ func Test_msh01(tst *testing.T) {
 
 	chk.PrintTitle("msh01")
 
-	msh := ReadMsh("data", "bh16.msh", 0)
-	if msh == nil {
-		tst.Errorf("test failed\n")
+	msh, err := ReadMsh("data", "bh16.msh", 0)
+	if err != nil {
+		tst.Errorf("test failed:\n%v", err)
 		return
 	}
 	io.Pforan("%v\n", msh)
