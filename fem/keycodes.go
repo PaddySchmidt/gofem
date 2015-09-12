@@ -12,7 +12,7 @@ import (
 	"github.com/cpmech/gosl/io"
 )
 
-func GetIntegrationPoints(nip, nipf int, cellType string) (ipsElem, ipsFace []*shp.Ipoint, err error) {
+func GetIntegrationPoints(nip, nipf int, cellType string) (ipsElem, ipsFace []shp.Ipoint, err error) {
 
 	// get integration points of element
 	ipsElem, err = shp.GetIps(cellType, nip)

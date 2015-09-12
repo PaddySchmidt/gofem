@@ -33,8 +33,8 @@ type ElemP struct {
 	Ndim int         // space dimension
 
 	// integration points
-	IpsElem []*shp.Ipoint // integration points of element
-	IpsFace []*shp.Ipoint // integration points corresponding to faces
+	IpsElem []shp.Ipoint // integration points of element
+	IpsFace []shp.Ipoint // integration points corresponding to faces
 
 	// material model
 	Mdl *mporous.Model // model
@@ -299,7 +299,7 @@ func (o *ElemP) AddToRhs(fb []float64, sol *Solution) (err error) {
 		if err != nil {
 			return
 		}
-		coef = o.Shp.J * ip.W
+		coef = o.Shp.J * ip[3]
 		S := o.Shp.S
 		G := o.Shp.G
 
@@ -368,7 +368,7 @@ func (o *ElemP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error)
 		if err != nil {
 			return
 		}
-		coef = o.Shp.J * ip.W
+		coef = o.Shp.J * ip[3]
 		S := o.Shp.S
 		G := o.Shp.G
 
@@ -709,7 +709,7 @@ func (o *ElemP) add_natbcs_to_rhs(fb []float64, sol *Solution) (err error) {
 			}
 			Sf := o.Shp.Sf
 			Jf := la.VecNorm(o.Shp.Fnvec)
-			coef := ipf.W * Jf
+			coef := ipf[3] * Jf
 
 			// select natural boundary condition type
 			switch nbc.Key {
@@ -785,7 +785,7 @@ func (o *ElemP) add_natbcs_to_jac(sol *Solution) (err error) {
 			}
 			Sf := o.Shp.Sf
 			Jf := la.VecNorm(o.Shp.Fnvec)
-			coef := ipf.W * Jf
+			coef := ipf[3] * Jf
 
 			// select natural boundary condition type
 			switch nbc.Key {

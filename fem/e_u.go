@@ -37,8 +37,8 @@ type ElemU struct {
 	Debug     bool    // debugging flag
 
 	// integration points
-	IpsElem []*shp.Ipoint // integration points of element
-	IpsFace []*shp.Ipoint // integration points corresponding to faces
+	IpsElem []shp.Ipoint // integration points of element
+	IpsFace []shp.Ipoint // integration points corresponding to faces
 
 	// material model and internal variables
 	Model    msolid.Model // material model
@@ -335,7 +335,7 @@ func (o *ElemU) AddToRhs(fb []float64, sol *Solution) (err error) {
 		}
 
 		// auxiliary
-		coef := o.Shp.J * ip.W * o.Thickness
+		coef := o.Shp.J * ip[3] * o.Thickness
 		S := o.Shp.S
 		G := o.Shp.G
 
@@ -405,7 +405,7 @@ func (o *ElemU) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error)
 		}
 
 		// auxiliary
-		coef := o.Shp.J * ip.W * o.Thickness
+		coef := o.Shp.J * ip[3] * o.Thickness
 		S := o.Shp.S
 		G := o.Shp.G
 
@@ -694,7 +694,7 @@ func (o *ElemU) add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
 
 			// distributed load
 			case "qn", "qn0", "aqn":
-				coef := ipf.W * res * o.Thickness
+				coef := ipf[3] * res * o.Thickness
 				if sol.Axisym && nbc.Key == "aqn" {
 					coef *= o.Shp.AxisymGetRadiusF(o.X, iface)
 				}
@@ -722,7 +722,7 @@ func (o *ElemU) add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
 				db = o.contact_g(xf)
 
 				// compute residuals
-				coef := ipf.W * o.Thickness
+				coef := ipf[3] * o.Thickness
 				Jf := la.VecNorm(nvec)
 				rmp = o.ramp(qb + o.κ*db)
 				rx = rmp
@@ -775,7 +775,7 @@ func (o *ElemU) add_contact_to_jac(sol *Solution) (err error) {
 				}
 				Sf := o.Shp.Sf
 				nvec := o.Shp.Fnvec
-				coef := ipf.W * o.Thickness
+				coef := ipf[3] * o.Thickness
 				Jf := la.VecNorm(nvec)
 
 				// variables extrapolated to face

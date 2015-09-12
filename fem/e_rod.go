@@ -32,7 +32,7 @@ type Rod struct {
 	Gfcn fun.Func // gravity function
 
 	// integration points
-	IpsElem []*shp.Ipoint // integration points of element
+	IpsElem []shp.Ipoint // integration points of element
 
 	// vectors and matrices
 	K [][]float64 // element K matrix
@@ -184,7 +184,7 @@ func (o *Rod) AddToRhs(fb []float64, sol *Solution) (err error) {
 		}
 
 		// auxiliary
-		coef := ip.W
+		coef := ip[3]
 		Jvec := o.Shp.Jvec3d
 		G := o.Shp.Gvec
 		σ := o.States[idx].Sig
@@ -219,7 +219,7 @@ func (o *Rod) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
 		}
 
 		// auxiliary
-		coef := ip.W
+		coef := ip[3]
 		Jvec := o.Shp.Jvec3d
 		G := o.Shp.Gvec
 		J := o.Shp.J

@@ -27,7 +27,7 @@ type ElemPhi struct {
 	Ndim int         // space dimension
 
 	// integration points
-	IpsElem []*shp.Ipoint // [nip] integration points of element
+	IpsElem []shp.Ipoint // [nip] integration points of element
 
 	// local starred variables
 	ψs []float64 // [nip] ψ* = β1.φ + β2.dφdt
@@ -153,7 +153,7 @@ func (o *ElemPhi) AddToRhs(fb []float64, sol *Solution) (err error) {
 		}
 
 		// auxiliary variables
-		coef := o.Shp.J * ip.W
+		coef := o.Shp.J * ip[3]
 		S := o.Shp.S
 		G := o.Shp.G
 
@@ -191,7 +191,7 @@ func (o *ElemPhi) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err erro
 		}
 
 		// auxiliary variables
-		coef := o.Shp.J * ip.W
+		coef := o.Shp.J * ip[3]
 		S := o.Shp.S
 
 		// add to right hand side vector

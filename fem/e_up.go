@@ -271,7 +271,7 @@ func (o *ElemUP) AddToRhs(fb []float64, sol *Solution) (err error) {
 		if err != nil {
 			return
 		}
-		coef = o.U.Shp.J * ip.W
+		coef = o.U.Shp.J * ip[3]
 		S := o.U.Shp.S
 		G := o.U.Shp.G
 		Sb := o.P.Shp.S
@@ -410,7 +410,7 @@ func (o *ElemUP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error
 		if err != nil {
 			return
 		}
-		coef = o.U.Shp.J * ip.W
+		coef = o.U.Shp.J * ip[3]
 		S := o.U.Shp.S
 		G := o.U.Shp.G
 		Sb := o.P.Shp.S
@@ -819,7 +819,7 @@ func (o *ElemUP) add_natbcs_to_jac(sol *Solution) (err error) {
 			}
 			Sf := o.P.Shp.Sf
 			Jf := la.VecNorm(o.P.Shp.Fnvec)
-			coef := ipf.W * Jf
+			coef := ipf[3] * Jf
 
 			// select natural boundary condition type
 			switch nbc.Key {

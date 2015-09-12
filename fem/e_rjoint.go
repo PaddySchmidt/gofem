@@ -368,7 +368,7 @@ func (o *Rjoint) AddToRhs(fb []float64, sol *Solution) (err error) {
 		if err != nil {
 			return
 		}
-		coef = ip.W * rodH.J
+		coef = ip[3] * rodH.J
 
 		// state variables
 		τ = o.States[idx].Sig
@@ -442,7 +442,7 @@ func (o *Rjoint) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error
 		if err != nil {
 			return
 		}
-		coef = ip.W * rodH.J
+		coef = ip[3] * rodH.J
 
 		// model derivatives
 		DτDω, err = o.Mdl.CalcD(o.States[idx], firstIt)
