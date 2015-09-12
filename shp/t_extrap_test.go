@@ -71,9 +71,9 @@ func Test_extrapapolation(tst *testing.T) {
 			Xip := la.MatAlloc(nip, 4) // ips local coordinates
 			for i := 0; i < nip; i++ {
 				var x, y, z float64
-				x = ips[i].R
-				y = ips[i].S
-				z = ips[i].T
+				x = ips[i][0]
+				y = ips[i][1]
+				z = ips[i][2]
 				Xip[i][0] = x
 				Xip[i][1] = y
 				Xip[i][2] = z
@@ -95,6 +95,5 @@ func Test_extrapapolation(tst *testing.T) {
 			msg := name + "_" + strconv.Itoa(nip)
 			chk.Vector(tst, msg, tol, NN, N)
 		}
-
 	}
 }

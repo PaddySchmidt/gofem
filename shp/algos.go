@@ -119,14 +119,12 @@ func (o *Shape) GetNodesNatCoordsMat() (ξ [][]float64) {
 
 // GetIpsNatCoordsMat returns the matrix (\hat{ξ}) with natural coordinates of interation
 // points, augmented by one column which is filled with ones [nip][ndim+1]
-func (o *Shape) GetIpsNatCoordsMat(ips []*Ipoint) (ξh [][]float64) {
+func (o *Shape) GetIpsNatCoordsMat(ips []Ipoint) (ξh [][]float64) {
 	nip := len(ips)
 	ξh = la.MatAlloc(nip, o.Gndim+1)
 	for i := 0; i < nip; i++ {
-		ξh[i][0] = ips[i].R
-		ξh[i][1] = ips[i].S
-		if o.Gndim == 3 {
-			ξh[i][2] = ips[i].T
+		for j := 0; j < o.Gndim; j++ {
+			ξh[i][j] = ips[i][j]
 		}
 		ξh[i][o.Gndim] = 1.0
 	}
@@ -135,15 +133,12 @@ func (o *Shape) GetIpsNatCoordsMat(ips []*Ipoint) (ξh [][]float64) {
 
 // GetShapeMatAtIps returns a matrix formed by computing the shape functions
 // at all integration points [nip][nverts]
-func (o *Shape) GetShapeMatAtIps(ips []*Ipoint) (N [][]float64) {
+func (o *Shape) GetShapeMatAtIps(ips []Ipoint) (N [][]float64) {
 	nip := len(ips)
 	N = la.MatAlloc(nip, o.Nverts)
 	derivs := false
 	for i := 0; i < nip; i++ {
-		r := ips[i].R
-		s := ips[i].S
-		t := ips[i].T
-		o.Func(o.S, o.DSdR, r, s, t, derivs)
+		o.Func(o.S, o.DSdR, ips[i][0], ips[i][1], ips[i][2], derivs)
 		for j := 0; j < o.Nverts; j++ {
 			N[i][j] = o.S[j]
 		}
@@ -153,7 +148,7 @@ func (o *Shape) GetShapeMatAtIps(ips []*Ipoint) (N [][]float64) {
 
 // Extrapolator computes the extrapolation matrix for this Shape with a combination of integration points 'ips'
 //  Note: E[nverts][nip] must be pre-allocated
-func (o *Shape) Extrapolator(E [][]float64, ips []*Ipoint) (err error) {
+func (o *Shape) Extrapolator(E [][]float64, ips []Ipoint) (err error) {
 	la.MatFill(E, 0)
 	nip := len(ips)
 	N := o.GetShapeMatAtIps(ips)

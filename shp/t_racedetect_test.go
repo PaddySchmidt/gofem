@@ -30,7 +30,7 @@ func Test_race01(tst *testing.T) {
 			shape.CalcAtR([][]float64{
 				{0, 1, 0},
 				{0, 0, 1},
-			}, []float64{0.5, 0.5}, true)
+			}, []float64{0.5, 0.5, 0}, true)
 			done <- 1
 		}(shapes[i])
 	}
