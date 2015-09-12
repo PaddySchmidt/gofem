@@ -36,10 +36,7 @@ func GetShapeNurbs(nurbs *gm.Nurbs, span []int) (o *Shape) {
 	return
 }
 
-func (o *Shape) NurbsFunc(S []float64, dSdR [][]float64, r, s, t float64, derivs bool) {
-
-	// auxiliary
-	R := []float64{r, s, t}
+func (o *Shape) NurbsFunc(S []float64, dSdR [][]float64, r []float64, derivs bool) {
 
 	// compute mapping to knots space
 	o.Ju = 1.0 // det(dudr) => du = Ju * dr
@@ -47,10 +44,10 @@ func (o *Shape) NurbsFunc(S []float64, dSdR [][]float64, r, s, t float64, derivs
 	for i := 0; i < o.Gndim; i++ {
 		umin = o.Nurbs.U(i, o.Span[i*2])
 		umax = o.Nurbs.U(i, o.Span[i*2+1])
-		o.U[i] = ((umax-umin)*R[i] + (umax + umin)) / 2.0
+		o.U[i] = ((umax-umin)*r[i] + (umax + umin)) / 2.0
 		o.Ju *= (umax - umin) / 2.0
 		if o.U[i] < umin || o.U[i] > umax {
-			chk.Panic("compute NURBS shape function outide cell range:\nr[%d]=%v, u[%d]=%v, urange=[%v,%v]", i, R[i], i, o.U[i], umin, umax)
+			chk.Panic("compute NURBS shape function outide cell range:\nr[%d]=%v, u[%d]=%v, urange=[%v,%v]", i, r[i], i, o.U[i], umin, umax)
 		}
 	}
 

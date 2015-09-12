@@ -58,7 +58,7 @@ func init() {
 
 // Tet4 calculates the shape functions (S) and derivatives of shape functions (dSdR) of tet4
 // elements at {r,s,t} natural coordinates. The derivatives are calculated only if derivs==true.
-func Tet4(S []float64, dSdR [][]float64, r, s, t float64, derivs bool) {
+func Tet4(S []float64, dSdR [][]float64, R []float64, derivs bool) {
 	/*                    t
 	              |
 	              3
@@ -88,6 +88,7 @@ func Tet4(S []float64, dSdR [][]float64, r, s, t float64, derivs bool) {
 	 /
 	r
 	*/
+	r, s, t := R[0], R[1], R[2]
 	S[0] = 1.0 - r - s - t
 	S[1] = r
 	S[2] = s
@@ -115,7 +116,7 @@ func Tet4(S []float64, dSdR [][]float64, r, s, t float64, derivs bool) {
 
 // Tet10 calculates the shape functions (S) and derivatives of shape functions (dSdR) of tet10
 // elements at {r,s,t} natural coordinates. The derivatives are calculated only if derivs==true.
-func Tet10(S []float64, dSdR [][]float64, r, s, t float64, derivs bool) {
+func Tet10(S []float64, dSdR [][]float64, R []float64, derivs bool) {
 	/*                    t
 	              |
 	              3
@@ -145,6 +146,7 @@ func Tet10(S []float64, dSdR [][]float64, r, s, t float64, derivs bool) {
 	 /
 	r
 	*/
+	r, s, t := R[0], R[1], R[2]
 	u := 1.0 - r - s - t
 	S[0] = u * (2.0*u - 1.0)
 	S[1] = r * (2.0*r - 1.0)

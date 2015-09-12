@@ -15,7 +15,7 @@ import (
 const MINDET = 1.0e-14 // minimum determinant allowed for dxdR
 
 // ShpFunc is the shape functions callback function
-type ShpFunc func(S []float64, dSdR [][]float64, r, s, t float64, derivs bool)
+type ShpFunc func(S []float64, dSdR [][]float64, r []float64, derivs bool)
 
 // Shape holds geometry data
 type Shape struct {
@@ -141,7 +141,7 @@ func Get(geoType string, goroutineId int) *Shape {
 func (o *Shape) IpRealCoords(x [][]float64, ip Ipoint) (y []float64) {
 	ndim := len(x)
 	y = make([]float64, ndim)
-	o.Func(o.S, o.DSdR, ip[0], ip[1], ip[2], false)
+	o.Func(o.S, o.DSdR, ip, false)
 	for i := 0; i < ndim; i++ {
 		for m := 0; m < o.Nverts; m++ {
 			y[i] += o.S[m] * x[i][m]
@@ -155,7 +155,7 @@ func (o *Shape) IpRealCoords(x [][]float64, ip Ipoint) (y []float64) {
 func (o *Shape) FaceIpRealCoords(x [][]float64, ipf Ipoint, idxface int) (y []float64) {
 	ndim := len(x)
 	y = make([]float64, ndim)
-	o.FaceFunc(o.Sf, o.DSfdRf, ipf[0], ipf[1], ipf[2], false)
+	o.FaceFunc(o.Sf, o.DSfdRf, ipf, false)
 	for i := 0; i < ndim; i++ {
 		for k, n := range o.FaceLocalV[idxface] {
 			y[i] += o.Sf[k] * x[i][n]
@@ -173,7 +173,7 @@ func (o *Shape) FaceIpRealCoords(x [][]float64, ipf Ipoint, idxface int) (y []fl
 func (o *Shape) CalcAtIp(x [][]float64, ip Ipoint, derivs bool) (err error) {
 
 	// S and dSdR
-	o.Func(o.S, o.DSdR, ip[0], ip[1], ip[2], derivs)
+	o.Func(o.S, o.DSdR, ip, derivs)
 	if !derivs {
 		return
 	}
@@ -244,7 +244,7 @@ func (o *Shape) CalcAtFaceIp(x [][]float64, ipf Ipoint, idxface int) (err error)
 	}
 
 	// Sf and dSfdR
-	o.FaceFunc(o.Sf, o.DSfdRf, ipf[0], ipf[1], ipf[2], true)
+	o.FaceFunc(o.Sf, o.DSfdRf, ipf, true)
 
 	// dxfdRf := sum_n x * dSfdRf   =>  dxf_i/dRf_j := sum_n xf^n_i * dSf^n/dRf_j
 	for i := 0; i < len(x); i++ {

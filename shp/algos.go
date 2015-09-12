@@ -42,7 +42,7 @@ func (o *Shape) InvMap(r, y []float64, x [][]float64) (err error) {
 	for it = 0; it < INVMAP_NIT; it++ {
 
 		// shape functions and derivatives
-		o.Func(o.S, o.DSdR, r[0], r[1], r[2], derivs)
+		o.Func(o.S, o.DSdR, r, derivs)
 
 		// residual: e = y - x * S
 		for i := 0; i < o.Gndim; i++ {
@@ -138,7 +138,7 @@ func (o *Shape) GetShapeMatAtIps(ips []Ipoint) (N [][]float64) {
 	N = la.MatAlloc(nip, o.Nverts)
 	derivs := false
 	for i := 0; i < nip; i++ {
-		o.Func(o.S, o.DSdR, ips[i][0], ips[i][1], ips[i][2], derivs)
+		o.Func(o.S, o.DSdR, ips[i], derivs)
 		for j := 0; j < o.Nverts; j++ {
 			N[i][j] = o.S[j]
 		}

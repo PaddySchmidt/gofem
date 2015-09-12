@@ -90,7 +90,7 @@ func Test_nurbs01(tst *testing.T) {
 
 	r := []float64{0.75, 0.75, 0}
 
-	shape0.NurbsFunc(shape0.S, shape0.DSdR, r[0], r[1], r[2], true)
+	shape0.NurbsFunc(shape0.S, shape0.DSdR, r, true)
 	io.Pforan("0: Ju = %v\n", shape0.Ju)
 	io.Pforan("0: u = %v\n", shape0.U)
 	chk.Scalar(tst, "0: Ju", 1e-17, shape0.Ju, JuCor)
@@ -100,7 +100,7 @@ func Test_nurbs01(tst *testing.T) {
 
 	io.Pforan("S(u(r)) = %v\n", shape0.S)
 
-	shape1.NurbsFunc(shape1.S, shape1.DSdR, r[0], r[1], r[2], true)
+	shape1.NurbsFunc(shape1.S, shape1.DSdR, r, true)
 	io.Pfpink("\n1: Ju = %v\n", shape1.Ju)
 	io.Pfpink("1: u = %v\n", shape1.U)
 	chk.Scalar(tst, "1: Ju", 1e-17, shape1.Ju, JuCor)
@@ -177,7 +177,7 @@ func check_nurbs_isoparametric(tst *testing.T, shape *Shape, C [][]float64) {
 		for j := 0; j < 2; j++ {
 			r[j] = qua4_natcoords[j][i]
 		}
-		shape.NurbsFunc(shape.S, shape.DSdR, r[0], r[1], r[2], false)
+		shape.NurbsFunc(shape.S, shape.DSdR, r, false)
 		for j := 0; j < 2; j++ {
 			x[j] = 0
 			for k, l := range shape.Ibasis {
@@ -203,7 +203,7 @@ func check_nurbs_dSdR(tst *testing.T, shape *Shape, r []float64, tol float64, ve
 		io.Pf("\nelement = %v, ibasis = %v\n", span, ibasis)
 
 		// analytical
-		shape.NurbsFunc(shape.S, shape.DSdR, r[0], r[1], r[2], true)
+		shape.NurbsFunc(shape.S, shape.DSdR, r, true)
 
 		// numerical
 		for n := 0; n < shape.Nverts; n++ {
@@ -211,7 +211,7 @@ func check_nurbs_dSdR(tst *testing.T, shape *Shape, r []float64, tol float64, ve
 				dSndRi, _ := num.DerivCentral(func(t float64, args ...interface{}) (Sn float64) {
 					copy(r_tmp, r)
 					r_tmp[i] = t
-					shape.NurbsFunc(S_tmp, nil, r_tmp[0], r_tmp[1], r_tmp[2], false)
+					shape.NurbsFunc(S_tmp, nil, r_tmp, false)
 					Sn = S_tmp[n]
 					return
 				}, r[i], 1e-1)

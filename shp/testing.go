@@ -17,16 +17,16 @@ func (o *Shape) Check_S(tst *testing.T, tol float64, verbose bool) {
 
 	// loop over all vertices
 	errS := 0.0
-	rst := []float64{0, 0, 0}
+	r := []float64{0, 0, 0}
 	for n := 0; n < o.Nverts; n++ {
 
 		// natural coordinates @ vertex
 		for i := 0; i < o.Gndim; i++ {
-			rst[i] = o.NatCoords[i][n]
+			r[i] = o.NatCoords[i][n]
 		}
 
 		// compute function
-		o.Func(o.S, o.DSdR, rst[0], rst[1], rst[2], false)
+		o.Func(o.S, o.DSdR, r, false)
 
 		// check
 		if verbose {
@@ -59,17 +59,17 @@ func (o *Shape) Check_Sf(tst *testing.T, tol float64, verbose bool) {
 
 	// loop over face vertices
 	errS := 0.0
-	rst := []float64{0, 0, 0}
+	r := []float64{0, 0, 0}
 	for k := 0; k < nfaces; k++ {
 		for n := range o.FaceLocalV[k] {
 
 			// natural coordinates @ vertex
 			for i := 0; i < o.Gndim; i++ {
-				rst[i] = o.NatCoords[i][n]
+				r[i] = o.NatCoords[i][n]
 			}
 
 			// compute function
-			o.Func(o.S, o.DSdR, rst[0], rst[1], rst[2], false)
+			o.Func(o.S, o.DSdR, r, false)
 
 			// check
 			if verbose {
@@ -100,29 +100,30 @@ func (o *Shape) Check_dSdR(tst *testing.T, tol float64, verbose bool) {
 
 	// loop over all vertices
 	h := 1e-1
-	rst := []float64{0, 0, 0}
+	r := []float64{0, 0, 0}
+	r_temp := []float64{0, 0, 0}
 	S_temp := make([]float64, o.Nverts)
 	for n := 0; n < o.Nverts; n++ {
 
 		// natural coordinates @ vertex
 		for i := 0; i < o.Gndim; i++ {
-			rst[i] = o.NatCoords[i][n]
+			r[i] = o.NatCoords[i][n]
 		}
 
 		// analytical
-		o.Func(o.S, o.DSdR, rst[0], rst[1], rst[2], true)
+		o.Func(o.S, o.DSdR, r, true)
 
 		// numerical
 		for i := 0; i < o.Gndim; i++ {
 			dSndRi, _ := num.DerivCentral(func(x float64, args ...interface{}) (Sn float64) {
-				rst_temp := []float64{rst[0], rst[1], rst[2]}
-				rst_temp[i] = x
-				o.Func(S_temp, nil, rst_temp[0], rst_temp[1], rst_temp[2], false)
+				copy(r_temp, r)
+				r_temp[i] = x
+				o.Func(S_temp, nil, r_temp, false)
 				Sn = S_temp[n]
 				return
-			}, rst[i], h)
+			}, r[i], h)
 			if verbose {
-				io.Pfgrey2("  dS%ddR%d @ [% 4.1f % 4.1f % 4.1f] = %v (num: %v)\n", n, i, rst[0], rst[1], rst[2], o.DSdR[n][i], dSndRi)
+				io.Pfgrey2("  dS%ddR%d @ [% 4.1f % 4.1f % 4.1f] = %v (num: %v)\n", n, i, r[0], r[1], r[2], o.DSdR[n][i], dSndRi)
 			}
 			if math.Abs(o.DSdR[n][i]-dSndRi) > tol {
 				tst.Errorf("%s dS%ddR%d failed with err = %g\n", o.Type, n, i, math.Abs(o.DSdR[n][i]-dSndRi))
