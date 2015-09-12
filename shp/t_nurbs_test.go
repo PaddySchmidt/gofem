@@ -79,7 +79,8 @@ func Test_nurbs01(tst *testing.T) {
 	chk.Ints(tst, "ibasis0", ibasis0, []int{0, 1, 2, 4, 5, 6})
 	chk.Ints(tst, "ibasis1", ibasis1, []int{1, 2, 3, 5, 6, 7})
 
-	shape := GetShapeNurbs(nurbs)
+	shape0 := GetShapeNurbs(nurbs, spans[0])
+	shape1 := GetShapeNurbs(nurbs, spans[1])
 
 	dux := 0.5
 	duy := 1.0
@@ -89,25 +90,23 @@ func Test_nurbs01(tst *testing.T) {
 
 	r := []float64{0.75, 0.75, 0}
 
-	Ju, u, ibasis := shape.NurbsFunc(shape.S, shape.DSdR, r, true, spans[0])
-	io.Pforan("Ju = %v\n", Ju)
-	io.Pforan("u = %v\n", u)
-	io.Pforan("ibasis = %v\n", ibasis)
-	chk.Scalar(tst, "Ju", 1e-17, Ju, JuCor)
-	chk.Scalar(tst, "ux", 1e-17, u[0], (1.0+r[0])*dux/drx)
-	chk.Scalar(tst, "uy", 1e-17, u[1], (1.0+r[1])*duy/dry)
-	chk.Ints(tst, "ibasis", ibasis, []int{0, 1, 2, 4, 5, 6})
+	shape0.NurbsFunc(shape0.S, shape0.DSdR, r[0], r[1], r[2], true)
+	io.Pforan("0: Ju = %v\n", shape0.Ju)
+	io.Pforan("0: u = %v\n", shape0.U)
+	chk.Scalar(tst, "0: Ju", 1e-17, shape0.Ju, JuCor)
+	chk.Scalar(tst, "0: ux", 1e-17, shape0.U[0], (1.0+r[0])*dux/drx)
+	chk.Scalar(tst, "0: uy", 1e-17, shape0.U[1], (1.0+r[1])*duy/dry)
+	chk.Ints(tst, "0: ibasis", shape0.Ibasis, []int{0, 1, 2, 4, 5, 6})
 
-	io.Pforan("S(u(r)) = %v\n", shape.S)
+	io.Pforan("S(u(r)) = %v\n", shape0.S)
 
-	Ju, u, ibasis = shape.NurbsFunc(shape.S, shape.DSdR, r, true, spans[1])
-	io.Pfpink("\nJu = %v\n", Ju)
-	io.Pfpink("u = %v\n", u)
-	io.Pfpink("ibasis = %v\n", ibasis)
-	chk.Scalar(tst, "Ju", 1e-17, Ju, JuCor)
-	chk.Scalar(tst, "ux", 1e-17, u[0], 0.5+(1.0+r[0])*dux/drx)
-	chk.Scalar(tst, "uy", 1e-17, u[1], (1.0+r[1])*duy/dry)
-	chk.Ints(tst, "ibasis", ibasis, []int{1, 2, 3, 5, 6, 7})
+	shape1.NurbsFunc(shape1.S, shape1.DSdR, r[0], r[1], r[2], true)
+	io.Pfpink("\n1: Ju = %v\n", shape1.Ju)
+	io.Pfpink("1: u = %v\n", shape1.U)
+	chk.Scalar(tst, "1: Ju", 1e-17, shape1.Ju, JuCor)
+	chk.Scalar(tst, "1: ux", 1e-17, shape1.U[0], 0.5+(1.0+r[0])*dux/drx)
+	chk.Scalar(tst, "1: uy", 1e-17, shape1.U[1], (1.0+r[1])*duy/dry)
+	chk.Ints(tst, "1: ibasis", shape1.Ibasis, []int{1, 2, 3, 5, 6, 7})
 
 	if chk.Verbose {
 		gm.PlotNurbs("/tmp/gofem", "tst_nurbs01", nurbs)
@@ -119,17 +118,20 @@ func Test_nurbs02(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("nurbs02")
 
-	shape := GetShapeNurbs(get_nurbs_A())
+	nurbs := get_nurbs_A()
+	spans := nurbs.Elements()
+	shape0 := GetShapeNurbs(nurbs, spans[0])
+	shape1 := GetShapeNurbs(nurbs, spans[1])
+	C0 := [][]float64{{5, 10}, {6.5, 10}, {6.5, 13}, {5, 13}}
+	C1 := [][]float64{{6.5, 10}, {8, 10}, {8, 13}, {6.5, 13}}
 
-	C := [][][]float64{
-		{{5, 10}, {6.5, 10}, {6.5, 13}, {5, 13}},
-		{{6.5, 10}, {8, 10}, {8, 13}, {6.5, 13}},
-	}
-
+	r := []float64{0.75, 0.75, 0}
 	tol := 1e-14
 	verb := true
-	check_nurbs_isoparametric(tst, shape, C)
-	check_nurbs_dSdR(tst, shape, []float64{0.75, 0.75, 0}, tol, verb)
+	check_nurbs_isoparametric(tst, shape0, C0)
+	check_nurbs_isoparametric(tst, shape1, C1)
+	check_nurbs_dSdR(tst, shape0, r, tol, verb)
+	check_nurbs_dSdR(tst, shape1, r, tol, verb)
 }
 
 func Test_nurbs03(tst *testing.T) {
@@ -137,26 +139,29 @@ func Test_nurbs03(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("nurbs03")
 
-	shape := GetShapeNurbs(get_nurbs_B())
+	nurbs := get_nurbs_B()
+	spans := nurbs.Elements()
+	shape0 := GetShapeNurbs(nurbs, spans[0])
+	shape1 := GetShapeNurbs(nurbs, spans[1])
+	C0 := [][]float64{{5, 10}, {6.5, 11}, {6.5, 12}, {5, 13}}
+	C1 := [][]float64{{6.5, 11}, {8, 10}, {8, 13}, {6.5, 12}}
 
-	C := [][][]float64{
-		{{5, 10}, {6.5, 11}, {6.5, 12}, {5, 13}},
-		{{6.5, 11}, {8, 10}, {8, 13}, {6.5, 12}},
-	}
-
+	r := []float64{0.75, 0.75, 0}
 	tol := 1e-14
 	verb := true
-	check_nurbs_isoparametric(tst, shape, C)
-	check_nurbs_dSdR(tst, shape, []float64{0.75, 0.75, 0}, tol, verb)
+	check_nurbs_isoparametric(tst, shape0, C0)
+	check_nurbs_isoparametric(tst, shape1, C1)
+	check_nurbs_dSdR(tst, shape0, r, tol, verb)
+	check_nurbs_dSdR(tst, shape1, r, tol, verb)
 
 	if false {
-		gm.PlotNurbs("/tmp/gofem", "tst_nurbs03", shape.Nurbs)
+		gm.PlotNurbs("/tmp/gofem", "tst_nurbs03", nurbs)
 	}
 }
 
 // check isoparametric property
-//  C -- [nspans_or_elements][4][2] elements coordinates of corners (not control points)
-func check_nurbs_isoparametric(tst *testing.T, shape *Shape, C [][][]float64) {
+//  C -- [4][2] elements coordinates of corners (not control points)
+func check_nurbs_isoparametric(tst *testing.T, shape *Shape, C [][]float64) {
 
 	// auxiliary
 	r := []float64{0, 0, 0}
@@ -166,26 +171,22 @@ func check_nurbs_isoparametric(tst *testing.T, shape *Shape, C [][][]float64) {
 		{-1, -1, 1, 1},
 	}
 
-	// loop over elements == spans
-	spans := shape.Nurbs.Elements()
-	for ie, span := range spans {
-		ibasis := shape.Nurbs.IndBasis(span)
-		io.Pf("\nelement = %v, ibasis = %v\n", span, ibasis)
-		for i := 0; i < 4; i++ {
-			for j := 0; j < 2; j++ {
-				r[j] = qua4_natcoords[j][i]
-			}
-			shape.NurbsFunc(shape.S, shape.DSdR, r, false, span)
-			for j := 0; j < 2; j++ {
-				x[j] = 0
-				for k, l := range ibasis {
-					q := shape.Nurbs.GetQl(l)
-					x[j] += shape.S[k] * q[j]
-				}
-			}
-			io.Pforan("x = %v\n", x)
-			chk.Vector(tst, "x", 1e-17, x, C[ie][i])
+	// check
+	io.Pf("\nelement = %v, ibasis = %v\n", shape.Span, shape.Ibasis)
+	for i := 0; i < 4; i++ {
+		for j := 0; j < 2; j++ {
+			r[j] = qua4_natcoords[j][i]
 		}
+		shape.NurbsFunc(shape.S, shape.DSdR, r[0], r[1], r[2], false)
+		for j := 0; j < 2; j++ {
+			x[j] = 0
+			for k, l := range shape.Ibasis {
+				q := shape.Nurbs.GetQl(l)
+				x[j] += shape.S[k] * q[j]
+			}
+		}
+		io.Pforan("x = %v\n", x)
+		chk.Vector(tst, "x", 1e-17, x, C[i])
 	}
 }
 
@@ -202,7 +203,7 @@ func check_nurbs_dSdR(tst *testing.T, shape *Shape, r []float64, tol float64, ve
 		io.Pf("\nelement = %v, ibasis = %v\n", span, ibasis)
 
 		// analytical
-		shape.NurbsFunc(shape.S, shape.DSdR, r, true, span)
+		shape.NurbsFunc(shape.S, shape.DSdR, r[0], r[1], r[2], true)
 
 		// numerical
 		for n := 0; n < shape.Nverts; n++ {
@@ -210,7 +211,7 @@ func check_nurbs_dSdR(tst *testing.T, shape *Shape, r []float64, tol float64, ve
 				dSndRi, _ := num.DerivCentral(func(t float64, args ...interface{}) (Sn float64) {
 					copy(r_tmp, r)
 					r_tmp[i] = t
-					shape.NurbsFunc(S_tmp, nil, r_tmp, false, span)
+					shape.NurbsFunc(S_tmp, nil, r_tmp[0], r_tmp[1], r_tmp[2], false)
 					Sn = S_tmp[n]
 					return
 				}, r[i], 1e-1)

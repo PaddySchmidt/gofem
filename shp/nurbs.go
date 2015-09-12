@@ -11,10 +11,9 @@ import (
 
 // GetShapeNurbs returns a shape structure based on NURBS
 //  Note: enodes are the local ids of control points in NURBS
-func GetShapeNurbs(nurbs *gm.Nurbs) (o *Shape) {
+func GetShapeNurbs(nurbs *gm.Nurbs, span []int) (o *Shape) {
 	o = new(Shape)
 	o.Type = "nurbs"
-	o.Nurbs = nurbs
 	o.Gndim = nurbs.Gnd()
 	switch o.Gndim {
 	case 1:
@@ -29,47 +28,49 @@ func GetShapeNurbs(nurbs *gm.Nurbs) (o *Shape) {
 	if o.Gndim > 1 {
 		o.FaceType = "nurbs"
 	}
+	o.Nurbs = nurbs
+	o.Span = span
+	o.Ibasis = o.Nurbs.IndBasis(o.Span)
+	o.U = make([]float64, o.Gndim)
 	o.init_scratchpad()
 	return
 }
 
-func (o *Shape) NurbsFunc(S []float64, dSdR [][]float64, r []float64, derivs bool, span []int) (Ju float64, u []float64, ibasis []int) {
+func (o *Shape) NurbsFunc(S []float64, dSdR [][]float64, r, s, t float64, derivs bool) {
+
+	// auxiliary
+	R := []float64{r, s, t}
 
 	// compute mapping to knots space
-	nd := o.Gndim
-	u = make([]float64, nd)
-	Ju = 1.0 // det(dudr) => du = Ju * dr
+	o.Ju = 1.0 // det(dudr) => du = Ju * dr
 	var umin, umax float64
-	for i := 0; i < nd; i++ {
-		umin = o.Nurbs.U(i, span[i*2])
-		umax = o.Nurbs.U(i, span[i*2+1])
-		u[i] = ((umax-umin)*r[i] + (umax + umin)) / 2.0
-		Ju *= (umax - umin) / 2.0
-		if u[i] < umin || u[i] > umax {
-			chk.Panic("compute NURBS shape function outide cell range:\nr[%d]=%v, u[%d]=%v, urange=[%v,%v]", i, r[i], i, u[i], umin, umax)
+	for i := 0; i < o.Gndim; i++ {
+		umin = o.Nurbs.U(i, o.Span[i*2])
+		umax = o.Nurbs.U(i, o.Span[i*2+1])
+		o.U[i] = ((umax-umin)*R[i] + (umax + umin)) / 2.0
+		o.Ju *= (umax - umin) / 2.0
+		if o.U[i] < umin || o.U[i] > umax {
+			chk.Panic("compute NURBS shape function outide cell range:\nr[%d]=%v, u[%d]=%v, urange=[%v,%v]", i, R[i], i, o.U[i], umin, umax)
 		}
 	}
 
-	// local indices of control points
-	ibasis = o.Nurbs.IndBasis(span)
-
 	// shape and/or derivatives in knots space
 	if derivs {
-		o.Nurbs.CalcBasisAndDerivs(u)
+		o.Nurbs.CalcBasisAndDerivs(o.U)
 	} else {
-		o.Nurbs.CalcBasis(u)
+		o.Nurbs.CalcBasis(o.U)
 	}
-	for k, l := range ibasis {
+	for k, l := range o.Ibasis {
 		S[k] = o.Nurbs.GetBasisL(l)
 	}
 
 	// derivatives in natural space
 	if derivs {
-		for k, l := range ibasis {
+		for k, l := range o.Ibasis {
 			o.Nurbs.GetDerivL(dSdR[k], l) // dSdR := dSdU
-			for i := 0; i < nd; i++ {
-				umin = o.Nurbs.U(i, span[i*2])
-				umax = o.Nurbs.U(i, span[i*2+1])
+			for i := 0; i < o.Gndim; i++ {
+				umin = o.Nurbs.U(i, o.Span[i*2])
+				umax = o.Nurbs.U(i, o.Span[i*2+1])
 				dSdR[k][i] *= (umax - umin) / 2.0 // dSdR[i] := dSdU[i] * du[i]/dr[i] (no sum on i)
 			}
 		}

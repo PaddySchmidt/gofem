@@ -38,6 +38,7 @@ type Shape struct {
 	SeamLocalV [][]int // seam (3d-edge) local vertices [nseams][nVertsOnSeam]
 
 	// scratchpad: volume
+	//R    []float64   // [3] natural coordinates vector
 	S    []float64   // [nverts] shape functions
 	G    [][]float64 // [nverts][gndim] G == dSdx. derivative of shape function
 	J    float64     // Jacobian: determinant of dxdr
@@ -56,8 +57,25 @@ type Shape struct {
 	DxfdRf [][]float64 // [gndim][gndim-1] derivatives of real coordinates w.r.t natural coordinates
 
 	// NURBS
-	Nurbs *gm.Nurbs // pointer to NURBS structure => indicates that this shape strucutre is based on NURBS
+	Nurbs  *gm.Nurbs // pointer to NURBS structure => indicates that this shape strucutre is based on NURBS
+	Span   []int     // NURBS knots' indices defining cell/element; e.g. [2, 3, 1, 2] for x-quad/y-lin cell
+	Ibasis []int     // indices of basis functions corresponding to Span == local indices of control points
+	U      []float64 // [gndim] NURBS' parametric space coordinates
+	Ju     float64   // parametric-natural mapping Jacobian: determinant of dudr
 }
+
+/*
+func (o *Shape) SetR(r, s, t float64) {
+	switch o.Gndim {
+	case 1:
+		o.R[0] = r
+	case 2:
+		o.R[0], o.R[1] = r, s
+	case 3:
+		o.R[0], o.R[1], o.R[2] = r, s, t
+	}
+}
+*/
 
 // GetCopy returns a new copy of this shape structure
 func (o Shape) GetCopy() *Shape {
