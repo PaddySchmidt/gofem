@@ -13,47 +13,47 @@ import (
 	"github.com/cpmech/gosl/num"
 )
 
-// Check_S checks that shape functions evaluate to 1.0 @ nodes
-func (o *Shape) Check_S(tst *testing.T, tol float64, verbose bool) {
+// CheckShape checks that shape functions evaluate to 1.0 @ nodes
+func CheckShape(tst *testing.T, shape *Shape, tol float64, verbose bool) {
 
 	// loop over all vertices
 	errS := 0.0
 	r := []float64{0, 0, 0}
-	for n := 0; n < o.Nverts; n++ {
+	for n := 0; n < shape.Nverts; n++ {
 
 		// natural coordinates @ vertex
-		for i := 0; i < o.Gndim; i++ {
-			r[i] = o.NatCoords[i][n]
+		for i := 0; i < shape.Gndim; i++ {
+			r[i] = shape.NatCoords[i][n]
 		}
 
 		// compute function
-		o.Func(o.S, o.DSdR, r, false)
+		shape.Func(shape.S, shape.DSdR, r, false)
 
 		// check
 		if verbose {
-			io.Pf("S = %v\n", o.S)
+			io.Pf("S = %v\n", shape.S)
 		}
-		for m := 0; m < o.Nverts; m++ {
+		for m := 0; m < shape.Nverts; m++ {
 			if n == m {
-				errS += math.Abs(o.S[m] - 1.0)
+				errS += math.Abs(shape.S[m] - 1.0)
 			} else {
-				errS += math.Abs(o.S[m])
+				errS += math.Abs(shape.S[m])
 			}
 		}
 	}
 
 	// error
 	if errS > tol {
-		tst.Errorf("%s failed with err = %g\n", o.Type, errS)
+		tst.Errorf("%s failed with err = %g\n", shape.Type, errS)
 		return
 	}
 }
 
-// Check_Sf checks shape functions @ faces
-func (o *Shape) Check_Sf(tst *testing.T, tol float64, verbose bool) {
+// CheckShapeFace checks shape functions @ faces
+func CheckShapeFace(tst *testing.T, shape *Shape, tol float64, verbose bool) {
 
 	// skip 1D shapes
-	nfaces := len(o.FaceLocalV)
+	nfaces := len(shape.FaceLocalV)
 	if nfaces == 0 {
 		return
 	}
@@ -62,25 +62,25 @@ func (o *Shape) Check_Sf(tst *testing.T, tol float64, verbose bool) {
 	errS := 0.0
 	r := []float64{0, 0, 0}
 	for k := 0; k < nfaces; k++ {
-		for n := range o.FaceLocalV[k] {
+		for n := range shape.FaceLocalV[k] {
 
 			// natural coordinates @ vertex
-			for i := 0; i < o.Gndim; i++ {
-				r[i] = o.NatCoords[i][n]
+			for i := 0; i < shape.Gndim; i++ {
+				r[i] = shape.NatCoords[i][n]
 			}
 
 			// compute function
-			o.Func(o.S, o.DSdR, r, false)
+			shape.Func(shape.S, shape.DSdR, r, false)
 
 			// check
 			if verbose {
-				io.Pforan("S = %v\n", o.S)
+				io.Pforan("S = %v\n", shape.S)
 			}
-			for m := range o.FaceLocalV[k] {
+			for m := range shape.FaceLocalV[k] {
 				if n == m {
-					errS += math.Abs(o.S[m] - 1.0)
+					errS += math.Abs(shape.S[m] - 1.0)
 				} else {
-					errS += math.Abs(o.S[m])
+					errS += math.Abs(shape.S[m])
 				}
 			}
 		}
@@ -91,67 +91,25 @@ func (o *Shape) Check_Sf(tst *testing.T, tol float64, verbose bool) {
 		io.Pforan("%g\n", errS)
 	}
 	if errS > tol {
-		tst.Errorf("%s failed with err = %g\n", o.Type, errS)
+		tst.Errorf("%s failed with err = %g\n", shape.Type, errS)
 		return
 	}
 }
 
-// Check_dSdR compares analytical dSdR with numerical results obtained by finite differences
-func (o *Shape) Check_dSdR(tst *testing.T, tol float64, verbose bool) {
-
-	// loop over all vertices
-	h := 1e-1
-	r := []float64{0, 0, 0}
-	r_temp := []float64{0, 0, 0}
-	S_temp := make([]float64, o.Nverts)
-	for n := 0; n < o.Nverts; n++ {
-
-		// natural coordinates @ vertex
-		for i := 0; i < o.Gndim; i++ {
-			r[i] = o.NatCoords[i][n]
-		}
-
-		// analytical
-		o.Func(o.S, o.DSdR, r, true)
-
-		// numerical
-		for i := 0; i < o.Gndim; i++ {
-			dSndRi, _ := num.DerivCentral(func(x float64, args ...interface{}) (Sn float64) {
-				copy(r_temp, r)
-				r_temp[i] = x
-				o.Func(S_temp, nil, r_temp, false)
-				Sn = S_temp[n]
-				return
-			}, r[i], h)
-			if verbose {
-				io.Pfgrey2("  dS%ddR%d @ [% 4.1f % 4.1f % 4.1f] = %v (num: %v)\n", n, i, r[0], r[1], r[2], o.DSdR[n][i], dSndRi)
-			}
-			if math.Abs(o.DSdR[n][i]-dSndRi) > tol {
-				tst.Errorf("%s dS%ddR%d failed with err = %g\n", o.Type, n, i, math.Abs(o.DSdR[n][i]-dSndRi))
-				return
-			}
-			//chk.Scalar(tst, fmt.Sprintf("dS%ddR%d", n, i), tol, dSdR[n][i], dSndRi)
-		}
-	}
-}
-
-// CheckNurbsIsop checks isoparametric property with NURBS
-//  C -- [4][2] elements coordinates of corners (not control points)
-func CheckNurbsIsop(tst *testing.T, shape *Shape, C [][]float64) {
+// CheckIsop checks isoparametric property
+//  C    -- [4][2] elements coordinates of corners (not control points)
+//  Cnat -- [2][4] natural coordinates of corners
+func CheckIsop(tst *testing.T, shape *Shape, C [][]float64, Cnat [][]float64) {
 
 	// auxiliary
 	r := []float64{0, 0, 0}
 	x := make([]float64, 2)
-	qua4_natcoords := [][]float64{
-		{-1, 1, 1, -1},
-		{-1, -1, 1, 1},
-	}
 
 	// check
 	io.Pf("\nelement = %v, ibasis = %v\n", shape.Span, shape.Ibasis)
 	for i := 0; i < 4; i++ {
 		for j := 0; j < 2; j++ {
-			r[j] = qua4_natcoords[j][i]
+			r[j] = Cnat[j][i]
 		}
 		shape.NurbsFunc(shape.S, shape.DSdR, r, false)
 		for j := 0; j < 2; j++ {
@@ -166,40 +124,32 @@ func CheckNurbsIsop(tst *testing.T, shape *Shape, C [][]float64) {
 	}
 }
 
-// CheckNurbs_dSdR checks derivatives with NURBS
-func CheckNurbs_dSdR(tst *testing.T, shape *Shape, r []float64, tol float64, verbose bool) {
+// CheckDSdR checks dSdR derivatives of shape structures
+func CheckDSdR(tst *testing.T, shape *Shape, r []float64, tol float64, verbose bool) {
 
 	// auxiliary
 	r_tmp := make([]float64, len(r))
 	S_tmp := make([]float64, shape.Nverts)
 
-	// loop over elements == spans
-	spans := shape.Nurbs.Elements()
-	for _, span := range spans {
-		ibasis := shape.Nurbs.IndBasis(span)
-		io.Pf("\nelement = %v, ibasis = %v\n", span, ibasis)
+	// analytical
+	shape.Func(shape.S, shape.DSdR, r, true)
 
-		// analytical
-		shape.NurbsFunc(shape.S, shape.DSdR, r, true)
-
-		// numerical
-		for n := 0; n < shape.Nverts; n++ {
-			for i := 0; i < shape.Gndim; i++ {
-				dSndRi, _ := num.DerivCentral(func(t float64, args ...interface{}) (Sn float64) {
-					copy(r_tmp, r)
-					r_tmp[i] = t
-					shape.NurbsFunc(S_tmp, nil, r_tmp, false)
-					Sn = S_tmp[n]
-					return
-				}, r[i], 1e-1)
-				if verbose {
-					io.Pfgrey2("  dS%ddR%d @ [%5.2f%5.2f%5.2f] = %v (num: %v)\n", n, i, r[0], r[1], r[2], shape.DSdR[n][i], dSndRi)
-				}
-				if math.Abs(shape.DSdR[n][i]-dSndRi) > tol {
-					tst.Errorf("nurbs dS%ddR%d failed with err = %g\n", n, i, math.Abs(shape.DSdR[n][i]-dSndRi))
-					return
-				}
-				//chk.Scalar(tst, fmt.Sprintf("dS%ddR%d", n, i), tol, dSdR[n][i], dSndRi)
+	// numerical
+	for n := 0; n < shape.Nverts; n++ {
+		for i := 0; i < shape.Gndim; i++ {
+			dSndRi, _ := num.DerivCentral(func(t float64, args ...interface{}) (Sn float64) {
+				copy(r_tmp, r)
+				r_tmp[i] = t
+				shape.Func(S_tmp, nil, r_tmp, false)
+				Sn = S_tmp[n]
+				return
+			}, r[i], 1e-1)
+			if verbose {
+				io.Pfgrey2("  dS%ddR%d @ [%5.2f%5.2f%5.2f] = %v (num: %v)\n", n, i, r[0], r[1], r[2], shape.DSdR[n][i], dSndRi)
+			}
+			if math.Abs(shape.DSdR[n][i]-dSndRi) > tol {
+				tst.Errorf("nurbs dS%ddR%d failed with err = %g\n", n, i, math.Abs(shape.DSdR[n][i]-dSndRi))
+				return
 			}
 		}
 	}

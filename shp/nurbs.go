@@ -28,6 +28,7 @@ func GetShapeNurbs(nurbs *gm.Nurbs, span []int) (o *Shape) {
 	if o.Gndim > 1 {
 		o.FaceType = "nurbs"
 	}
+	o.Func = o.NurbsFunc
 	o.Nurbs = nurbs
 	o.Span = span
 	o.Ibasis = o.Nurbs.IndBasis(o.Span)

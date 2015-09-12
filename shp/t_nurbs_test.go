@@ -123,13 +123,18 @@ func Test_nurbs02(tst *testing.T) {
 	C0 := [][]float64{{5, 10}, {6.5, 10}, {6.5, 13}, {5, 13}}
 	C1 := [][]float64{{6.5, 10}, {8, 10}, {8, 13}, {6.5, 13}}
 
+	Cnat := [][]float64{
+		{-1, 1, 1, -1},
+		{-1, -1, 1, 1},
+	}
+
 	r := []float64{0.75, 0.75, 0}
 	tol := 1e-14
 	verb := true
-	CheckNurbsIsop(tst, shape0, C0)
-	CheckNurbsIsop(tst, shape1, C1)
-	CheckNurbs_dSdR(tst, shape0, r, tol, verb)
-	CheckNurbs_dSdR(tst, shape1, r, tol, verb)
+	CheckIsop(tst, shape0, C0, Cnat)
+	CheckIsop(tst, shape1, C1, Cnat)
+	CheckDSdR(tst, shape0, r, tol, verb)
+	CheckDSdR(tst, shape1, r, tol, verb)
 }
 
 func Test_nurbs03(tst *testing.T) {
@@ -144,13 +149,18 @@ func Test_nurbs03(tst *testing.T) {
 	C0 := [][]float64{{5, 10}, {6.5, 11}, {6.5, 12}, {5, 13}}
 	C1 := [][]float64{{6.5, 11}, {8, 10}, {8, 13}, {6.5, 12}}
 
+	Cnat := [][]float64{
+		{-1, 1, 1, -1},
+		{-1, -1, 1, 1},
+	}
+
 	r := []float64{0.75, 0.75, 0}
 	tol := 1e-14
 	verb := true
-	CheckNurbsIsop(tst, shape0, C0)
-	CheckNurbsIsop(tst, shape1, C1)
-	CheckNurbs_dSdR(tst, shape0, r, tol, verb)
-	CheckNurbs_dSdR(tst, shape1, r, tol, verb)
+	CheckIsop(tst, shape0, C0, Cnat)
+	CheckIsop(tst, shape1, C1, Cnat)
+	CheckDSdR(tst, shape0, r, tol, verb)
+	CheckDSdR(tst, shape1, r, tol, verb)
 
 	if false {
 		gm.PlotNurbs("/tmp/gofem", "tst_nurbs03", nurbs)

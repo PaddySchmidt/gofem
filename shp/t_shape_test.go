@@ -16,6 +16,8 @@ func Test_shape01(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("Test shape01")
 
+	r := []float64{0, 0, 0}
+
 	verb := true
 	for name, shape := range factory {
 
@@ -26,7 +28,11 @@ func Test_shape01(tst *testing.T) {
 		if name == "tri10" {
 			tol = 1e-14
 		}
-		shape.Check_S(tst, tol, verb)
+		CheckShape(tst, shape, tol, verb)
+
+		// check Sf
+		tol = 1e-18
+		CheckShapeFace(tst, shape, tol, verb)
 
 		// check dSdR
 		tol = 1e-14
@@ -36,11 +42,7 @@ func Test_shape01(tst *testing.T) {
 		if name == "tri15" {
 			tol = 1e-9
 		}
-		shape.Check_dSdR(tst, tol, verb)
-
-		// check face vertices
-		tol = 1e-18
-		shape.Check_Sf(tst, tol, verb)
+		CheckDSdR(tst, shape, r, tol, verb)
 
 		io.PfGreen("OK\n")
 	}
