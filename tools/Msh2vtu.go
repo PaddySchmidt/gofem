@@ -41,7 +41,11 @@ func main() {
 	))
 
 	// read mesh
-	msh := inp.ReadMsh("", mshfn, 0)
+	msh, err := inp.ReadMsh("", mshfn, 0)
+	if err != nil {
+		io.PfRed("cannot read mesh:\n%v", err)
+		return
+	}
 	ndim = msh.Ndim
 	verts = msh.Verts
 	cells = msh.Cells
