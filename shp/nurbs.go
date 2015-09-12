@@ -18,10 +18,22 @@ func GetShapeNurbs(nurbs *gm.Nurbs) (o *Shape) {
 	switch o.Gndim {
 	case 1:
 		o.BasicType = "lin2"
+		o.NatCoords = [][]float64{
+			{-1, 1},
+		}
 	case 2:
 		o.BasicType = "qua4"
+		o.NatCoords = [][]float64{
+			{-1, 1, 1, -1},
+			{-1, -1, 1, 1},
+		}
 	case 3:
 		o.BasicType = "hex8"
+		o.NatCoords = [][]float64{
+			{-1, 1, 1, -1, -1, 1, 1, -1},
+			{-1, -1, 1, 1, -1, -1, 1, 1},
+			{-1, -1, -1, -1, 1, 1, 1, 1},
+		}
 	}
 	o.Nverts = nurbs.GetElemNumBasis()
 	o.VtkCode = VTK_POLY_VERTEX
