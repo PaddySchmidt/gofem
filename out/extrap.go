@@ -31,7 +31,7 @@ func ComputeExtrapolatedValues(extrapKeys []string) {
 
 		// get shape and integration points from known elements
 		var sha *shp.Shape
-		var ips []*shp.Ipoint
+		var ips []shp.Ipoint
 		switch e := ele.(type) {
 		case *fem.ElemP:
 			sha = e.Shp
