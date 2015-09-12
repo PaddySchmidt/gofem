@@ -145,10 +145,59 @@ func CheckDSdR(tst *testing.T, shape *Shape, r []float64, tol float64, verbose b
 				return
 			}, r[i], 1e-1)
 			if verbose {
-				io.Pfgrey2("  dS%ddR%d @ [%5.2f%5.2f%5.2f] = %v (num: %v)\n", n, i, r[0], r[1], r[2], shape.DSdR[n][i], dSndRi)
+				io.Pfgrey2("  dS%ddR%d @ %5.2f = %v (num: %v)\n", n, i, r, shape.DSdR[n][i], dSndRi)
 			}
 			if math.Abs(shape.DSdR[n][i]-dSndRi) > tol {
 				tst.Errorf("nurbs dS%ddR%d failed with err = %g\n", n, i, math.Abs(shape.DSdR[n][i]-dSndRi))
+				return
+			}
+		}
+	}
+}
+
+// CheckDSdx checks G=dSdx derivatives of shape structures
+func CheckDSdx(tst *testing.T, shape *Shape, xmat [][]float64, x []float64, tol float64, verbose bool) {
+
+	// find r corresponding to x
+	r := make([]float64, 3)
+	err := shape.InvMap(r, x, xmat)
+	if err != nil {
+		tst.Errorf("InvMap failed:\n%v", err)
+		return
+	}
+
+	// analytical
+	err = shape.CalcAtIp(xmat, r, true)
+	if err != nil {
+		tst.Errorf("CalcAtIp failed:\n%v", err)
+		return
+	}
+
+	// numerical
+	x_tmp := make([]float64, len(x))
+	for n := 0; n < shape.Nverts; n++ {
+		for i := 0; i < shape.Gndim; i++ {
+			dSnDxi, _ := num.DerivCentral(func(t float64, args ...interface{}) (Sn float64) {
+				copy(x_tmp, x)
+				x_tmp[i] = t
+				err = shape.InvMap(r, x_tmp, xmat)
+				if err != nil {
+					tst.Errorf("InvMap failed:\n%v", err)
+					return
+				}
+				err = shape.CalcAtIp(xmat, r, false)
+				if err != nil {
+					tst.Errorf("CalcAtIp failed:\n%v", err)
+					return
+				}
+				Sn = shape.S[n]
+				return
+			}, x[i], 1e-1)
+			if verbose {
+				io.Pfgrey2("  dS%dDx%d @ %5.2f = %v (num: %v)\n", n, i, x, shape.G[n][i], dSnDxi)
+			}
+			if math.Abs(shape.G[n][i]-dSnDxi) > tol {
+				tst.Errorf("nurbs dS%dDx%d failed with err = %g\n", n, i, math.Abs(shape.G[n][i]-dSnDxi))
 				return
 			}
 		}

@@ -10,6 +10,7 @@ import (
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/gm"
 	"github.com/cpmech/gosl/io"
+	"github.com/cpmech/gosl/utl"
 )
 
 func get_nurbs_A() *gm.Nurbs {
@@ -135,6 +136,16 @@ func Test_nurbs02(tst *testing.T) {
 	CheckIsop(tst, shape1, C1, Cnat)
 	CheckDSdR(tst, shape0, r, tol, verb)
 	CheckDSdR(tst, shape1, r, tol, verb)
+
+	X0 := get_nurbs_xmat(nurbs, shape0.Ibasis)
+	X1 := get_nurbs_xmat(nurbs, shape0.Ibasis)
+	io.Pforan("X0 = %v\n", X0)
+	io.Pforan("X1 = %v\n", X1)
+
+	tol = 1e-10
+	x := []float64{6, 12.5}
+	CheckDSdx(tst, shape0, X0, x, tol, verb)
+	CheckDSdx(tst, shape1, X1, x, tol, verb)
 }
 
 func Test_nurbs03(tst *testing.T) {
@@ -162,7 +173,29 @@ func Test_nurbs03(tst *testing.T) {
 	CheckDSdR(tst, shape0, r, tol, verb)
 	CheckDSdR(tst, shape1, r, tol, verb)
 
+	X0 := get_nurbs_xmat(nurbs, shape0.Ibasis)
+	X1 := get_nurbs_xmat(nurbs, shape0.Ibasis)
+	io.Pforan("X0 = %v\n", X0)
+	io.Pforan("X1 = %v\n", X1)
+
+	tol = 1e-9
+	x := []float64{6, 12}
+	CheckDSdx(tst, shape0, X0, x, tol, verb)
+	CheckDSdx(tst, shape1, X1, x, tol, verb)
+
 	if false {
 		gm.PlotNurbs("/tmp/gofem", "tst_nurbs03", nurbs)
 	}
+}
+
+func get_nurbs_xmat(nurbs *gm.Nurbs, ibasis []int) (xmat [][]float64) {
+	nd := nurbs.Gnd()
+	xmat = utl.DblsAlloc(nd, len(ibasis))
+	for k, l := range ibasis {
+		q := nurbs.GetQl(l)
+		for j := 0; j < nd; j++ {
+			xmat[j][k] = q[j]
+		}
+	}
+	return
 }

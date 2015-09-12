@@ -14,7 +14,7 @@ import (
 func Test_shape01(tst *testing.T) {
 
 	//verbose()
-	chk.PrintTitle("Test shape01")
+	chk.PrintTitle("shape01")
 
 	r := []float64{0, 0, 0}
 
@@ -46,4 +46,27 @@ func Test_shape01(tst *testing.T) {
 
 		io.PfGreen("OK\n")
 	}
+}
+
+func Test_shape02(tst *testing.T) {
+
+	//verbose()
+	chk.PrintTitle("shape02")
+
+	xmat := [][]float64{
+		{10, 13, 13, 10},
+		{8, 8, 9, 9},
+	}
+	dx, dy := 3.0, 1.0
+	dr, ds := 2.0, 2.0
+	r := []float64{0, 0, 0}
+	shape := factory["qua4"]
+	shape.CalcAtIp(xmat, r, true)
+	io.Pforan("J = %v\n", shape.J)
+	chk.Scalar(tst, "J", 1e-17, shape.J, (dx/dr)*(dy/ds))
+
+	tol := 1e-14
+	verb := true
+	x := []float64{12.0, 8.5}
+	CheckDSdx(tst, shape, xmat, x, tol, verb)
 }

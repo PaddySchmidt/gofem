@@ -10,7 +10,7 @@ import (
 )
 
 // GetShapeNurbs returns a shape structure based on NURBS
-//  Note: enodes are the local ids of control points in NURBS
+//  Note: span are the local ids of control points in NURBS defining elements
 func GetShapeNurbs(nurbs *gm.Nurbs, span []int) (o *Shape) {
 	o = new(Shape)
 	o.Type = "nurbs"
@@ -37,6 +37,7 @@ func GetShapeNurbs(nurbs *gm.Nurbs, span []int) (o *Shape) {
 	return
 }
 
+// NurbsFunc implements shape/deriv functions for NURBS
 func (o *Shape) NurbsFunc(S []float64, dSdR [][]float64, r []float64, derivs bool) {
 
 	// compute mapping to knots space
