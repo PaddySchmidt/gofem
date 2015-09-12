@@ -5,11 +5,13 @@
 package shp
 
 import (
+	"math"
 	"testing"
 
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/gm"
 	"github.com/cpmech/gosl/io"
+	"github.com/cpmech/gosl/num"
 )
 
 func get_nurbs_A() *gm.Nurbs {
@@ -22,6 +24,31 @@ func get_nurbs_A() *gm.Nurbs {
 		{6.0, 13, 0, 1}, // global 5
 		{7.0, 10, 0, 1}, // global 6
 		{7.0, 13, 0, 1}, // global 7
+	}
+	knots := [][]float64{
+		{0, 0, 0, 0.5, 1, 1, 1},
+		{0, 0, 1, 1},
+	}
+	ctrls := []int{
+		0, 4, 6, 1, // first level along x
+		3, 5, 7, 2, // second level along x
+	}
+	var nurbs gm.Nurbs
+	nurbs.Init(2, []int{2, 1}, knots)
+	nurbs.SetControl(verts, ctrls)
+	return &nurbs
+}
+
+func get_nurbs_B() *gm.Nurbs {
+	verts := [][]float64{
+		{5.0, 10, 0, 1}, // global 0
+		{8.0, 10, 0, 1}, // global 1
+		{8.0, 13, 0, 1}, // global 2
+		{5.0, 13, 0, 1}, // global 3
+		{6.0, 11, 0, 1}, // global 4
+		{6.0, 12, 0, 1}, // global 5
+		{7.0, 11, 0, 1}, // global 6
+		{7.0, 12, 0, 1}, // global 7
 	}
 	knots := [][]float64{
 		{0, 0, 0, 0.5, 1, 1, 1},
@@ -92,20 +119,43 @@ func Test_nurbs02(tst *testing.T) {
 	//verbose()
 	chk.PrintTitle("nurbs02")
 
-	// nurbs and shape
 	shape := GetShapeNurbs(get_nurbs_A())
 
-	// elements coordinates of corners (not control points)
 	C := [][][]float64{
 		{{5, 10}, {6.5, 10}, {6.5, 13}, {5, 13}},
 		{{6.5, 10}, {8, 10}, {8, 13}, {6.5, 13}},
 	}
 
-	// check
+	tol := 1e-14
+	verb := true
 	check_nurbs_isoparametric(tst, shape, C)
+	check_nurbs_dSdR(tst, shape, []float64{0.75, 0.75, 0}, tol, verb)
+}
+
+func Test_nurbs03(tst *testing.T) {
+
+	//verbose()
+	chk.PrintTitle("nurbs03")
+
+	shape := GetShapeNurbs(get_nurbs_B())
+
+	C := [][][]float64{
+		{{5, 10}, {6.5, 11}, {6.5, 12}, {5, 13}},
+		{{6.5, 11}, {8, 10}, {8, 13}, {6.5, 12}},
+	}
+
+	tol := 1e-14
+	verb := true
+	check_nurbs_isoparametric(tst, shape, C)
+	check_nurbs_dSdR(tst, shape, []float64{0.75, 0.75, 0}, tol, verb)
+
+	if false {
+		gm.PlotNurbs("/tmp/gofem", "tst_nurbs03", shape.Nurbs)
+	}
 }
 
 // check isoparametric property
+//  C -- [nspans_or_elements][4][2] elements coordinates of corners (not control points)
 func check_nurbs_isoparametric(tst *testing.T, shape *Shape, C [][][]float64) {
 
 	// auxiliary
@@ -135,6 +185,44 @@ func check_nurbs_isoparametric(tst *testing.T, shape *Shape, C [][][]float64) {
 			}
 			io.Pforan("x = %v\n", x)
 			chk.Vector(tst, "x", 1e-17, x, C[ie][i])
+		}
+	}
+}
+
+func check_nurbs_dSdR(tst *testing.T, shape *Shape, r []float64, tol float64, verbose bool) {
+
+	// auxiliary
+	r_tmp := make([]float64, len(r))
+	S_tmp := make([]float64, shape.Nverts)
+
+	// loop over elements == spans
+	spans := shape.Nurbs.Elements()
+	for _, span := range spans {
+		ibasis := shape.Nurbs.IndBasis(span)
+		io.Pf("\nelement = %v, ibasis = %v\n", span, ibasis)
+
+		// analytical
+		shape.NurbsFunc(shape.S, shape.DSdR, r, true, span)
+
+		// numerical
+		for n := 0; n < shape.Nverts; n++ {
+			for i := 0; i < shape.Gndim; i++ {
+				dSndRi, _ := num.DerivCentral(func(t float64, args ...interface{}) (Sn float64) {
+					copy(r_tmp, r)
+					r_tmp[i] = t
+					shape.NurbsFunc(S_tmp, nil, r_tmp, false, span)
+					Sn = S_tmp[n]
+					return
+				}, r[i], 1e-1)
+				if verbose {
+					io.Pfgrey2("  dS%ddR%d @ [%5.2f%5.2f%5.2f] = %v (num: %v)\n", n, i, r[0], r[1], r[2], shape.DSdR[n][i], dSndRi)
+				}
+				if math.Abs(shape.DSdR[n][i]-dSndRi) > tol {
+					tst.Errorf("nurbs dS%ddR%d failed with err = %g\n", n, i, math.Abs(shape.DSdR[n][i]-dSndRi))
+					return
+				}
+				//chk.Scalar(tst, fmt.Sprintf("dS%ddR%d", n, i), tol, dSdR[n][i], dSndRi)
+			}
 		}
 	}
 }
