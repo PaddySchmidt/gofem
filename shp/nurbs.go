@@ -14,26 +14,15 @@ import (
 func GetShapeNurbs(nurbs *gm.Nurbs) (o *Shape) {
 	o = new(Shape)
 	o.Type = "nurbs"
+	o.Nurbs = nurbs
 	o.Gndim = nurbs.Gnd()
 	switch o.Gndim {
 	case 1:
 		o.BasicType = "lin2"
-		o.NatCoords = [][]float64{
-			{-1, 1},
-		}
 	case 2:
 		o.BasicType = "qua4"
-		o.NatCoords = [][]float64{
-			{-1, 1, 1, -1},
-			{-1, -1, 1, 1},
-		}
 	case 3:
 		o.BasicType = "hex8"
-		o.NatCoords = [][]float64{
-			{-1, 1, 1, -1, -1, 1, 1, -1},
-			{-1, -1, 1, 1, -1, -1, 1, 1},
-			{-1, -1, -1, -1, 1, 1, 1, 1},
-		}
 	}
 	o.Nverts = nurbs.GetElemNumBasis()
 	o.VtkCode = VTK_POLY_VERTEX
@@ -44,16 +33,16 @@ func GetShapeNurbs(nurbs *gm.Nurbs) (o *Shape) {
 	return
 }
 
-func NurbsShapeFunc(S []float64, dSdR [][]float64, r []float64, derivs bool, nurbs *gm.Nurbs, span []int) (Ju float64, u []float64, ibasis []int) {
+func (o *Shape) NurbsFunc(S []float64, dSdR [][]float64, r []float64, derivs bool, span []int) (Ju float64, u []float64, ibasis []int) {
 
 	// compute mapping to knots space
-	nd := nurbs.Gnd()
+	nd := o.Gndim
 	u = make([]float64, nd)
 	Ju = 1.0 // det(dudr) => du = Ju * dr
 	var umin, umax float64
 	for i := 0; i < nd; i++ {
-		umin = nurbs.U(i, span[i*2])
-		umax = nurbs.U(i, span[i*2+1])
+		umin = o.Nurbs.U(i, span[i*2])
+		umax = o.Nurbs.U(i, span[i*2+1])
 		u[i] = ((umax-umin)*r[i] + (umax + umin)) / 2.0
 		Ju *= (umax - umin) / 2.0
 		if u[i] < umin || u[i] > umax {
@@ -62,25 +51,25 @@ func NurbsShapeFunc(S []float64, dSdR [][]float64, r []float64, derivs bool, nur
 	}
 
 	// local indices of control points
-	ibasis = nurbs.IndBasis(span)
+	ibasis = o.Nurbs.IndBasis(span)
 
 	// shape and/or derivatives in knots space
 	if derivs {
-		nurbs.CalcBasisAndDerivs(u)
+		o.Nurbs.CalcBasisAndDerivs(u)
 	} else {
-		nurbs.CalcBasis(u)
+		o.Nurbs.CalcBasis(u)
 	}
 	for k, l := range ibasis {
-		S[k] = nurbs.GetBasisL(l)
+		S[k] = o.Nurbs.GetBasisL(l)
 	}
 
 	// derivatives in natural space
 	if derivs {
 		for k, l := range ibasis {
-			nurbs.GetDerivL(dSdR[k], l) // dSdR := dSdU
+			o.Nurbs.GetDerivL(dSdR[k], l) // dSdR := dSdU
 			for i := 0; i < nd; i++ {
-				umin = nurbs.U(i, span[i*2])
-				umax = nurbs.U(i, span[i*2+1])
+				umin = o.Nurbs.U(i, span[i*2])
+				umax = o.Nurbs.U(i, span[i*2+1])
 				dSdR[k][i] *= (umax - umin) / 2.0 // dSdR[i] := dSdU[i] * du[i]/dr[i] (no sum on i)
 			}
 		}

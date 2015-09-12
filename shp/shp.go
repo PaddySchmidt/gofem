@@ -6,6 +6,7 @@
 package shp
 
 import (
+	"github.com/cpmech/gosl/gm"
 	"github.com/cpmech/gosl/la"
 	"github.com/cpmech/gosl/utl"
 )
@@ -53,6 +54,9 @@ type Shape struct {
 	Fnvec  []float64   // [gndim] face normal vector multiplied by Jf
 	DSfdRf [][]float64 // [facenverts][gndim-1] derivatives of Sf w.r.t natural coordinates
 	DxfdRf [][]float64 // [gndim][gndim-1] derivatives of real coordinates w.r.t natural coordinates
+
+	// NURBS
+	Nurbs *gm.Nurbs // pointer to NURBS structure => indicates that this shape strucutre is based on NURBS
 }
 
 // GetCopy returns a new copy of this shape structure
