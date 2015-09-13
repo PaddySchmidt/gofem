@@ -224,6 +224,24 @@ func ReadMsh(dir, fn string, goroutineId int) (o *Mesh, err error) {
 			return
 		}
 
+		// get shape structure
+		switch c.Type {
+		case "joint":
+			c.IsJoint = true
+		case "nurbs":
+			c.Shp = shp.GetShapeNurbs(o.PtNurbs[c.Nrb], o.NrbFaces[c.Nrb], c.Span)
+			if c.Shp == nil {
+				err = chk.Err("cannot allocate \"shape\" structure for cell type = %q\n", c.Type)
+				return
+			}
+		default:
+			c.Shp = shp.Get(c.Type, goroutineId)
+			if c.Shp == nil {
+				err = chk.Err("cannot allocate \"shape\" structure for cell type = %q\n", c.Type)
+				return
+			}
+		}
+
 		// face tags
 		cells := o.CellTag2cells[c.Tag]
 		o.CellTag2cells[c.Tag] = append(cells, c)
@@ -231,7 +249,7 @@ func ReadMsh(dir, fn string, goroutineId int) (o *Mesh, err error) {
 			if ftag < 0 {
 				pairs := o.FaceTag2cells[ftag]
 				o.FaceTag2cells[ftag] = append(pairs, CellFaceId{c, i})
-				for _, l := range shp.GetFaceLocalVerts(c.Type, i) {
+				for _, l := range c.Shp.FaceLocalVerts[i] {
 					utl.IntIntsMapAppend(&o.FaceTag2verts, ftag, o.Verts[c.Verts[l]].Id)
 				}
 			}
@@ -254,24 +272,6 @@ func ReadMsh(dir, fn string, goroutineId int) (o *Mesh, err error) {
 		// partition => cells
 		cells = o.Part2cells[c.Part]
 		o.Part2cells[c.Part] = append(cells, c)
-
-		// get shape structure
-		switch c.Type {
-		case "joint":
-			c.IsJoint = true
-		case "nurbs":
-			c.Shp = shp.GetShapeNurbs(o.PtNurbs[c.Nrb], o.NrbFaces[c.Nrb], c.Span)
-			if c.Shp == nil {
-				err = chk.Err("cannot allocate \"shape\" structure for cell type = %q\n", c.Type)
-				return
-			}
-		default:
-			c.Shp = shp.Get(c.Type, goroutineId)
-			if c.Shp == nil {
-				err = chk.Err("cannot allocate \"shape\" structure for cell type = %q\n", c.Type)
-				return
-			}
-		}
 	}
 
 	// remove duplicates

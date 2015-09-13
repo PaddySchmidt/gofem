@@ -7,7 +7,6 @@ package inp
 import (
 	"sort"
 
-	"github.com/cpmech/gofem/shp"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
 	"github.com/cpmech/gosl/utl"
@@ -90,7 +89,7 @@ func (o *Cell) SetFaceConds(stg *Stage, functions FuncsData) (err error) {
 		}
 
 		// local and global ids of vertices on face
-		lverts := shp.GetFaceLocalVerts(o.Type, faceId)
+		lverts := o.Shp.FaceLocalVerts[faceId]
 		gverts := make([]int, len(lverts))
 		for i, l := range lverts {
 			gverts[i] = o.Verts[l]
