@@ -22,7 +22,6 @@ type ElemU struct {
 	// basic data
 	Cell *inp.Cell   // the cell structure
 	X    [][]float64 // matrix of nodal coordinates [ndim][nnode]
-	Shp  *shp.Shape  // shape structure
 	Nu   int         // total number of unknowns
 	Ndim int         // space dimension
 
@@ -106,7 +105,7 @@ func init() {
 		var info Info
 
 		// number of nodes in element
-		nverts := shp.GetNverts(cell.Type)
+		nverts := cell.Shp.Nverts
 		if nverts < 0 {
 			return nil
 		}
@@ -148,16 +147,15 @@ func init() {
 		var o ElemU
 		o.Cell = cell
 		o.X = x
-		o.Shp = shp.Get(cell.Type, sim.GoroutineId)
 		o.Ndim = len(x)
-		o.Nu = o.Ndim * o.Shp.Nverts
+		o.Nu = o.Ndim * o.Cell.Shp.Nverts
 
 		// parse flags
 		o.UseB, o.Debug, o.Thickness = GetSolidFlags(sim.Data.Axisym, sim.Data.Pstress, edat.Extra)
 
 		// integration points
 		var err error
-		o.IpsElem, o.IpsFace, err = GetIntegrationPoints(edat.Nip, edat.Nipf, cell.Type)
+		o.IpsElem, o.IpsFace, err = o.Cell.Shp.GetIps(edat.Nip, edat.Nipf)
 		if err != nil {
 			chk.Panic("cannot allocate integration points of solid element with nip=%d and nipf=%d:\n%v", edat.Nip, edat.Nipf, err)
 		}
@@ -212,10 +210,10 @@ func init() {
 
 		// variables for debugging
 		if o.Debug {
-			o.fex = make([]float64, o.Shp.Nverts)
-			o.fey = make([]float64, o.Shp.Nverts)
+			o.fex = make([]float64, o.Cell.Shp.Nverts)
+			o.fey = make([]float64, o.Cell.Shp.Nverts)
 			if o.Ndim == 3 {
-				o.fez = make([]float64, o.Shp.Nverts)
+				o.fez = make([]float64, o.Cell.Shp.Nverts)
 			}
 		}
 
@@ -266,7 +264,7 @@ func (o *ElemU) Id() int { return o.Cell.Id }
 // SetEqs set equations
 func (o *ElemU) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
 	o.Umap = make([]int, o.Nu)
-	for m := 0; m < o.Shp.Nverts; m++ {
+	for m := 0; m < o.Cell.Shp.Nverts; m++ {
 		for i := 0; i < o.Ndim; i++ {
 			r := i + m*o.Ndim
 			o.Umap[r] = eqs[m][i]
@@ -295,21 +293,23 @@ func (o *ElemU) InterpStarVars(sol *Solution) (err error) {
 	for idx, ip := range o.IpsElem {
 
 		// interpolation functions and gradients
-		err = o.Shp.CalcAtIp(o.X, ip, true)
+		err = o.Cell.Shp.CalcAtIp(o.X, ip, true)
 		if err != nil {
 			return
 		}
+		S := o.Cell.Shp.S
+		G := o.Cell.Shp.G
 
 		// interpolate starred variables
 		o.divχs[idx] = 0
 		for i := 0; i < o.Ndim; i++ {
 			o.ζs[idx][i] = 0
 			o.χs[idx][i] = 0
-			for m := 0; m < o.Shp.Nverts; m++ {
+			for m := 0; m < o.Cell.Shp.Nverts; m++ {
 				r := o.Umap[i+m*o.Ndim]
-				o.ζs[idx][i] += o.Shp.S[m] * sol.Zet[r]
-				o.χs[idx][i] += o.Shp.S[m] * sol.Chi[r]
-				o.divχs[idx] += o.Shp.G[m][i] * sol.Chi[r]
+				o.ζs[idx][i] += S[m] * sol.Zet[r]
+				o.χs[idx][i] += S[m] * sol.Chi[r]
+				o.divχs[idx] += G[m][i] * sol.Chi[r]
 			}
 		}
 	}
@@ -325,7 +325,7 @@ func (o *ElemU) AddToRhs(fb []float64, sol *Solution) (err error) {
 	}
 
 	// for each integration point
-	nverts := o.Shp.Nverts
+	nverts := o.Cell.Shp.Nverts
 	for idx, ip := range o.IpsElem {
 
 		// interpolation functions, gradients and variables @ ip
@@ -335,15 +335,15 @@ func (o *ElemU) AddToRhs(fb []float64, sol *Solution) (err error) {
 		}
 
 		// auxiliary
-		coef := o.Shp.J * ip[3] * o.Thickness
-		S := o.Shp.S
-		G := o.Shp.G
+		coef := o.Cell.Shp.J * ip[3] * o.Thickness
+		S := o.Cell.Shp.S
+		G := o.Cell.Shp.G
 
 		// add internal forces to fb
 		if o.UseB {
 			radius := 1.0
 			if sol.Axisym {
-				radius = o.Shp.AxisymGetRadius(o.X)
+				radius = o.Cell.Shp.AxisymGetRadius(o.X)
 				coef *= radius
 			}
 			IpBmatrix(o.B, o.Ndim, nverts, G, radius, S, sol.Axisym)
@@ -390,7 +390,7 @@ func (o *ElemU) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error)
 	la.MatFill(o.K, 0)
 
 	// for each integration point
-	nverts := o.Shp.Nverts
+	nverts := o.Cell.Shp.Nverts
 	for idx, ip := range o.IpsElem {
 
 		// interpolation functions, gradients and variables @ ip
@@ -400,14 +400,14 @@ func (o *ElemU) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error)
 		}
 
 		// check Jacobian
-		if o.Shp.J < 0 {
-			return chk.Err("ElemU: eid=%d: Jacobian is negative = %g\n", o.Id(), o.Shp.J)
+		if o.Cell.Shp.J < 0 {
+			return chk.Err("ElemU: eid=%d: Jacobian is negative = %g\n", o.Id(), o.Cell.Shp.J)
 		}
 
 		// auxiliary
-		coef := o.Shp.J * ip[3] * o.Thickness
-		S := o.Shp.S
-		G := o.Shp.G
+		coef := o.Cell.Shp.J * ip[3] * o.Thickness
+		S := o.Cell.Shp.S
+		G := o.Cell.Shp.G
 
 		// consistent tangent model matrix
 		err = o.MdlSmall.CalcD(o.D, o.States[idx], firstIt)
@@ -419,7 +419,7 @@ func (o *ElemU) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error)
 		if o.UseB {
 			radius := 1.0
 			if sol.Axisym {
-				radius = o.Shp.AxisymGetRadius(o.X)
+				radius = o.Cell.Shp.AxisymGetRadius(o.X)
 				coef *= radius
 			}
 			IpBmatrix(o.B, o.Ndim, nverts, G, radius, S, sol.Axisym)
@@ -478,22 +478,22 @@ func (o *ElemU) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error)
 func (o *ElemU) Update(sol *Solution) (err error) {
 
 	// for each integration point
-	nverts := o.Shp.Nverts
+	nverts := o.Cell.Shp.Nverts
 	for idx, ip := range o.IpsElem {
 
 		// interpolation functions and gradients
-		err = o.Shp.CalcAtIp(o.X, ip, true)
+		err = o.Cell.Shp.CalcAtIp(o.X, ip, true)
 		if err != nil {
 			return
 		}
-		S := o.Shp.S
-		G := o.Shp.G
+		S := o.Cell.Shp.S
+		G := o.Cell.Shp.G
 
 		// compute strains
 		if o.UseB {
 			radius := 1.0
 			if sol.Axisym {
-				radius = o.Shp.AxisymGetRadius(o.X)
+				radius = o.Cell.Shp.AxisymGetRadius(o.X)
 			}
 			IpBmatrix(o.B, o.Ndim, nverts, G, radius, S, sol.Axisym)
 			IpStrainsAndIncB(o.ε, o.Δε, 2*o.Ndim, o.Nu, o.B, sol.Y, sol.ΔY, o.Umap)
@@ -516,7 +516,7 @@ func (o *ElemU) Update(sol *Solution) (err error) {
 func (o *ElemU) Ipoints() (coords [][]float64) {
 	coords = la.MatAlloc(len(o.IpsElem), o.Ndim)
 	for idx, ip := range o.IpsElem {
-		coords[idx] = o.Shp.IpRealCoords(o.X, ip)
+		coords[idx] = o.Cell.Shp.IpRealCoords(o.X, ip)
 	}
 	return
 }
@@ -609,7 +609,7 @@ func (o *ElemU) OutIpsData() (data []*OutIpData) {
 	keys := StressKeys(o.Ndim)
 	for idx, ip := range o.IpsElem {
 		s := o.States[idx]
-		x := o.Shp.IpRealCoords(o.X, ip)
+		x := o.Cell.Shp.IpRealCoords(o.X, ip)
 		calc := func(sol *Solution) (vals map[string]float64) {
 			vals = make(map[string]float64)
 			for i, _ := range keys {
@@ -628,7 +628,7 @@ func (o *ElemU) OutIpsData() (data []*OutIpData) {
 func (o *ElemU) ipvars(idx int, sol *Solution) (err error) {
 
 	// interpolation functions and gradients
-	err = o.Shp.CalcAtIp(o.X, o.IpsElem[idx], true)
+	err = o.Cell.Shp.CalcAtIp(o.X, o.IpsElem[idx], true)
 	if err != nil {
 		return
 	}
@@ -644,10 +644,10 @@ func (o *ElemU) ipvars(idx int, sol *Solution) (err error) {
 	}
 
 	// recover u-variables @ ip
-	for m := 0; m < o.Shp.Nverts; m++ {
+	for m := 0; m < o.Cell.Shp.Nverts; m++ {
 		for i := 0; i < o.Ndim; i++ {
 			r := o.Umap[i+m*o.Ndim]
-			o.us[i] += o.Shp.S[m] * sol.Y[r]
+			o.us[i] += o.Cell.Shp.S[m] * sol.Y[r]
 		}
 	}
 	return
@@ -682,12 +682,12 @@ func (o *ElemU) add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
 
 			// interpolation functions and gradients @ face
 			iface := nbc.IdxFace
-			err = o.Shp.CalcAtFaceIp(o.X, ipf, iface)
+			err = o.Cell.Shp.CalcAtFaceIp(o.X, ipf, iface)
 			if err != nil {
 				return
 			}
-			Sf := o.Shp.Sf
-			nvec := o.Shp.Fnvec
+			Sf := o.Cell.Shp.Sf
+			nvec := o.Cell.Shp.Fnvec
 
 			// select natural boundary condition type
 			switch nbc.Key {
@@ -696,9 +696,9 @@ func (o *ElemU) add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
 			case "qn", "qn0", "aqn":
 				coef := ipf[3] * res * o.Thickness
 				if sol.Axisym && nbc.Key == "aqn" {
-					coef *= o.Shp.AxisymGetRadiusF(o.X, iface)
+					coef *= o.Cell.Shp.AxisymGetRadiusF(o.X, iface)
 				}
-				for j, m := range o.Shp.FaceLocalVerts[iface] {
+				for j, m := range o.Cell.Shp.FaceLocalVerts[iface] {
 					for i := 0; i < o.Ndim; i++ {
 						r := o.Umap[i+m*o.Ndim]
 						fb[r] += coef * Sf[j] * nvec[i] // +fe
@@ -717,7 +717,7 @@ func (o *ElemU) add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
 
 				// variables extrapolated to face
 				qb = o.fipvars(iface, sol)
-				xf := o.Shp.FaceIpRealCoords(o.X, ipf, iface)
+				xf := o.Cell.Shp.FaceIpRealCoords(o.X, ipf, iface)
 				la.VecAdd(xf, 1, o.us) // add displacement: x = X + u
 				db = o.contact_g(xf)
 
@@ -727,7 +727,7 @@ func (o *ElemU) add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
 				rmp = o.ramp(qb + o.κ*db)
 				rx = rmp
 				rq = qb - rmp
-				for j, m := range o.Shp.FaceLocalVerts[iface] {
+				for j, m := range o.Cell.Shp.FaceLocalVerts[iface] {
 					μ := o.Vid2contactId[m]
 					fb[o.Qmap[μ]] -= coef * Sf[j] * rq * Jf // -residual
 					for i := 0; i < o.Ndim; i++ {
@@ -769,27 +769,27 @@ func (o *ElemU) add_contact_to_jac(sol *Solution) (err error) {
 
 				// interpolation functions and gradients @ face
 				iface := nbc.IdxFace
-				err = o.Shp.CalcAtFaceIp(o.X, ipf, iface)
+				err = o.Cell.Shp.CalcAtFaceIp(o.X, ipf, iface)
 				if err != nil {
 					return
 				}
-				Sf := o.Shp.Sf
-				nvec := o.Shp.Fnvec
+				Sf := o.Cell.Shp.Sf
+				nvec := o.Cell.Shp.Fnvec
 				coef := ipf[3] * o.Thickness
 				Jf := la.VecNorm(nvec)
 
 				// variables extrapolated to face
 				qb = o.fipvars(iface, sol)
-				xf := o.Shp.FaceIpRealCoords(o.X, ipf, iface)
+				xf := o.Cell.Shp.FaceIpRealCoords(o.X, ipf, iface)
 				la.VecAdd(xf, 1, o.us) // add displacement: x = X + u
 				db = o.contact_g(xf)
 				o.contact_dgdx(dddu, xf)
 
 				// compute derivatives
 				Hb = o.rampD1(qb + o.κ*db)
-				for i, m := range o.Shp.FaceLocalVerts[iface] {
+				for i, m := range o.Cell.Shp.FaceLocalVerts[iface] {
 					μ := o.Vid2contactId[m]
-					for j, n := range o.Shp.FaceLocalVerts[iface] {
+					for j, n := range o.Cell.Shp.FaceLocalVerts[iface] {
 						ν := o.Vid2contactId[n]
 						o.Kqq[μ][ν] += coef * Jf * Sf[i] * Sf[j] * (1.0 - Hb)
 						for k := 0; k < o.Ndim; k++ {
@@ -811,11 +811,11 @@ func (o *ElemU) add_contact_to_jac(sol *Solution) (err error) {
 // fipvars computes current values @ face integration points
 // computes also displacements (us) @ face
 func (o *ElemU) fipvars(fidx int, sol *Solution) (qb float64) {
-	Sf := o.Shp.Sf
+	Sf := o.Cell.Shp.Sf
 	for i := 0; i < o.Ndim; i++ {
 		o.us[i] = 0
 	}
-	for i, m := range o.Shp.FaceLocalVerts[fidx] {
+	for i, m := range o.Cell.Shp.FaceLocalVerts[fidx] {
 		μ := o.Vid2contactId[m]
 		qb += Sf[i] * sol.Y[o.Qmap[μ]]
 		for j := 0; j < o.Ndim; j++ {
@@ -845,8 +845,8 @@ func (o *ElemU) rampD1(x float64) float64 {
 // TODO: improve these
 func (o *ElemU) contact_f(x []float64) float64 {
 	r := make([]float64, 3)
-	o.Shp.InvMap(r, x, o.X)
-	return shp.CellBryDist(o.Cell.Type, r)
+	o.Cell.Shp.InvMap(r, x, o.X)
+	return o.Cell.Shp.CellBryDist(r)
 }
 
 func (o *ElemU) contact_g(x []float64) float64 {
@@ -858,7 +858,7 @@ func (o *ElemU) contact_g(x []float64) float64 {
 	Y := o.get_Y()
 	qua4 := shp.Get("qua4", 0) //o.Sim.GoroutineId)
 	qua4.InvMap(r, x, Y)
-	δ := shp.CellBryDist("qua4", r)
+	δ := o.Cell.Shp.CellBryDist(r)
 	return δ
 }
 
@@ -872,7 +872,7 @@ func (o *ElemU) contact_dgdx(dgdx, x []float64) {
 	qua4 := shp.Get("qua4", 0) //o.Sim.GoroutineId)
 	qua4.InvMap(r, x, Y)
 	dfdR := make([]float64, 2)
-	shp.CellBryDistDeriv(dfdR, "qua4", r)
+	o.Cell.Shp.CellBryDistDeriv(dfdR, r)
 	qua4.CalcAtR(Y, r, true)
 	dgdx[0], dgdx[1] = 0.0, 0.0
 	for i := 0; i < 2; i++ {

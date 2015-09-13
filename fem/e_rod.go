@@ -20,7 +20,6 @@ type Rod struct {
 	// basic data
 	Cell *inp.Cell   // the cell structure
 	X    [][]float64 // matrix of nodal coordinates [ndim][nnode]
-	Shp  *shp.Shape  // shape structure
 	Nu   int         // total number of unknowns == 2 * nsn
 	Ndim int         // space dimension
 
@@ -64,7 +63,7 @@ func init() {
 		var info Info
 
 		// number of nodes in element
-		nverts := shp.GetNverts(cell.Type)
+		nverts := cell.Shp.Nverts
 
 		// solution variables
 		ykeys := []string{"ux", "uy"}
@@ -91,9 +90,8 @@ func init() {
 		var o Rod
 		o.Cell = cell
 		o.X = x
-		o.Shp = shp.Get(cell.Type, sim.GoroutineId)
 		o.Ndim = sim.Ndim
-		o.Nu = o.Ndim * o.Shp.Nverts
+		o.Nu = o.Ndim * o.Cell.Shp.Nverts
 
 		// parameters
 		matdata := sim.MatParams.Get(edat.Mat)
@@ -120,7 +118,7 @@ func init() {
 		}
 
 		// integration points
-		o.IpsElem, err = shp.GetIps(o.Shp.Type, edat.Nip)
+		o.IpsElem, _, err = o.Cell.Shp.GetIps(edat.Nip, 0)
 		if err != nil {
 			chk.Panic("cannot get integration points for rod element {tag=%d id=%d material=%q} with nip=%d", cell.Tag, cell.Id, edat.Mat, edat.Nip)
 		}
@@ -148,7 +146,7 @@ func (o *Rod) Id() int { return o.Cell.Id }
 // SetEqs set equations
 func (o *Rod) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
 	o.Umap = make([]int, o.Nu)
-	for m := 0; m < o.Shp.Nverts; m++ {
+	for m := 0; m < o.Cell.Shp.Nverts; m++ {
 		for i := 0; i < o.Ndim; i++ {
 			r := i + m*o.Ndim
 			o.Umap[r] = eqs[m][i]
@@ -174,7 +172,7 @@ func (o *Rod) SetEleConds(key string, f fun.Func, extra string) (err error) {
 func (o *Rod) AddToRhs(fb []float64, sol *Solution) (err error) {
 
 	// for each integration point
-	nverts := o.Shp.Nverts
+	nverts := o.Cell.Shp.Nverts
 	for idx, ip := range o.IpsElem {
 
 		// interpolation functions, gradients and variables @ ip
@@ -185,8 +183,8 @@ func (o *Rod) AddToRhs(fb []float64, sol *Solution) (err error) {
 
 		// auxiliary
 		coef := ip[3]
-		Jvec := o.Shp.Jvec3d
-		G := o.Shp.Gvec
+		Jvec := o.Cell.Shp.Jvec3d
+		G := o.Cell.Shp.Gvec
 		σ := o.States[idx].Sig
 
 		// update fb with internal forces
@@ -209,7 +207,7 @@ func (o *Rod) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
 
 	// for each integration point
 	var E float64
-	nverts := o.Shp.Nverts
+	nverts := o.Cell.Shp.Nverts
 	for idx, ip := range o.IpsElem {
 
 		// interpolation functions, gradients and variables @ ip
@@ -220,9 +218,9 @@ func (o *Rod) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
 
 		// auxiliary
 		coef := ip[3]
-		Jvec := o.Shp.Jvec3d
-		G := o.Shp.Gvec
-		J := o.Shp.J
+		Jvec := o.Cell.Shp.Jvec3d
+		G := o.Cell.Shp.Gvec
+		J := o.Cell.Shp.J
 
 		// add contribution to consistent tangent matrix
 		for m := 0; m < nverts; m++ {
@@ -255,7 +253,7 @@ func (o *Rod) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
 func (o *Rod) Update(sol *Solution) (err error) {
 
 	// for each integration point
-	nverts := o.Shp.Nverts
+	nverts := o.Cell.Shp.Nverts
 	for idx, _ := range o.IpsElem {
 
 		// interpolation functions, gradients and variables @ ip
@@ -265,9 +263,9 @@ func (o *Rod) Update(sol *Solution) (err error) {
 		}
 
 		// auxiliary
-		Jvec := o.Shp.Jvec3d
-		G := o.Shp.Gvec
-		J := o.Shp.J
+		Jvec := o.Cell.Shp.Jvec3d
+		G := o.Cell.Shp.Gvec
+		J := o.Cell.Shp.J
 
 		// compute strains
 		Δε := 0.0
@@ -293,7 +291,7 @@ func (o *Rod) Update(sol *Solution) (err error) {
 func (o *Rod) Ipoints() (coords [][]float64) {
 	coords = la.MatAlloc(len(o.IpsElem), o.Ndim)
 	for idx, ip := range o.IpsElem {
-		coords[idx] = o.Shp.IpRealCoords(o.X, ip)
+		coords[idx] = o.Cell.Shp.IpRealCoords(o.X, ip)
 	}
 	return
 }
@@ -382,7 +380,7 @@ func (o *Rod) Decode(dec Decoder) (err error) {
 func (o *Rod) OutIpsData() (data []*OutIpData) {
 	for idx, ip := range o.IpsElem {
 		s := o.States[idx]
-		x := o.Shp.IpRealCoords(o.X, ip)
+		x := o.Cell.Shp.IpRealCoords(o.X, ip)
 		calc := func(sol *Solution) (vals map[string]float64) {
 			vals = make(map[string]float64)
 			vals["sig"] = s.Sig
@@ -399,7 +397,7 @@ func (o *Rod) OutIpsData() (data []*OutIpData) {
 func (o *Rod) ipvars(idx int, sol *Solution) (err error) {
 
 	// interpolation functions and gradients
-	err = o.Shp.CalcAtIp(o.X, o.IpsElem[idx], true)
+	err = o.Cell.Shp.CalcAtIp(o.X, o.IpsElem[idx], true)
 	if err != nil {
 		return
 	}
@@ -415,10 +413,10 @@ func (o *Rod) ipvars(idx int, sol *Solution) (err error) {
 	}
 
 	// recover u-variables @ ip
-	for m := 0; m < o.Shp.Nverts; m++ {
+	for m := 0; m < o.Cell.Shp.Nverts; m++ {
 		for i := 0; i < o.Ndim; i++ {
 			r := o.Umap[i+m*o.Ndim]
-			o.us[i] += o.Shp.S[m] * sol.Y[r]
+			o.us[i] += o.Cell.Shp.S[m] * sol.Y[r]
 		}
 	}
 	return

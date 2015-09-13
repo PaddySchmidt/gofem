@@ -138,7 +138,7 @@ func Test_p01a(tst *testing.T) {
 		e := ele.(*ElemP)
 		for idx, ip := range e.IpsElem {
 			s := e.States[idx]
-			z := e.Shp.IpRealCoords(e.X, ip)[1]
+			z := e.Cell.Shp.IpRealCoords(e.X, ip)[1]
 			_, ρLC, _ := dom.HydSta.Calc(z)
 			chk.Scalar(tst, io.Sf("sl(@ %18g)= %18g", z, s.A_sl), 1e-17, s.A_sl, 1)
 			chk.Scalar(tst, io.Sf("ρL(@ %18g)= %18g", z, s.A_ρL), 1e-13, s.A_ρL, ρLC)

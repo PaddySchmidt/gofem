@@ -6,7 +6,6 @@ package fem
 
 import (
 	"github.com/cpmech/gofem/inp"
-	"github.com/cpmech/gofem/shp"
 
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
@@ -59,16 +58,16 @@ func init() {
 		// u-element info
 		u_info := infogetters["u"](sim, cell, edat)
 
-		// p-element info
-		ctype_bkp := cell.Type
-		if !sim.Data.NoLBB {
-			cell.Type = shp.GetBasicType(cell.Type)
+		// allocate lbb cell
+		if cell.LbbCell == nil {
+			cell.AllocLbb()
 		}
-		p_info := infogetters["p"](sim, cell, edat)
-		cell.Type = ctype_bkp
+
+		// p-element info
+		p_info := infogetters["p"](sim, cell.LbbCell, edat)
 
 		// solution variables
-		nverts := shp.GetNverts(cell.Type)
+		nverts := cell.Shp.Nverts
 		info.Dofs = make([][]string, nverts)
 		for i, dofs := range u_info.Dofs {
 			info.Dofs[i] = append(info.Dofs[i], dofs...)
@@ -110,15 +109,8 @@ func init() {
 		edat.Nip = len(o.U.IpsElem)
 		//edat.Nipf = len(o.U.IpsFace) // TODO: check if this is necessary
 
-		// change cell.Type (LBB)
-		ctype_bkp := cell.Type
-		defer func() { cell.Type = ctype_bkp }()
-		if !sim.Data.NoLBB {
-			cell.Type = shp.GetBasicType(cell.Type)
-		}
-
 		// allocate p-element
-		p_elem := eallocators["p"](sim, cell, edat, x)
+		p_elem := eallocators["p"](sim, cell.LbbCell, edat, x)
 		if p_elem == nil {
 			chk.Panic("cannot allocate underlying p-element")
 		}
@@ -132,8 +124,8 @@ func init() {
 
 		// seepage terms
 		if o.P.DoExtrap {
-			p_nverts := o.P.Shp.Nverts
-			u_nverts := o.U.Shp.Nverts
+			p_nverts := o.P.Cell.Shp.Nverts
+			u_nverts := o.U.Cell.Shp.Nverts
 			o.dρldus_ex = la.MatAlloc(p_nverts, u_nverts*o.Ndim)
 		}
 
@@ -162,15 +154,8 @@ func (o *ElemUP) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
 		}
 	}
 
-	// change cell.Type (LBB)
-	ctype_bkp := o.Cell.Type
-	defer func() { o.Cell.Type = ctype_bkp }()
-	if !o.Sim.Data.NoLBB {
-		o.Cell.Type = shp.GetBasicType(o.Cell.Type)
-	}
-
 	// p: equations
-	p_info := infogetters["p"](o.Sim, o.Cell, o.Edat)
+	p_info := infogetters["p"](o.Sim, o.Cell.LbbCell, o.Edat)
 	p_nverts := len(p_info.Dofs)
 	p_eqs := make([][]int, p_nverts)
 	for i := 0; i < p_nverts; i++ {
@@ -203,23 +188,23 @@ func (o *ElemUP) SetEleConds(key string, f fun.Func, extra string) (err error) {
 func (o *ElemUP) InterpStarVars(sol *Solution) (err error) {
 
 	// for each integration point
-	u_nverts := o.U.Shp.Nverts
-	p_nverts := o.P.Shp.Nverts
+	u_nverts := o.U.Cell.Shp.Nverts
+	p_nverts := o.P.Cell.Shp.Nverts
 	var r int
 	for idx, ip := range o.U.IpsElem {
 
 		// interpolation functions and gradients
-		err = o.P.Shp.CalcAtIp(o.P.X, ip, true)
+		err = o.P.Cell.Shp.CalcAtIp(o.P.X, ip, true)
 		if err != nil {
 			return
 		}
-		err = o.U.Shp.CalcAtIp(o.U.X, ip, true)
+		err = o.U.Cell.Shp.CalcAtIp(o.U.X, ip, true)
 		if err != nil {
 			return
 		}
-		S := o.U.Shp.S
-		G := o.U.Shp.G
-		Sb := o.P.Shp.S
+		S := o.U.Cell.Shp.S
+		G := o.U.Cell.Shp.G
+		Sb := o.P.Cell.Shp.S
 
 		// clear local variables
 		o.P.ψl[idx], o.U.divχs[idx] = 0, 0
@@ -260,8 +245,8 @@ func (o *ElemUP) AddToRhs(fb []float64, sol *Solution) (err error) {
 	// for each integration point
 	α4 := sol.DynCfs.α4
 	β1 := sol.DynCfs.β1
-	u_nverts := o.U.Shp.Nverts
-	p_nverts := o.P.Shp.Nverts
+	u_nverts := o.U.Cell.Shp.Nverts
+	p_nverts := o.P.Cell.Shp.Nverts
 	var coef, plt, klr, ρl, ρ, p, Cpl, Cvs, divvs float64
 	var r int
 	for idx, ip := range o.U.IpsElem {
@@ -271,16 +256,16 @@ func (o *ElemUP) AddToRhs(fb []float64, sol *Solution) (err error) {
 		if err != nil {
 			return
 		}
-		coef = o.U.Shp.J * ip[3]
-		S := o.U.Shp.S
-		G := o.U.Shp.G
-		Sb := o.P.Shp.S
-		Gb := o.P.Shp.G
+		coef = o.U.Cell.Shp.J * ip[3]
+		S := o.U.Cell.Shp.S
+		G := o.U.Cell.Shp.G
+		Sb := o.P.Cell.Shp.S
+		Gb := o.P.Cell.Shp.G
 
 		// axisymmetric case
 		radius := 1.0
 		if sol.Axisym {
-			radius = o.U.Shp.AxisymGetRadius(o.U.X)
+			radius = o.U.Cell.Shp.AxisymGetRadius(o.U.X)
 			coef *= radius
 		}
 
@@ -372,8 +357,8 @@ func (o *ElemUP) AddToRhs(fb []float64, sol *Solution) (err error) {
 func (o *ElemUP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
 
 	// clear matrices
-	u_nverts := o.U.Shp.Nverts
-	p_nverts := o.P.Shp.Nverts
+	u_nverts := o.U.Cell.Shp.Nverts
+	p_nverts := o.P.Cell.Shp.Nverts
 	la.MatFill(o.P.Kpp, 0)
 	for i := 0; i < o.U.Nu; i++ {
 		for j := 0; j < o.P.Np; j++ {
@@ -410,16 +395,16 @@ func (o *ElemUP) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error
 		if err != nil {
 			return
 		}
-		coef = o.U.Shp.J * ip[3]
-		S := o.U.Shp.S
-		G := o.U.Shp.G
-		Sb := o.P.Shp.S
-		Gb := o.P.Shp.G
+		coef = o.U.Cell.Shp.J * ip[3]
+		S := o.U.Cell.Shp.S
+		G := o.U.Cell.Shp.G
+		Sb := o.P.Cell.Shp.S
+		Gb := o.P.Cell.Shp.G
 
 		// axisymmetric case
 		radius := 1.0
 		if sol.Axisym {
-			radius = o.U.Shp.AxisymGetRadius(o.U.X)
+			radius = o.U.Cell.Shp.AxisymGetRadius(o.U.X)
 			coef *= radius
 		}
 
@@ -589,7 +574,7 @@ func (o *ElemUP) Update(sol *Solution) (err error) {
 func (o *ElemUP) Ipoints() (coords [][]float64) {
 	coords = la.MatAlloc(len(o.U.IpsElem), o.Ndim)
 	for idx, ip := range o.U.IpsElem {
-		coords[idx] = o.U.Shp.IpRealCoords(o.U.X, ip)
+		coords[idx] = o.U.Cell.Shp.IpRealCoords(o.U.X, ip)
 	}
 	return
 }
@@ -621,13 +606,13 @@ func (o *ElemUP) SetIniIvs(sol *Solution, ivs map[string][]float64) (err error) 
 		for i, ip := range o.U.IpsElem {
 
 			// compute pl @ ip
-			err = o.P.Shp.CalcAtIp(o.P.X, ip, false)
+			err = o.P.Cell.Shp.CalcAtIp(o.P.X, ip, false)
 			if err != nil {
 				return
 			}
 			pl := 0.0
-			for m := 0; m < o.P.Shp.Nverts; m++ {
-				pl += o.P.Shp.S[m] * sol.Y[o.P.Pmap[m]]
+			for m := 0; m < o.P.Cell.Shp.Nverts; m++ {
+				pl += o.P.Cell.Shp.S[m] * sol.Y[o.P.Pmap[m]]
 			}
 
 			// compute effective stresses
@@ -666,13 +651,13 @@ func (o *ElemUP) RestoreIvs(aux bool) (err error) {
 
 // Ureset fixes internal variables after u (displacements) have been zeroed
 func (o *ElemUP) Ureset(sol *Solution) (err error) {
-	u_nverts := o.U.Shp.Nverts
+	u_nverts := o.U.Cell.Shp.Nverts
 	for idx, ip := range o.U.IpsElem {
-		err = o.U.Shp.CalcAtIp(o.U.X, ip, true)
+		err = o.U.Cell.Shp.CalcAtIp(o.U.X, ip, true)
 		if err != nil {
 			return
 		}
-		G := o.U.Shp.G
+		G := o.U.Cell.Shp.G
 		var divus float64
 		for m := 0; m < u_nverts; m++ {
 			for i := 0; i < o.Ndim; i++ {
@@ -717,7 +702,7 @@ func (o *ElemUP) OutIpsData() (data []*OutIpData) {
 	for idx, ip := range o.U.IpsElem {
 		r := o.P.States[idx]
 		s := o.U.States[idx]
-		x := o.U.Shp.IpRealCoords(o.U.X, ip)
+		x := o.U.Cell.Shp.IpRealCoords(o.U.X, ip)
 		calc := func(sol *Solution) (vals map[string]float64) {
 			err := o.ipvars(idx, sol)
 			if err != nil {
@@ -752,11 +737,11 @@ func (o *ElemUP) OutIpsData() (data []*OutIpData) {
 func (o *ElemUP) ipvars(idx int, sol *Solution) (err error) {
 
 	// interpolation functions and gradients
-	err = o.P.Shp.CalcAtIp(o.P.X, o.U.IpsElem[idx], true)
+	err = o.P.Cell.Shp.CalcAtIp(o.P.X, o.U.IpsElem[idx], true)
 	if err != nil {
 		return
 	}
-	err = o.U.Shp.CalcAtIp(o.U.X, o.U.IpsElem[idx], true)
+	err = o.U.Cell.Shp.CalcAtIp(o.U.X, o.U.IpsElem[idx], true)
 	if err != nil {
 		return
 	}
@@ -770,20 +755,20 @@ func (o *ElemUP) ipvars(idx int, sol *Solution) (err error) {
 	for i := 0; i < o.Ndim; i++ {
 		o.P.gpl[i] = 0 // clear gpl here
 		o.U.us[i] = 0
-		for m := 0; m < o.U.Shp.Nverts; m++ {
+		for m := 0; m < o.U.Cell.Shp.Nverts; m++ {
 			r := o.U.Umap[i+m*o.Ndim]
-			o.U.us[i] += o.U.Shp.S[m] * sol.Y[r]
-			o.divus += o.U.Shp.G[m][i] * sol.Y[r]
+			o.U.us[i] += o.U.Cell.Shp.S[m] * sol.Y[r]
+			o.divus += o.U.Cell.Shp.G[m][i] * sol.Y[r]
 		}
 	}
 
 	// recover p-variables @ ip
 	o.P.pl = 0
-	for m := 0; m < o.P.Shp.Nverts; m++ {
+	for m := 0; m < o.P.Cell.Shp.Nverts; m++ {
 		r := o.P.Pmap[m]
-		o.P.pl += o.P.Shp.S[m] * sol.Y[r]
+		o.P.pl += o.P.Cell.Shp.S[m] * sol.Y[r]
 		for i := 0; i < o.Ndim; i++ {
-			o.P.gpl[i] += o.P.Shp.G[m][i] * sol.Y[r]
+			o.P.gpl[i] += o.P.Cell.Shp.G[m][i] * sol.Y[r]
 		}
 	}
 
@@ -800,7 +785,7 @@ func (o *ElemUP) ipvars(idx int, sol *Solution) (err error) {
 func (o *ElemUP) add_natbcs_to_jac(sol *Solution) (err error) {
 
 	// compute surface integral
-	u_nverts := o.U.Shp.Nverts
+	u_nverts := o.U.Cell.Shp.Nverts
 	var shift float64
 	var pl, fl, plmax, g, rmp float64
 	for idx, nbc := range o.P.NatBcs {
@@ -813,12 +798,12 @@ func (o *ElemUP) add_natbcs_to_jac(sol *Solution) (err error) {
 
 			// interpolation functions and gradients @ face
 			iface := nbc.IdxFace
-			err = o.P.Shp.CalcAtFaceIp(o.P.X, ipf, iface)
+			err = o.P.Cell.Shp.CalcAtFaceIp(o.P.X, ipf, iface)
 			if err != nil {
 				return
 			}
-			Sf := o.P.Shp.Sf
-			Jf := la.VecNorm(o.P.Shp.Fnvec)
+			Sf := o.P.Cell.Shp.Sf
+			Jf := la.VecNorm(o.P.Cell.Shp.Fnvec)
 			coef := ipf[3] * Jf
 
 			// select natural boundary condition type
@@ -835,11 +820,11 @@ func (o *ElemUP) add_natbcs_to_jac(sol *Solution) (err error) {
 				// compute derivatives
 				g = pl - plmax // Eq. (24)
 				rmp = o.P.ramp(fl + o.P.κ*g)
-				for i, m := range o.P.Shp.FaceLocalVerts[iface] {
+				for i, m := range o.P.Cell.Shp.FaceLocalVerts[iface] {
 					for n := 0; n < u_nverts; n++ {
 						for j := 0; j < o.Ndim; j++ {
 							c := j + n*o.Ndim
-							for l, r := range o.P.Shp.FaceLocalVerts[iface] {
+							for l, r := range o.P.Cell.Shp.FaceLocalVerts[iface] {
 								o.Kpu[m][c] += coef * Sf[i] * Sf[l] * o.dρldus_ex[r][c] * rmp
 							}
 						}

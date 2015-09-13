@@ -183,7 +183,7 @@ func Test_up01a(tst *testing.T) {
 		e := ele.(*ElemUP)
 		for idx, ip := range e.P.IpsElem {
 			s := e.P.States[idx]
-			z := e.P.Shp.IpRealCoords(e.P.X, ip)[1]
+			z := e.P.Cell.Shp.IpRealCoords(e.P.X, ip)[1]
 			chk.AnaNum(tst, io.Sf("sl(z=%11.8f)", z), 1e-17, s.A_sl, 1, chk.Verbose)
 		}
 	}
@@ -236,7 +236,7 @@ func Test_up01a(tst *testing.T) {
 	for _, ele := range dom.Elems {
 		e := ele.(*ElemUP)
 		for idx, ip := range e.U.IpsElem {
-			z := e.U.Shp.IpRealCoords(e.U.X, ip)[1]
+			z := e.U.Cell.Shp.IpRealCoords(e.U.X, ip)[1]
 			σe := e.U.States[idx].Sig
 			sv := sig.F(z, nil)
 			sve := sv + pres.F(z, nil)

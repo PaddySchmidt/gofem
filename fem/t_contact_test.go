@@ -146,7 +146,7 @@ func Test_contact01b(tst *testing.T) {
 		e := dom.Elems[3].(*ElemU)
 		tols := 1e-13
 		for idx, ip := range e.IpsElem {
-			x := e.Shp.IpRealCoords(e.X, ip)
+			x := e.Cell.Shp.IpRealCoords(e.X, ip)
 			σ := e.States[idx].Sig
 			io.Pforan("σ = %v\n", σ)
 			sol.CheckStress(tst, t, σ, x, tols)

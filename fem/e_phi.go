@@ -22,7 +22,6 @@ type ElemPhi struct {
 	// basic data
 	Cell *inp.Cell   // the cell structure
 	X    [][]float64 // [ndim][nnode] matrix of nodal coordinates
-	Shp  *shp.Shape  // shape structure
 	Nu   int         // total number of unknowns == number of vertices
 	Ndim int         // space dimension
 
@@ -50,7 +49,7 @@ func init() {
 		// new info
 		var info Info
 
-		nverts := shp.GetNverts(cell.Type)
+		nverts := cell.Shp.Nverts
 		ykeys := []string{"h"}
 
 		info.Dofs = make([][]string, nverts)
@@ -71,13 +70,12 @@ func init() {
 		var o ElemPhi
 		o.Cell = cell
 		o.X = x
-		o.Shp = shp.Get(cell.Type, sim.GoroutineId) // cell.Type: e.g. "tri6", "qua8"
-		o.Nu = o.Shp.Nverts
+		o.Nu = o.Cell.Shp.Nverts
 		o.Ndim = sim.Ndim
 
 		// integration points
 		var err error
-		o.IpsElem, _, err = GetIntegrationPoints(edat.Nip, edat.Nipf, cell.Type)
+		o.IpsElem, _, err = o.Cell.Shp.GetIps(edat.Nip, edat.Nipf)
 		if err != nil {
 			chk.Panic("cannot allocate integration points of phi-element with nip=%d and nipf=%d:\n%v", edat.Nip, edat.Nipf, err)
 		}
@@ -120,7 +118,7 @@ func (o *ElemPhi) InterpStarVars(sol *Solution) (err error) {
 	for idx, ip := range o.IpsElem {
 
 		// interpolation functions and gradients
-		err = o.Shp.CalcAtIp(o.X, ip, false)
+		err = o.Cell.Shp.CalcAtIp(o.X, ip, false)
 		if err != nil {
 			return
 		}
@@ -128,7 +126,7 @@ func (o *ElemPhi) InterpStarVars(sol *Solution) (err error) {
 		//interpolate starred variables
 		o.ψs[idx] = 0
 		for m := 0; m < o.Nu; m++ {
-			o.ψs[idx] += o.Shp.S[m] * sol.Psi[o.Umap[m]]
+			o.ψs[idx] += o.Cell.Shp.S[m] * sol.Psi[o.Umap[m]]
 		}
 	}
 	return
@@ -139,7 +137,7 @@ func (o *ElemPhi) AddToRhs(fb []float64, sol *Solution) (err error) {
 
 	// auxiliary
 	β1 := sol.DynCfs.β1
-	nverts := o.Shp.Nverts
+	nverts := o.Cell.Shp.Nverts
 
 	v := []float64{1, 0, 0} // TODO: find a way to input the velocity
 
@@ -147,15 +145,15 @@ func (o *ElemPhi) AddToRhs(fb []float64, sol *Solution) (err error) {
 	for _, ip := range o.IpsElem {
 
 		// interpolation functions and gradients
-		err = o.Shp.CalcAtIp(o.X, ip, true)
+		err = o.Cell.Shp.CalcAtIp(o.X, ip, true)
 		if err != nil {
 			return
 		}
 
 		// auxiliary variables
-		coef := o.Shp.J * ip[3]
-		S := o.Shp.S
-		G := o.Shp.G
+		coef := o.Cell.Shp.J * ip[3]
+		S := o.Cell.Shp.S
+		G := o.Cell.Shp.G
 
 		// add to right hand side vector
 		for m := 0; m < nverts; m++ {
@@ -176,7 +174,7 @@ func (o *ElemPhi) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err erro
 
 	// auxiliary
 	β1 := sol.DynCfs.β1
-	nverts := o.Shp.Nverts
+	nverts := o.Cell.Shp.Nverts
 
 	// zero K matrix
 	la.MatFill(o.K, 0)
@@ -185,14 +183,14 @@ func (o *ElemPhi) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err erro
 	for _, ip := range o.IpsElem {
 
 		// interpolation functions and gradients
-		err = o.Shp.CalcAtIp(o.X, ip, true)
+		err = o.Cell.Shp.CalcAtIp(o.X, ip, true)
 		if err != nil {
 			return
 		}
 
 		// auxiliary variables
-		coef := o.Shp.J * ip[3]
-		S := o.Shp.S
+		coef := o.Cell.Shp.J * ip[3]
+		S := o.Cell.Shp.S
 
 		// add to right hand side vector
 		for m := 0; m < nverts; m++ {
@@ -236,11 +234,11 @@ func (o *ElemPhi) OutIpsData() (data []*OutIpData) {
 	for _, ip := range o.IpsElem {
 
 		// interpolation functions and gradients
-		err := o.Shp.CalcAtIp(o.X, ip, true)
+		err := o.Cell.Shp.CalcAtIp(o.X, ip, true)
 		if err != nil {
 			return
 		}
-		G := o.Shp.G
+		G := o.Cell.Shp.G
 
 		// calculate function
 		calc := func(sol *Solution) (vals map[string]float64) {
@@ -261,7 +259,7 @@ func (o *ElemPhi) OutIpsData() (data []*OutIpData) {
 		}
 
 		// results
-		x := o.Shp.IpRealCoords(o.X, ip)
+		x := o.Cell.Shp.IpRealCoords(o.X, ip)
 		data = append(data, &OutIpData{o.Id(), x, calc})
 	}
 	return

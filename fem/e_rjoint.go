@@ -184,13 +184,13 @@ func (o *Rjoint) Connect(cid2elem []Elem, c *inp.Cell) (nnzK int, err error) {
 	nsig := 2 * o.Ndim
 
 	// rod data
-	rodH := o.Rod.Shp
+	rodH := o.Rod.Cell.Shp
 	rodNp := len(o.Rod.IpsElem)
 	rodNn := rodH.Nverts
 	rodNu := o.Rod.Nu
 
 	// solid data
-	sldH := o.Sld.Shp
+	sldH := o.Sld.Cell.Shp
 	sldS := sldH.S
 	sldNp := len(o.Sld.IpsElem)
 	sldNn := sldH.Nverts
@@ -347,10 +347,10 @@ func (o *Rjoint) InterpStarVars(sol *Solution) (err error) {
 func (o *Rjoint) AddToRhs(fb []float64, sol *Solution) (err error) {
 
 	// auxiliary
-	rodH := o.Rod.Shp
+	rodH := o.Rod.Cell.Shp
 	rodS := rodH.S
 	rodNn := rodH.Nverts
-	sldH := o.Sld.Shp
+	sldH := o.Sld.Cell.Shp
 	sldNn := sldH.Nverts
 
 	// internal forces vector
@@ -405,10 +405,10 @@ func (o *Rjoint) AddToRhs(fb []float64, sol *Solution) (err error) {
 func (o *Rjoint) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error) {
 
 	// auxiliary
-	rodH := o.Rod.Shp
+	rodH := o.Rod.Cell.Shp
 	rodS := rodH.S
 	rodNn := rodH.Nverts
-	sldH := o.Sld.Shp
+	sldH := o.Sld.Cell.Shp
 	sldNn := sldH.Nverts
 
 	// zero K matrices
@@ -552,10 +552,10 @@ func (o *Rjoint) Update(sol *Solution) (err error) {
 
 	// auxiliary
 	nsig := 2 * o.Ndim
-	rodH := o.Rod.Shp
+	rodH := o.Rod.Cell.Shp
 	rodS := rodH.S
 	rodNn := rodH.Nverts
-	sldH := o.Sld.Shp
+	sldH := o.Sld.Cell.Shp
 	sldNn := sldH.Nverts
 
 	// extrapolate stresses at integration points of solid element to its nodes
@@ -738,7 +738,7 @@ func (o *Rjoint) Decode(dec Decoder) (err error) {
 func (o *Rjoint) OutIpsData() (data []*OutIpData) {
 	for idx, ip := range o.Rod.IpsElem {
 		s := o.States[idx]
-		x := o.Rod.Shp.IpRealCoords(o.Rod.X, ip)
+		x := o.Rod.Cell.Shp.IpRealCoords(o.Rod.X, ip)
 		calc := func(sol *Solution) (vals map[string]float64) {
 			vals = make(map[string]float64)
 			vals["tau"] = s.Sig
@@ -753,8 +753,8 @@ func (o *Rjoint) OutIpsData() (data []*OutIpData) {
 // debugging ////////////////////////////////////////////////////////////////////////////////////////
 
 func (o *Rjoint) debug_print_init() {
-	sldNn := o.Sld.Shp.Nverts
-	rodNn := o.Rod.Shp.Nverts
+	sldNn := o.Sld.Cell.Shp.Nverts
+	rodNn := o.Rod.Cell.Shp.Nverts
 	rodNp := len(o.Rod.IpsElem)
 	io.Pf("Nmat =\n")
 	for i := 0; i < sldNn; i++ {
@@ -779,8 +779,8 @@ func (o *Rjoint) debug_print_init() {
 }
 
 func (o *Rjoint) debug_print_K() {
-	sldNn := o.Sld.Shp.Nverts
-	rodNn := o.Rod.Shp.Nverts
+	sldNn := o.Sld.Cell.Shp.Nverts
+	rodNn := o.Rod.Cell.Shp.Nverts
 	K := la.MatAlloc(o.Ny, o.Ny)
 	start := o.Sld.Nu
 	for i := 0; i < o.Ndim; i++ {

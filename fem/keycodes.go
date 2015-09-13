@@ -7,15 +7,14 @@ package fem
 import (
 	"math"
 
-	"github.com/cpmech/gofem/shp"
-	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
 )
 
-func GetIntegrationPoints(nip, nipf int, cellType string) (ipsElem, ipsFace []shp.Ipoint, err error) {
+/*
+func GetIntegrationPoints(nip, nipf int, cell *inp.Cell) (ipsElem, ipsFace []shp.Ipoint, err error) {
 
 	// get integration points of element
-	ipsElem, err = shp.GetIps(cellType, nip)
+	ipsElem, err = shp.GetIps(cell.Type, nip)
 	if err != nil {
 		err = chk.Err("cannot get integration points for element with shape type=%q and nip=%d\n%v", cellType, nip, err)
 		return
@@ -29,6 +28,7 @@ func GetIntegrationPoints(nip, nipf int, cellType string) (ipsElem, ipsFace []sh
 	}
 	return
 }
+*/
 
 func GetSolidFlags(axisym, pstress bool, extra string) (useB, debug bool, thickness float64) {
 

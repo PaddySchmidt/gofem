@@ -46,18 +46,18 @@ type Cell struct {
 	Neighs []int // neighbours; e.g. [3, 7, -1, 11] => side:cid => 0:3, 1:7, 2:-1(no cell), 3:11
 
 	// derived
-	Shp     *shp.Shape // shape structure
-	FaceBcs FaceConds  // face boundary condition
+	Shp         *shp.Shape // shape structure
+	FaceBcs     FaceConds  // face boundary condition
+	GoroutineId int        // go routine id
 
 	// specific problems data
 	IsJoint   bool         // cell represents joint element
 	SeepVerts map[int]bool // local vertices ids of vertices on seepage faces
+	LbbCell   *Cell        // copy of this Cell with less vertices if LBB (externally allocated)
 
 	// NURBS
-	//IsNurbs bool      // indicates that this cell was build from a NURBS patch
 	Nrb  int   // index of NURBS patch to which this cell belongs to
 	Span []int // knot indices indicating which span this cell is located
-	//Nurbs   *gm.Nurbs // the NURBS structure corresponding to Nrb index
 }
 
 // CellFaceId structure
@@ -241,6 +241,7 @@ func ReadMsh(dir, fn string, goroutineId int) (o *Mesh, err error) {
 				return
 			}
 		}
+		c.GoroutineId = goroutineId
 
 		// face tags
 		cells := o.CellTag2cells[c.Tag]
@@ -314,6 +315,47 @@ func (o *Cell) String() string {
 	}
 	l += "] }"
 	return l
+}
+
+// AllocLbb allocates Lbb cell
+func (o *Cell) AllocLbb() {
+	o.LbbCell = new(Cell)
+
+	// input data
+	o.LbbCell.Id = o.Id
+	o.LbbCell.Tag = o.Tag
+	o.LbbCell.Geo = o.Geo
+	o.LbbCell.Type = o.Type
+	o.LbbCell.Part = o.Part
+	o.LbbCell.Verts = o.Verts
+	o.LbbCell.FTags = o.FTags
+	o.LbbCell.STags = o.STags
+	o.LbbCell.JlinId = o.JlinId
+	o.LbbCell.JsldId = o.JsldId
+
+	// neighbours
+	o.LbbCell.Neighs = o.Neighs
+
+	// derived
+	if o.Shp.Nurbs == nil {
+		o.LbbCell.Shp = shp.Get(o.Shp.BasicType, o.GoroutineId)
+		if o.LbbCell.Shp == nil {
+			chk.Panic("cannot allocate \"shape\" structure for cell type = %q\n", o.Shp.BasicType)
+		}
+	} else {
+		chk.Panic("cannot handle LBB cells with NURBS yet")
+	}
+	o.LbbCell.FaceBcs = o.FaceBcs
+	o.LbbCell.GoroutineId = o.GoroutineId
+
+	// specific problems data
+	o.LbbCell.IsJoint = o.IsJoint
+	o.LbbCell.SeepVerts = o.SeepVerts
+
+	// NURBS
+	o.LbbCell.Nrb = o.Nrb
+	o.LbbCell.Span = o.Span
+	return
 }
 
 // String returns a JSON representation of *Mesh
