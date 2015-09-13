@@ -6,6 +6,7 @@
 package shp
 
 import (
+	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/gm"
 	"github.com/cpmech/gosl/la"
 	"github.com/cpmech/gosl/utl"
@@ -106,6 +107,11 @@ func (o Shape) GetCopy() *Shape {
 	p.Fnvec = la.VecClone(o.Fnvec)
 	p.DSfdRf = la.MatClone(o.DSfdRf)
 	p.DxfdRf = la.MatClone(o.DxfdRf)
+
+	// fail if NURBS
+	if o.Nurbs != nil {
+		chk.Panic("cannot get a copy of Shape if it's NURBS")
+	}
 	return &p
 }
 
