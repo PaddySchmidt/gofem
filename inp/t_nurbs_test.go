@@ -23,7 +23,7 @@ func Test_nurbs01(tst *testing.T) {
 	}
 
 	for _, cell := range msh.Cells {
-		p0, p1 := cell.Nurbs.Ord(0), cell.Nurbs.Ord(1)
+		p0, p1 := cell.Shp.Nurbs.Ord(0), cell.Shp.Nurbs.Ord(1)
 		io.Pfcyan("cell # %d : NURBS orders = (%d,%d)\n", cell.Id, p0, p1)
 		chk.IntAssert(p0, 2)
 		chk.IntAssert(p1, 2)

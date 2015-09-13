@@ -54,10 +54,10 @@ type Cell struct {
 	SeepVerts map[int]bool // local vertices ids of vertices on seepage faces
 
 	// NURBS
-	IsNurbs bool      // indicates that this cell was build from a NURBS patch
-	Nrb     int       // index of NURBS patch to which this cell belongs to
-	Span    []int     // knot indices indicating which span this cell is located
-	Nurbs   *gm.Nurbs // the NURBS structure corresponding to Nrb index
+	//IsNurbs bool      // indicates that this cell was build from a NURBS patch
+	Nrb  int   // index of NURBS patch to which this cell belongs to
+	Span []int // knot indices indicating which span this cell is located
+	//Nurbs   *gm.Nurbs // the NURBS structure corresponding to Nrb index
 }
 
 // CellFaceId structure
@@ -96,8 +96,9 @@ type Mesh struct {
 	Part2cells    map[int][]*Cell      // partition number => set of cells
 
 	// NURBS
-	Nurbss  []gm.NurbsD // all NURBS data (read from file)
-	PtNurbs []*gm.Nurbs // all NURBS' structures (allocated here)
+	Nurbss   []gm.NurbsD   // all NURBS data (read from file)
+	PtNurbs  []*gm.Nurbs   // all NURBS' structures (allocated here)
+	NrbFaces [][]*gm.Nurbs // all NURBS's faces
 }
 
 // ReadMsh reads a mesh for FE analyses
@@ -196,10 +197,12 @@ func ReadMsh(dir, fn string, goroutineId int) (o *Mesh, err error) {
 
 	// allocate NURBSs
 	o.PtNurbs = make([]*gm.Nurbs, len(o.Nurbss))
+	o.NrbFaces = make([][]*gm.Nurbs, len(o.Nurbss))
 	for i, d := range o.Nurbss {
 		o.PtNurbs[i] = new(gm.Nurbs)
 		o.PtNurbs[i].Init(d.Gnd, d.Ords, d.Knots)
 		o.PtNurbs[i].SetControl(controlpts, d.Ctrls)
+		o.NrbFaces[i] = o.PtNurbs[i].ExtractSurfaces()
 	}
 
 	// derived data
@@ -257,8 +260,11 @@ func ReadMsh(dir, fn string, goroutineId int) (o *Mesh, err error) {
 		case "joint":
 			c.IsJoint = true
 		case "nurbs":
-			c.IsNurbs = true
-			c.Nurbs = o.PtNurbs[c.Nrb]
+			c.Shp = shp.GetShapeNurbs(o.PtNurbs[c.Nrb], o.NrbFaces[c.Nrb], c.Span)
+			if c.Shp == nil {
+				err = chk.Err("cannot allocate \"shape\" structure for cell type = %q\n", c.Type)
+				return
+			}
 		default:
 			c.Shp = shp.Get(c.Type, goroutineId)
 			if c.Shp == nil {
