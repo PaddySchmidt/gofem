@@ -19,13 +19,27 @@ var ipsfactory = make(map[string][]Ipoint)
 
 // GetIps returns a set of integration points
 //  If the number (nips) of integration points is zero, it returns a default set
-func GetIps(geoType string, nips int) (ips []Ipoint, err error) {
-	key := io.Sf("%s_%d", geoType, nips)
-	s, ok := ipsfactory[key]
-	if !ok {
-		return nil, chk.Err("cannot find integration point set for geometry type = %s and nips = %d\n", geoType, nips)
+func (o *Shape) GetIps(nips, nipf int) (ips, ipf []Ipoint, err error) {
+	if o.Type == "nurbs" {
+		chk.Panic("not yet")
+		return
 	}
-	return s, nil
+	var ok bool
+	key := io.Sf("%s_%d", o.Type, nips)
+	ips, ok = ipsfactory[key]
+	if !ok {
+		err = chk.Err("cannot find integration point set for geometry type = %s and nips = %d\n", o.Type, nips)
+		return
+	}
+	if o.Gndim > 1 {
+		key = io.Sf("%s_%d", o.FaceType, nipf)
+		ipf, ok = ipsfactory[key]
+		if !ok {
+			err = chk.Err("cannot find (face) integration point set for geometry type = %s and nips = %d\n", o.FaceType, nipf)
+			return
+		}
+	}
+	return
 }
 
 var (
