@@ -195,7 +195,7 @@ func Test_nurbs03(tst *testing.T) {
 
 func Test_nurbs04(tst *testing.T) {
 
-	verbose()
+	//verbose()
 	chk.PrintTitle("nurbs04")
 
 	ori := get_nurbs_A()

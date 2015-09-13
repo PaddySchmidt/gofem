@@ -51,7 +51,7 @@ type Shape struct {
 
 	// scratchpad: face
 	Sf     []float64   // [FaceNvertsMax] shape functions values
-	Fnvec  []float64   // [gndim] face normal vector multiplied by Jf
+	Fnvec  []float64   // [gndim] face normal vector multiplied by Jf (and Ju if NURBS)
 	DSfdRf [][]float64 // [FaceNvertsMax][gndim-1] derivatives of Sf w.r.t natural coordinates
 	DxfdRf [][]float64 // [gndim][gndim-1] derivatives of real coordinates w.r.t natural coordinates
 
@@ -238,6 +238,7 @@ func (o *Shape) CalcAtFaceIp(x [][]float64, ipf Ipoint, idxface int) (err error)
 	}
 
 	// Sf and dSfdR
+	o.Ju = 1.0
 	o.FaceFunc(o.Sf, o.DSfdRf, ipf, true, idxface)
 
 	// dxfdRf := sum_n x * dSfdRf   =>  dxf_i/dRf_j := sum_n xf^n_i * dSf^n/dRf_j
@@ -252,13 +253,13 @@ func (o *Shape) CalcAtFaceIp(x [][]float64, ipf Ipoint, idxface int) (err error)
 
 	// face normal vector
 	if o.Gndim == 2 {
-		o.Fnvec[0] = o.DxfdRf[1][0]
-		o.Fnvec[1] = -o.DxfdRf[0][0]
+		o.Fnvec[0] = o.DxfdRf[1][0] * o.Ju
+		o.Fnvec[1] = -o.DxfdRf[0][0] * o.Ju
 		return
 	}
-	o.Fnvec[0] = o.DxfdRf[1][0]*o.DxfdRf[2][1] - o.DxfdRf[2][0]*o.DxfdRf[1][1]
-	o.Fnvec[1] = o.DxfdRf[2][0]*o.DxfdRf[0][1] - o.DxfdRf[0][0]*o.DxfdRf[2][1]
-	o.Fnvec[2] = o.DxfdRf[0][0]*o.DxfdRf[1][1] - o.DxfdRf[1][0]*o.DxfdRf[0][1]
+	o.Fnvec[0] = (o.DxfdRf[1][0]*o.DxfdRf[2][1] - o.DxfdRf[2][0]*o.DxfdRf[1][1]) * o.Ju
+	o.Fnvec[1] = (o.DxfdRf[2][0]*o.DxfdRf[0][1] - o.DxfdRf[0][0]*o.DxfdRf[2][1]) * o.Ju
+	o.Fnvec[2] = (o.DxfdRf[0][0]*o.DxfdRf[1][1] - o.DxfdRf[1][0]*o.DxfdRf[0][1]) * o.Ju
 	return
 }
 
