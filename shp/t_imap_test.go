@@ -32,7 +32,7 @@ func Test_imap(tst *testing.T) {
 		if name == "tri10" {
 			tol = 1e-14
 		}
-		if shape.FaceNverts > 2 {
+		if shape.FaceNvertsMax > 2 {
 			noise = 0.0
 		}
 		nverts := shape.Nverts

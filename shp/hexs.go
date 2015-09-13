@@ -19,8 +19,8 @@ func init() {
 	hex8.Gndim = 3
 	hex8.Nverts = 8
 	hex8.VtkCode = VTK_HEXAHEDRON
-	hex8.FaceNverts = 4
-	hex8.FaceLocalV = [][]int{{0, 4, 7, 3}, {1, 2, 6, 5}, {0, 1, 5, 4}, {2, 3, 7, 6}, {0, 3, 2, 1}, {4, 5, 6, 7}}
+	hex8.FaceNvertsMax = 4
+	hex8.FaceLocalVerts = [][]int{{0, 4, 7, 3}, {1, 2, 6, 5}, {0, 1, 5, 4}, {2, 3, 7, 6}, {0, 3, 2, 1}, {4, 5, 6, 7}}
 	hex8.NatCoords = [][]float64{
 		{-1, 1, 1, -1, -1, 1, 1, -1},
 		{-1, -1, 1, 1, -1, -1, 1, 1},
@@ -42,8 +42,8 @@ func init() {
 	hex20.Gndim = 3
 	hex20.Nverts = 20
 	hex20.VtkCode = VTK_QUADRATIC_HEXAHEDRON
-	hex20.FaceNverts = 8
-	hex20.FaceLocalV = [][]int{{0, 4, 7, 3, 16, 15, 19, 11}, {1, 2, 6, 5, 9, 18, 13, 17}, {0, 1, 5, 4, 8, 17, 12, 16}, {2, 3, 7, 6, 10, 19, 14, 18}, {0, 3, 2, 1, 11, 10, 9, 8}, {4, 5, 6, 7, 12, 13, 14, 15}}
+	hex20.FaceNvertsMax = 8
+	hex20.FaceLocalVerts = [][]int{{0, 4, 7, 3, 16, 15, 19, 11}, {1, 2, 6, 5, 9, 18, 13, 17}, {0, 1, 5, 4, 8, 17, 12, 16}, {2, 3, 7, 6, 10, 19, 14, 18}, {0, 3, 2, 1, 11, 10, 9, 8}, {4, 5, 6, 7, 12, 13, 14, 15}}
 	hex20.NatCoords = [][]float64{
 		{-1, 1, 1, -1, -1, 1, 1, -1, 0, 1, 0, -1, 0, 1, 0, -1, -1, 1, 1, -1},
 		{-1, -1, 1, 1, -1, -1, 1, 1, -1, 0, 1, 0, -1, 0, 1, 0, -1, -1, 1, 1},
@@ -60,7 +60,7 @@ func init() {
 
 // Hex8 calculates the shape functions (S) and derivatives of shape functions (dSdR) of hex8
 // elements at {r,s,t} natural coordinates. The derivatives are calculated only if derivs==true.
-func Hex8(S []float64, dSdR [][]float64, R []float64, derivs bool) {
+func Hex8(S []float64, dSdR [][]float64, R []float64, derivs bool, idxface int) {
 	/*
 	             4________________7
 	           ,'|              ,'|
@@ -126,7 +126,7 @@ func Hex8(S []float64, dSdR [][]float64, R []float64, derivs bool) {
 
 // Hex20 calculates the shape functions (S) and derivatives of shape functions (dSdR) of hex20
 // elements at {r,s,t} natural coordinates. The derivatives are calculated only if derivs==true.
-func Hex20(S []float64, dSdR [][]float64, R []float64, derivs bool) {
+func Hex20(S []float64, dSdR [][]float64, R []float64, derivs bool, idxface int) {
 	/*
 	              4_______15_______7
 	            ,'|              ,'|

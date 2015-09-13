@@ -554,7 +554,7 @@ func (o *ElemP) SetIniIvs(sol *Solution, ignored map[string][]float64) (err erro
 				switch nbc.Key {
 				case "seep":
 					pl = 0
-					for i, m := range o.Shp.FaceLocalV[iface] {
+					for i, m := range o.Shp.FaceLocalVerts[iface] {
 						pl += Sf[i] * sol.Y[o.Pmap[m]]
 					}
 					o.Plmax[idx][jdx] = pl
@@ -678,7 +678,7 @@ func (o *ElemP) ipvars(idx int, sol *Solution) (err error) {
 // fipvars computes current values @ face integration points
 func (o *ElemP) fipvars(fidx int, sol *Solution) (ρl, pl, fl float64) {
 	Sf := o.Shp.Sf
-	for i, m := range o.Shp.FaceLocalV[fidx] {
+	for i, m := range o.Shp.FaceLocalVerts[fidx] {
 		μ := o.Vid2seepId[m]
 		ρl += Sf[i] * o.ρl_ex[m]
 		pl += Sf[i] * sol.Y[o.Pmap[m]]
@@ -717,10 +717,10 @@ func (o *ElemP) add_natbcs_to_rhs(fb []float64, sol *Solution) (err error) {
 			// flux prescribed
 			case "ql":
 				ρl = 0
-				for i, m := range o.Shp.FaceLocalV[iface] {
+				for i, m := range o.Shp.FaceLocalVerts[iface] {
 					ρl += Sf[i] * o.ρl_ex[m]
 				}
-				for i, m := range o.Shp.FaceLocalV[iface] {
+				for i, m := range o.Shp.FaceLocalVerts[iface] {
 					fb[o.Pmap[m]] -= coef * ρl * tmp * Sf[i]
 				}
 
@@ -739,7 +739,7 @@ func (o *ElemP) add_natbcs_to_rhs(fb []float64, sol *Solution) (err error) {
 				rmp = o.ramp(fl + o.κ*g)
 				rx = ρl * rmp // Eq. (30)
 				rf = fl - rmp // Eq. (26)
-				for i, m := range o.Shp.FaceLocalV[iface] {
+				for i, m := range o.Shp.FaceLocalVerts[iface] {
 					μ := o.Vid2seepId[m]
 					fb[o.Pmap[m]] -= coef * Sf[i] * rx
 					fb[o.Fmap[μ]] -= coef * Sf[i] * rf
@@ -806,9 +806,9 @@ func (o *ElemP) add_natbcs_to_jac(sol *Solution) (err error) {
 				drxdfl = ρl * rmpD       // Eq. (A.5) (without Sn)
 				drfdpl = -o.κ * rmpD     // Eq. (A.6) (corrected with κ and without Sn)
 				drfdfl = 1.0 - rmpD      // Eq. (A.7) (without Sn)
-				for i, m := range o.Shp.FaceLocalV[iface] {
+				for i, m := range o.Shp.FaceLocalVerts[iface] {
 					μ := o.Vid2seepId[m]
-					for j, n := range o.Shp.FaceLocalV[iface] {
+					for j, n := range o.Shp.FaceLocalVerts[iface] {
 						ν := o.Vid2seepId[n]
 						o.Kpp[m][n] += coef * Sf[i] * Sf[j] * drxdpl
 						o.Kpf[m][ν] += coef * Sf[i] * Sf[j] * drxdfl
@@ -816,7 +816,7 @@ func (o *ElemP) add_natbcs_to_jac(sol *Solution) (err error) {
 						o.Kff[μ][ν] += coef * Sf[i] * Sf[j] * drfdfl
 					}
 					for n := 0; n < nverts; n++ { // Eqs. (18) and (22)
-						for l, r := range o.Shp.FaceLocalV[iface] {
+						for l, r := range o.Shp.FaceLocalVerts[iface] {
 							o.Kpp[m][n] += coef * Sf[i] * Sf[l] * o.dρldpl_ex[r][n] * rmp
 						}
 					}

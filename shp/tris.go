@@ -19,8 +19,8 @@ func init() {
 	tri3.Gndim = 2
 	tri3.Nverts = 3
 	tri3.VtkCode = VTK_TRIANGLE
-	tri3.FaceNverts = 2
-	tri3.FaceLocalV = [][]int{{0, 1}, {1, 2}, {2, 0}}
+	tri3.FaceNvertsMax = 2
+	tri3.FaceLocalVerts = [][]int{{0, 1}, {1, 2}, {2, 0}}
 	tri3.NatCoords = [][]float64{
 		{0, 1, 0},
 		{0, 0, 1},
@@ -40,8 +40,8 @@ func init() {
 	tri6.Gndim = 2
 	tri6.Nverts = 6
 	tri6.VtkCode = VTK_QUADRATIC_TRIANGLE
-	tri6.FaceNverts = 3
-	tri6.FaceLocalV = [][]int{{0, 1, 3}, {1, 2, 4}, {2, 0, 5}}
+	tri6.FaceNvertsMax = 3
+	tri6.FaceLocalVerts = [][]int{{0, 1, 3}, {1, 2, 4}, {2, 0, 5}}
 	tri6.NatCoords = [][]float64{
 		{0, 1, 0, 0.5, 0.5, 0},
 		{0, 0, 1, 0, 0.5, 0.5},
@@ -60,8 +60,8 @@ func init() {
 	tri10.Gndim = 2
 	tri10.Nverts = 10
 	tri10.VtkCode = VTK_POLY_VERTEX
-	tri10.FaceNverts = 4
-	tri10.FaceLocalV = [][]int{{0, 1, 3, 6}, {1, 2, 4, 7}, {2, 0, 5, 8}}
+	tri10.FaceNvertsMax = 4
+	tri10.FaceLocalVerts = [][]int{{0, 1, 3, 6}, {1, 2, 4, 7}, {2, 0, 5, 8}}
 	tri10.NatCoords = [][]float64{
 		{0, 1, 0, 1.0 / 3.0, 2.0 / 3.0, 0, 2.0 / 3.0, 1.0 / 3.0, 0, 1.0 / 3.0},
 		{0, 0, 1, 0, 1.0 / 3.0, 2.0 / 3.0, 0, 2.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0},
@@ -81,8 +81,8 @@ func init() {
 	tri15.Gndim = 2
 	tri15.Nverts = 15
 	tri15.VtkCode = VTK_POLY_VERTEX
-	tri15.FaceNverts = 5
-	tri15.FaceLocalV = [][]int{{0, 1, 3, 6, 7}, {1, 2, 4, 8, 9}, {2, 0, 5, 10, 11}}
+	tri15.FaceNvertsMax = 5
+	tri15.FaceLocalVerts = [][]int{{0, 1, 3, 6, 7}, {1, 2, 4, 8, 9}, {2, 0, 5, 10, 11}}
 	tri15.NatCoords = [][]float64{
 		{0, 1, 0, 0.5, 0.5, 0, 0.25, 0.75, 0.75, 0.25, 0, 0, 0.25, 0.5, 0.25},
 		{0, 0, 1, 0, 0.5, 0.5, 0, 0, 0.25, 0.75, 0.75, 0.25, 0.25, 0.25, 0.5},
@@ -96,7 +96,7 @@ func init() {
 
 // Tri3 calculates the shape functions (S) and derivatives of shape functions (dSdR) of tri3
 // elements at {r,s,t} natural coordinates. The derivatives are calculated only if derivs==true.
-func Tri3(S []float64, dSdR [][]float64, R []float64, derivs bool) {
+func Tri3(S []float64, dSdR [][]float64, R []float64, derivs bool, idxface int) {
 	/*      s
 	        |
 	        2, (0,1)
@@ -131,7 +131,7 @@ func Tri3(S []float64, dSdR [][]float64, R []float64, derivs bool) {
 
 // Tri6 calculates the shape functions (S) and derivatives of shape functions (dSdR) of tri6
 // elements at {r,s,t} natural coordinates. The derivatives are calculated only if derivs==true.
-func Tri6(S []float64, dSdR [][]float64, R []float64, derivs bool) {
+func Tri6(S []float64, dSdR [][]float64, R []float64, derivs bool, idxface int) {
 	/*      s
 	        |
 	        2, (0,1)
@@ -175,7 +175,7 @@ func Tri6(S []float64, dSdR [][]float64, R []float64, derivs bool) {
 
 // Tri10 calculates the shape functions (S) and derivatives of shape functions (dSdR) of tri10
 // elements at {r,s,t} natural coordinates. The derivatives are calculated only if derivs==true.
-func Tri10(S []float64, dSdR [][]float64, R []float64, derivs bool) {
+func Tri10(S []float64, dSdR [][]float64, R []float64, derivs bool, idxface int) {
 	/*
 	   s
 	   |
@@ -249,7 +249,7 @@ func Tri10(S []float64, dSdR [][]float64, R []float64, derivs bool) {
 
 // Tri15 calculates the shape functions (S) and derivatives of shape functions (dSdR) of tri15
 // elements at {r,s,t} natural coordinates. The derivatives are calculated only if derivs==true.
-func Tri15(S []float64, dSdR [][]float64, R []float64, derivs bool) {
+func Tri15(S []float64, dSdR [][]float64, R []float64, derivs bool, idxface int) {
 	/*      s
 	           ^
 	           |

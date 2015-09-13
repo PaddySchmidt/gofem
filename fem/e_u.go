@@ -698,7 +698,7 @@ func (o *ElemU) add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
 				if sol.Axisym && nbc.Key == "aqn" {
 					coef *= o.Shp.AxisymGetRadiusF(o.X, iface)
 				}
-				for j, m := range o.Shp.FaceLocalV[iface] {
+				for j, m := range o.Shp.FaceLocalVerts[iface] {
 					for i := 0; i < o.Ndim; i++ {
 						r := o.Umap[i+m*o.Ndim]
 						fb[r] += coef * Sf[j] * nvec[i] // +fe
@@ -727,7 +727,7 @@ func (o *ElemU) add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
 				rmp = o.ramp(qb + o.κ*db)
 				rx = rmp
 				rq = qb - rmp
-				for j, m := range o.Shp.FaceLocalV[iface] {
+				for j, m := range o.Shp.FaceLocalVerts[iface] {
 					μ := o.Vid2contactId[m]
 					fb[o.Qmap[μ]] -= coef * Sf[j] * rq * Jf // -residual
 					for i := 0; i < o.Ndim; i++ {
@@ -787,9 +787,9 @@ func (o *ElemU) add_contact_to_jac(sol *Solution) (err error) {
 
 				// compute derivatives
 				Hb = o.rampD1(qb + o.κ*db)
-				for i, m := range o.Shp.FaceLocalV[iface] {
+				for i, m := range o.Shp.FaceLocalVerts[iface] {
 					μ := o.Vid2contactId[m]
-					for j, n := range o.Shp.FaceLocalV[iface] {
+					for j, n := range o.Shp.FaceLocalVerts[iface] {
 						ν := o.Vid2contactId[n]
 						o.Kqq[μ][ν] += coef * Jf * Sf[i] * Sf[j] * (1.0 - Hb)
 						for k := 0; k < o.Ndim; k++ {
@@ -815,7 +815,7 @@ func (o *ElemU) fipvars(fidx int, sol *Solution) (qb float64) {
 	for i := 0; i < o.Ndim; i++ {
 		o.us[i] = 0
 	}
-	for i, m := range o.Shp.FaceLocalV[fidx] {
+	for i, m := range o.Shp.FaceLocalVerts[fidx] {
 		μ := o.Vid2contactId[m]
 		qb += Sf[i] * sol.Y[o.Qmap[μ]]
 		for j := 0; j < o.Ndim; j++ {

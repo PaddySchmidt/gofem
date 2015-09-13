@@ -18,8 +18,8 @@ func init() {
 	qua4.Gndim = 2
 	qua4.Nverts = 4
 	qua4.VtkCode = VTK_QUAD
-	qua4.FaceNverts = 2
-	qua4.FaceLocalV = [][]int{{0, 1}, {1, 2}, {2, 3}, {3, 0}}
+	qua4.FaceNvertsMax = 2
+	qua4.FaceLocalVerts = [][]int{{0, 1}, {1, 2}, {2, 3}, {3, 0}}
 	qua4.NatCoords = [][]float64{
 		{-1, 1, 1, -1},
 		{-1, -1, 1, 1},
@@ -39,8 +39,8 @@ func init() {
 	qua8.Gndim = 2
 	qua8.Nverts = 8
 	qua8.VtkCode = VTK_QUADRATIC_QUAD
-	qua8.FaceNverts = 3
-	qua8.FaceLocalV = [][]int{{0, 1, 4}, {1, 2, 5}, {2, 3, 6}, {3, 0, 7}}
+	qua8.FaceNvertsMax = 3
+	qua8.FaceLocalVerts = [][]int{{0, 1, 4}, {1, 2, 5}, {2, 3, 6}, {3, 0, 7}}
 	qua8.NatCoords = [][]float64{
 		{-1, 1, 1, -1, 0, 1, 0, -1},
 		{-1, -1, 1, 1, -1, 0, 1, 0},
@@ -60,8 +60,8 @@ func init() {
 	qua9.Gndim = 2
 	qua9.Nverts = 9
 	qua9.VtkCode = VTK_POLY_VERTEX
-	qua9.FaceNverts = 3
-	qua9.FaceLocalV = [][]int{{0, 1, 4}, {1, 2, 5}, {2, 3, 6}, {3, 0, 7}}
+	qua9.FaceNvertsMax = 3
+	qua9.FaceLocalVerts = [][]int{{0, 1, 4}, {1, 2, 5}, {2, 3, 6}, {3, 0, 7}}
 	qua9.NatCoords = [][]float64{
 		{-1, 1, 1, -1, 0, 1, 0, -1, 0},
 		{-1, -1, 1, 1, -1, 0, 1, 0, 0},
@@ -81,8 +81,8 @@ func init() {
 	qua12.Gndim = 2
 	qua12.Nverts = 12
 	qua12.VtkCode = VTK_POLY_VERTEX
-	qua12.FaceNverts = 4
-	qua12.FaceLocalV = [][]int{{0, 1, 4, 8}, {1, 2, 5, 9}, {2, 3, 6, 10}, {3, 0, 7, 11}}
+	qua12.FaceNvertsMax = 4
+	qua12.FaceLocalVerts = [][]int{{0, 1, 4, 8}, {1, 2, 5, 9}, {2, 3, 6, 10}, {3, 0, 7, 11}}
 	qua12.NatCoords = [][]float64{
 		{-1, 1, 1, -1, -1.0 / 3.0, 1, 1.0 / 3.0, -1, 1.0 / 3.0, 1, -1.0 / 3.0, -1},
 		{-1, -1, 1, 1, -1, -1.0 / 3.0, 1, 1.0 / 3.0, -1, 1.0 / 3.0, 1, -1.0 / 3.0},
@@ -101,8 +101,8 @@ func init() {
 	qua16.Gndim = 2
 	qua16.Nverts = 16
 	qua16.VtkCode = VTK_POLY_VERTEX
-	qua16.FaceNverts = 4
-	qua16.FaceLocalV = [][]int{{0, 1, 4, 8}, {1, 2, 5, 9}, {2, 3, 6, 10}, {3, 0, 7, 11}}
+	qua16.FaceNvertsMax = 4
+	qua16.FaceLocalVerts = [][]int{{0, 1, 4, 8}, {1, 2, 5, 9}, {2, 3, 6, 10}, {3, 0, 7, 11}}
 	qua16.NatCoords = [][]float64{
 		{-1, 1, 1, -1, -1.0 / 3.0, 1, 1.0 / 3.0, -1, 1.0 / 3.0, 1, -1.0 / 3.0, -1, -1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0, -1.0 / 3.0},
 		{-1, -1, 1, 1, -1, -1.0 / 3.0, 1, 1.0 / 3.0, -1, 1.0 / 3.0, 1, -1.0 / 3.0, -1.0 / 3.0, -1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0},
@@ -115,7 +115,7 @@ func init() {
 
 // Qua4 calculates the shape functions (S) and derivatives of shape functions (dSdR) of qua4
 // elements at {r,s,t} natural coordinates. The derivatives are calculated only if derivs==true.
-func Qua4(S []float64, dSdR [][]float64, R []float64, derivs bool) {
+func Qua4(S []float64, dSdR [][]float64, R []float64, derivs bool, idxface int) {
 	/*
 	   3-----------2
 	   |     s     |
@@ -147,7 +147,7 @@ func Qua4(S []float64, dSdR [][]float64, R []float64, derivs bool) {
 
 // Qua8 calculates the shape functions (S) and derivatives of shape functions (dSdR) of qua8
 // elements at {r,s,t} natural coordinates. The derivatives are calculated only if derivs==true.
-func Qua8(S []float64, dSdR [][]float64, R []float64, derivs bool) {
+func Qua8(S []float64, dSdR [][]float64, R []float64, derivs bool, idxface int) {
 	/*
 	   3-----6-----2
 	   |     s     |
@@ -192,7 +192,7 @@ func Qua8(S []float64, dSdR [][]float64, R []float64, derivs bool) {
 
 // Qua9 calculates the shape functions (S) and derivatives of shape functions (dSdR) of qua9
 // elements at {r,s,t} natural coordinates. The derivatives are calculated only if derivs==true.
-func Qua9(S []float64, dSdR [][]float64, R []float64, derivs bool) {
+func Qua9(S []float64, dSdR [][]float64, R []float64, derivs bool, idxface int) {
 	/*
 	   3-----6-----2
 	   |     s     |
@@ -245,7 +245,7 @@ func Qua9(S []float64, dSdR [][]float64, R []float64, derivs bool) {
 
 // Qua12 calculates the shape functions (S) and derivatives of shape functions (dSdR) of qua12
 // elements at {r,s,t} natural coordinates. The derivatives are calculated only if derivs==true.
-func Qua12(S []float64, dSdR [][]float64, R []float64, derivs bool) {
+func Qua12(S []float64, dSdR [][]float64, R []float64, derivs bool, idxface int) {
 	/*
 	    3      10       6        2
 	      @-----@-------@------@
@@ -313,7 +313,7 @@ func Qua12(S []float64, dSdR [][]float64, R []float64, derivs bool) {
 
 // Qua16 calculates the shape functions (S) and derivatives of shape functions (dSdR) of qua16
 // elements at {r,s,t} natural coordinates. The derivatives are calculated only if derivs==true.
-func Qua16(S []float64, dSdR [][]float64, R []float64, derivs bool) {
+func Qua16(S []float64, dSdR [][]float64, R []float64, derivs bool, idxface int) {
 	/*
 	    3      10       6        2
 	      @-----@-------@------@
@@ -339,8 +339,8 @@ func Qua16(S []float64, dSdR [][]float64, R []float64, derivs bool) {
 		}
 	}
 
-	Lin4(sr, dr, []float64{r}, derivs)
-	Lin4(ss, ds, []float64{s}, derivs)
+	Lin4(sr, dr, []float64{r}, derivs, idxface)
+	Lin4(ss, ds, []float64{s}, derivs, idxface)
 
 	S[0] = sr[0] * ss[0]
 	S[1] = sr[1] * ss[0]

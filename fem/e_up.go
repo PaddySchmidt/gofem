@@ -835,11 +835,11 @@ func (o *ElemUP) add_natbcs_to_jac(sol *Solution) (err error) {
 				// compute derivatives
 				g = pl - plmax // Eq. (24)
 				rmp = o.P.ramp(fl + o.P.κ*g)
-				for i, m := range o.P.Shp.FaceLocalV[iface] {
+				for i, m := range o.P.Shp.FaceLocalVerts[iface] {
 					for n := 0; n < u_nverts; n++ {
 						for j := 0; j < o.Ndim; j++ {
 							c := j + n*o.Ndim
-							for l, r := range o.P.Shp.FaceLocalV[iface] {
+							for l, r := range o.P.Shp.FaceLocalVerts[iface] {
 								o.Kpu[m][c] += coef * Sf[i] * Sf[l] * o.dρldus_ex[r][c] * rmp
 							}
 						}

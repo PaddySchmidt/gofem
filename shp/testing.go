@@ -27,7 +27,7 @@ func CheckShape(tst *testing.T, shape *Shape, tol float64, verbose bool) {
 		}
 
 		// compute function
-		shape.Func(shape.S, shape.DSdR, r, false)
+		shape.Func(shape.S, shape.DSdR, r, false, -1)
 
 		// check
 		if verbose {
@@ -53,7 +53,7 @@ func CheckShape(tst *testing.T, shape *Shape, tol float64, verbose bool) {
 func CheckShapeFace(tst *testing.T, shape *Shape, tol float64, verbose bool) {
 
 	// skip 1D shapes
-	nfaces := len(shape.FaceLocalV)
+	nfaces := len(shape.FaceLocalVerts)
 	if nfaces == 0 {
 		return
 	}
@@ -62,7 +62,7 @@ func CheckShapeFace(tst *testing.T, shape *Shape, tol float64, verbose bool) {
 	errS := 0.0
 	r := []float64{0, 0, 0}
 	for k := 0; k < nfaces; k++ {
-		for n := range shape.FaceLocalV[k] {
+		for n := range shape.FaceLocalVerts[k] {
 
 			// natural coordinates @ vertex
 			for i := 0; i < shape.Gndim; i++ {
@@ -70,13 +70,13 @@ func CheckShapeFace(tst *testing.T, shape *Shape, tol float64, verbose bool) {
 			}
 
 			// compute function
-			shape.Func(shape.S, shape.DSdR, r, false)
+			shape.Func(shape.S, shape.DSdR, r, false, -1)
 
 			// check
 			if verbose {
 				io.Pforan("S = %v\n", shape.S)
 			}
-			for m := range shape.FaceLocalV[k] {
+			for m := range shape.FaceLocalVerts[k] {
 				if n == m {
 					errS += math.Abs(shape.S[m] - 1.0)
 				} else {
@@ -111,7 +111,7 @@ func CheckIsop(tst *testing.T, shape *Shape, C [][]float64, Cnat [][]float64) {
 		for j := 0; j < 2; j++ {
 			r[j] = Cnat[j][i]
 		}
-		shape.NurbsFunc(shape.S, shape.DSdR, r, false)
+		shape.NurbsFunc(shape.S, shape.DSdR, r, false, -1)
 		for j := 0; j < 2; j++ {
 			x[j] = 0
 			for k, l := range shape.Ibasis {
@@ -132,7 +132,7 @@ func CheckDSdR(tst *testing.T, shape *Shape, r []float64, tol float64, verbose b
 	S_tmp := make([]float64, shape.Nverts)
 
 	// analytical
-	shape.Func(shape.S, shape.DSdR, r, true)
+	shape.Func(shape.S, shape.DSdR, r, true, -1)
 
 	// numerical
 	for n := 0; n < shape.Nverts; n++ {
@@ -140,7 +140,7 @@ func CheckDSdR(tst *testing.T, shape *Shape, r []float64, tol float64, verbose b
 			dSndRi, _ := num.DerivCentral(func(t float64, args ...interface{}) (Sn float64) {
 				copy(r_tmp, r)
 				r_tmp[i] = t
-				shape.Func(S_tmp, nil, r_tmp, false)
+				shape.Func(S_tmp, nil, r_tmp, false, -1)
 				Sn = S_tmp[n]
 				return
 			}, r[i], 1e-1)

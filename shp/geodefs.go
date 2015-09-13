@@ -17,7 +17,7 @@ func GetFaceLocalVerts(cellType string, fidx int) []int {
 	if !ok {
 		return nil
 	}
-	return shape.FaceLocalV[fidx]
+	return shape.FaceLocalVerts[fidx]
 }
 
 func GetFaceType(cellType string) string {

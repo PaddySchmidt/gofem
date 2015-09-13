@@ -19,8 +19,8 @@ func init() {
 	tet4.Gndim = 3
 	tet4.Nverts = 4
 	tet4.VtkCode = VTK_TETRA
-	tet4.FaceNverts = 3
-	tet4.FaceLocalV = [][]int{{0, 3, 2}, {0, 1, 3}, {0, 2, 1}, {1, 2, 3}}
+	tet4.FaceNvertsMax = 3
+	tet4.FaceLocalVerts = [][]int{{0, 3, 2}, {0, 1, 3}, {0, 2, 1}, {1, 2, 3}}
 	tet4.NatCoords = [][]float64{
 		{0, 1, 0, 0},
 		{0, 0, 1, 0},
@@ -42,8 +42,8 @@ func init() {
 	tet10.Gndim = 3
 	tet10.Nverts = 10
 	tet10.VtkCode = VTK_QUADRATIC_TETRA
-	tet10.FaceNverts = 6
-	tet10.FaceLocalV = [][]int{{0, 3, 2, 7, 9, 6}, {0, 1, 3, 4, 8, 7}, {0, 2, 1, 6, 5, 4}, {1, 2, 3, 5, 9, 8}}
+	tet10.FaceNvertsMax = 6
+	tet10.FaceLocalVerts = [][]int{{0, 3, 2, 7, 9, 6}, {0, 1, 3, 4, 8, 7}, {0, 2, 1, 6, 5, 4}, {1, 2, 3, 5, 9, 8}}
 	tet10.NatCoords = [][]float64{
 		{0, 1, 0, 0, 0.5, 0.5, 0, 0, 0.5, 0},
 		{0, 0, 1, 0, 0, 0.5, 0.5, 0, 0, 0.5},
@@ -58,7 +58,7 @@ func init() {
 
 // Tet4 calculates the shape functions (S) and derivatives of shape functions (dSdR) of tet4
 // elements at {r,s,t} natural coordinates. The derivatives are calculated only if derivs==true.
-func Tet4(S []float64, dSdR [][]float64, R []float64, derivs bool) {
+func Tet4(S []float64, dSdR [][]float64, R []float64, derivs bool, idxface int) {
 	/*                    t
 	              |
 	              3
@@ -116,7 +116,7 @@ func Tet4(S []float64, dSdR [][]float64, R []float64, derivs bool) {
 
 // Tet10 calculates the shape functions (S) and derivatives of shape functions (dSdR) of tet10
 // elements at {r,s,t} natural coordinates. The derivatives are calculated only if derivs==true.
-func Tet10(S []float64, dSdR [][]float64, R []float64, derivs bool) {
+func Tet10(S []float64, dSdR [][]float64, R []float64, derivs bool, idxface int) {
 	/*                    t
 	              |
 	              3

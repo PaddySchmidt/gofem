@@ -15,27 +15,27 @@ import (
 const MINDET = 1.0e-14 // minimum determinant allowed for dxdR
 
 // ShpFunc is the shape functions callback function
-type ShpFunc func(S []float64, dSdR [][]float64, r []float64, derivs bool)
+type ShpFunc func(S []float64, dSdR [][]float64, r []float64, derivs bool, idxface int)
 
 // Shape holds geometry data
 type Shape struct {
 
 	// geometry
-	Type       string      // name; e.g. "lin2"
-	Func       ShpFunc     // shape/derivs function callback function
-	FaceFunc   ShpFunc     // face shape/derivs function callback function
-	BasicType  string      // geometry of basic element; e.g. "qua8" => "qua4"
-	FaceType   string      // geometry of face; e.g. "qua8" => "lin3"
-	Gndim      int         // geometry of shape; e.g. "lin3" => gnd == 1 (even in 3D simulations)
-	Nverts     int         // number of vertices in cell; e.g. "qua8" => 8
-	VtkCode    int         // VTK code
-	FaceNverts int         // number of vertices on face
-	FaceLocalV [][]int     // face local vertices [nfaces][FaceNverts]
-	NatCoords  [][]float64 // natural coordinates [gndim][nverts]
+	Type           string      // name; e.g. "lin2"
+	Func           ShpFunc     // shape/derivs function callback function
+	FaceFunc       ShpFunc     // face shape/derivs function callback function
+	BasicType      string      // geometry of basic element; e.g. "qua8" => "qua4"
+	FaceType       string      // geometry of face; e.g. "qua8" => "lin3"
+	Gndim          int         // geometry of shape; e.g. "lin3" => gnd == 1 (even in 3D simulations)
+	Nverts         int         // number of vertices in cell; e.g. "qua8" => 8
+	VtkCode        int         // VTK code
+	FaceNvertsMax  int         // max number of vertices on face
+	FaceLocalVerts [][]int     // face local vertices [nfaces][...]
+	NatCoords      [][]float64 // natural coordinates [gndim][nverts]
 
 	// geometry: for seams (3D-edges)
-	SeamType   int     // geometry of seam (3D-edge); e.g. "hex8" => "lin2"
-	SeamLocalV [][]int // seam (3d-edge) local vertices [nseams][nVertsOnSeam]
+	SeamType       int     // geometry of seam (3D-edge); e.g. "hex8" => "lin2"
+	SeamLocalVerts [][]int // seam (3d-edge) local vertices [nseams][nVertsOnSeam]
 
 	// scratchpad: volume
 	S    []float64   // [nverts] shape functions
@@ -50,17 +50,20 @@ type Shape struct {
 	Gvec   []float64 // [nverts] G == dSdx. derivative of shape function
 
 	// scratchpad: face
-	Sf     []float64   // [facenverts] shape functions values
+	Sf     []float64   // [FaceNvertsMax] shape functions values
 	Fnvec  []float64   // [gndim] face normal vector multiplied by Jf
-	DSfdRf [][]float64 // [facenverts][gndim-1] derivatives of Sf w.r.t natural coordinates
+	DSfdRf [][]float64 // [FaceNvertsMax][gndim-1] derivatives of Sf w.r.t natural coordinates
 	DxfdRf [][]float64 // [gndim][gndim-1] derivatives of real coordinates w.r.t natural coordinates
 
 	// NURBS
-	Nurbs  *gm.Nurbs // pointer to NURBS structure => indicates that this shape strucutre is based on NURBS
-	Span   []int     // NURBS knots' indices defining cell/element; e.g. [2, 3, 1, 2] for x-quad/y-lin cell
-	Ibasis []int     // indices of basis functions corresponding to Span == local indices of control points
-	U      []float64 // [gndim] NURBS' parametric space coordinates
-	Ju     float64   // parametric-natural mapping Jacobian: determinant of dudr
+	Nurbs      *gm.Nurbs   // pointer to NURBS structure => indicates that this shape strucutre is based on NURBS
+	NurbsFaces []*gm.Nurbs // boundaries (surfaces) of NURBS [normalTo0, normalTo0, normalTo1, normalTo1, normalTo2, normalTo2]
+	Span       []int       // NURBS knots' indices defining cell/element; e.g. [2, 3, 1, 2] for x-quad/y-lin cell
+	Ibasis     []int       // indices of basis functions corresponding to Span == local indices of control points
+	SpanFace   [][]int     // NURBS knots' indices defining cell/element; e.g. [2, 3, 1, 2] for x-quad/y-lin cell
+	IbasisFace [][]int     // indices of basis functions corresponding to Span == local indices of control points
+	U          []float64   // [gndim] NURBS' parametric space coordinates
+	Ju         float64     // parametric-natural mapping Jacobian: determinant of dudr
 }
 
 // GetCopy returns a new copy of this shape structure
@@ -78,13 +81,13 @@ func (o Shape) GetCopy() *Shape {
 	p.Gndim = o.Gndim
 	p.Nverts = o.Nverts
 	p.VtkCode = o.VtkCode
-	p.FaceNverts = o.FaceNverts
-	p.FaceLocalV = utl.IntsClone(o.FaceLocalV)
+	p.FaceNvertsMax = o.FaceNvertsMax
+	p.FaceLocalVerts = utl.IntsClone(o.FaceLocalVerts)
 	p.NatCoords = la.MatClone(o.NatCoords)
 
 	// geometry: for seams (3D-edges)
 	p.SeamType = o.SeamType
-	p.SeamLocalV = utl.IntsClone(o.SeamLocalV)
+	p.SeamLocalVerts = utl.IntsClone(o.SeamLocalVerts)
 
 	// scratchpad: volume
 	p.S = la.VecClone(o.S)
@@ -127,7 +130,7 @@ func Get(geoType string, goroutineId int) *Shape {
 func (o *Shape) IpRealCoords(x [][]float64, ip Ipoint) (y []float64) {
 	ndim := len(x)
 	y = make([]float64, ndim)
-	o.Func(o.S, o.DSdR, ip, false)
+	o.Func(o.S, o.DSdR, ip, false, -1)
 	for i := 0; i < ndim; i++ {
 		for m := 0; m < o.Nverts; m++ {
 			y[i] += o.S[m] * x[i][m]
@@ -141,9 +144,9 @@ func (o *Shape) IpRealCoords(x [][]float64, ip Ipoint) (y []float64) {
 func (o *Shape) FaceIpRealCoords(x [][]float64, ipf Ipoint, idxface int) (y []float64) {
 	ndim := len(x)
 	y = make([]float64, ndim)
-	o.FaceFunc(o.Sf, o.DSfdRf, ipf, false)
+	o.FaceFunc(o.Sf, o.DSfdRf, ipf, false, idxface)
 	for i := 0; i < ndim; i++ {
-		for k, n := range o.FaceLocalV[idxface] {
+		for k, n := range o.FaceLocalVerts[idxface] {
 			y[i] += o.Sf[k] * x[i][n]
 		}
 	}
@@ -159,7 +162,7 @@ func (o *Shape) FaceIpRealCoords(x [][]float64, ipf Ipoint, idxface int) (y []fl
 func (o *Shape) CalcAtIp(x [][]float64, ip Ipoint, derivs bool) (err error) {
 
 	// S and dSdR
-	o.Func(o.S, o.DSdR, ip, derivs)
+	o.Func(o.S, o.DSdR, ip, derivs, -1)
 	if !derivs {
 		return
 	}
@@ -235,13 +238,13 @@ func (o *Shape) CalcAtFaceIp(x [][]float64, ipf Ipoint, idxface int) (err error)
 	}
 
 	// Sf and dSfdR
-	o.FaceFunc(o.Sf, o.DSfdRf, ipf, true)
+	o.FaceFunc(o.Sf, o.DSfdRf, ipf, true, idxface)
 
 	// dxfdRf := sum_n x * dSfdRf   =>  dxf_i/dRf_j := sum_n xf^n_i * dSf^n/dRf_j
 	for i := 0; i < len(x); i++ {
 		for j := 0; j < o.Gndim-1; j++ {
 			o.DxfdRf[i][j] = 0.0
-			for k, n := range o.FaceLocalV[idxface] {
+			for k, n := range o.FaceLocalVerts[idxface] {
 				o.DxfdRf[i][j] += x[i][n] * o.DSfdRf[k][j]
 			}
 		}
@@ -271,8 +274,8 @@ func (o *Shape) AxisymGetRadius(x [][]float64) (radius float64) {
 // AxisymGetRadiusF (face) returns the x0 == radius for axisymmetric computations
 //  Note: must be called after CalcAtFaceIp
 func (o *Shape) AxisymGetRadiusF(x [][]float64, idxface int) (radius float64) {
-	for m := 0; m < o.FaceNverts; m++ {
-		radius += o.Sf[m] * x[0][o.FaceLocalV[idxface][m]]
+	for m := 0; m < o.FaceNvertsMax; m++ {
+		radius += o.Sf[m] * x[0][o.FaceLocalVerts[idxface][m]]
 	}
 	return
 }
@@ -289,8 +292,8 @@ func (o *Shape) init_scratchpad() {
 
 	// face data
 	if o.Gndim > 1 {
-		o.Sf = make([]float64, o.FaceNverts)
-		o.DSfdRf = la.MatAlloc(o.FaceNverts, o.Gndim-1)
+		o.Sf = make([]float64, o.FaceNvertsMax)
+		o.DSfdRf = la.MatAlloc(o.FaceNvertsMax, o.Gndim-1)
 		o.DxfdRf = la.MatAlloc(o.Gndim, o.Gndim-1)
 		o.Fnvec = make([]float64, o.Gndim)
 	}
