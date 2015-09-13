@@ -13,13 +13,15 @@ func init() {
 	// lin2
 	lin2.Type = "lin2"
 	lin2.Func = Lin2
-	lin2.BasicType = "lin2"
 	lin2.Gndim = 1
 	lin2.Nverts = 2
 	lin2.VtkCode = VTK_LINE
 	lin2.NatCoords = [][]float64{
 		{-1, 1},
 	}
+	lin2.BasicType = "lin2"
+	lin2.BasicNverts = 2
+	lin2.BasicVtkCode = VTK_LINE
 	lin2.init_scratchpad()
 	factory["lin2"] = &lin2
 	ipsfactory["lin2_0"] = ips_lin_2
@@ -28,13 +30,15 @@ func init() {
 	// lin3
 	lin3.Type = "lin3"
 	lin3.Func = Lin3
-	lin3.BasicType = "lin3"
 	lin3.Gndim = 1
 	lin3.Nverts = 3
 	lin3.VtkCode = VTK_QUADRATIC_EDGE
 	lin3.NatCoords = [][]float64{
 		{-1, 1, 0},
 	}
+	lin3.BasicType = "lin2"
+	lin3.BasicNverts = 2
+	lin3.BasicVtkCode = VTK_LINE
 	lin3.init_scratchpad()
 	factory["lin3"] = &lin3
 	ipsfactory["lin3_0"] = ips_lin_3
@@ -44,13 +48,15 @@ func init() {
 	// lin4
 	lin4.Type = "lin4"
 	lin4.Func = Lin4
-	lin4.BasicType = "lin4"
 	lin4.Gndim = 1
 	lin4.Nverts = 4
 	lin4.VtkCode = VTK_POLY_LINE
 	lin4.NatCoords = [][]float64{
 		{-1, 1, -1.0 / 3.0, 1.0 / 3.0},
 	}
+	lin4.BasicType = "lin2"
+	lin4.BasicNverts = 2
+	lin4.BasicVtkCode = VTK_LINE
 	lin4.init_scratchpad()
 	factory["lin4"] = &lin4
 	ipsfactory["lin4_0"] = ips_lin_3
@@ -61,13 +67,15 @@ func init() {
 	// lin5
 	lin5.Type = "lin5"
 	lin5.Func = Lin2
-	lin5.BasicType = "lin5"
 	lin5.Gndim = 1
 	lin5.Nverts = 2
 	lin5.VtkCode = VTK_POLY_LINE
 	lin5.NatCoords = [][]float64{
 		{-1, 1, 0, -0.5, 0.5},
 	}
+	lin5.BasicType = "lin2"
+	lin5.BasicNverts = 2
+	lin5.BasicVtkCode = VTK_LINE
 	lin5.init_scratchpad()
 	factory["lin5"] = &lin5
 	ipsfactory["lin5_0"] = ips_lin_3

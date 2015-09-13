@@ -25,14 +25,20 @@ type Shape struct {
 	Type           string      // name; e.g. "lin2"
 	Func           ShpFunc     // shape/derivs function callback function
 	FaceFunc       ShpFunc     // face shape/derivs function callback function
-	BasicType      string      // geometry of basic element; e.g. "qua8" => "qua4"
 	FaceType       string      // geometry of face; e.g. "qua8" => "lin3"
 	Gndim          int         // geometry of shape; e.g. "lin3" => gnd == 1 (even in 3D simulations)
 	Nverts         int         // number of vertices in cell; e.g. "qua8" => 8
 	VtkCode        int         // VTK code
+	VtkNverts      int         // number of vertices to use in VTK file; e.g. "qua9" => 8 vertices
 	FaceNvertsMax  int         // max number of vertices on face
 	FaceLocalVerts [][]int     // face local vertices [nfaces][...]
 	NatCoords      [][]float64 // natural coordinates [gndim][nverts]
+
+	// basic type => for plotting or LBB cells
+	BasicType    string // geometry of basic cell; e.g. "qua8" => "qua4"
+	BasicNverts  int    // number of vertices in basic cell; e.g. 8 => 4
+	BasicVtkCode int    // VTK code of basic cell
+	//BasicLocalVerts []int  // local indices of vertices in x matrix corresponding to basic cell
 
 	// geometry: for seams (3D-edges)
 	SeamType       int     // geometry of seam (3D-edge); e.g. "hex8" => "lin2"

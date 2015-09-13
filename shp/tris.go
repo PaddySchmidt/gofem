@@ -14,7 +14,6 @@ func init() {
 	tri3.Type = "tri3"
 	tri3.Func = Tri3
 	tri3.FaceFunc = Lin2
-	tri3.BasicType = "tri3"
 	tri3.FaceType = "lin2"
 	tri3.Gndim = 2
 	tri3.Nverts = 3
@@ -25,6 +24,9 @@ func init() {
 		{0, 1, 0},
 		{0, 0, 1},
 	}
+	tri3.BasicType = "tri3"
+	tri3.BasicNverts = 3
+	tri3.BasicVtkCode = VTK_TRIANGLE
 	tri3.init_scratchpad()
 	factory["tri3"] = &tri3
 	ipsfactory["tri3_0"] = ips_tri_1
@@ -35,7 +37,6 @@ func init() {
 	tri6.Type = "tri6"
 	tri6.Func = Tri6
 	tri6.FaceFunc = Lin3
-	tri6.BasicType = "tri3"
 	tri6.FaceType = "lin3"
 	tri6.Gndim = 2
 	tri6.Nverts = 6
@@ -46,6 +47,9 @@ func init() {
 		{0, 1, 0, 0.5, 0.5, 0},
 		{0, 0, 1, 0, 0.5, 0.5},
 	}
+	tri6.BasicType = "tri3"
+	tri6.BasicNverts = 3
+	tri6.BasicVtkCode = VTK_TRIANGLE
 	tri6.init_scratchpad()
 	factory["tri6"] = &tri6
 	ipsfactory["tri6_0"] = ips_tri_3
@@ -55,7 +59,6 @@ func init() {
 	tri10.Type = "tri10"
 	tri10.Func = Tri10
 	tri10.FaceFunc = Lin4
-	tri10.BasicType = "tri3"
 	tri10.FaceType = "lin4"
 	tri10.Gndim = 2
 	tri10.Nverts = 10
@@ -66,6 +69,9 @@ func init() {
 		{0, 1, 0, 1.0 / 3.0, 2.0 / 3.0, 0, 2.0 / 3.0, 1.0 / 3.0, 0, 1.0 / 3.0},
 		{0, 0, 1, 0, 1.0 / 3.0, 2.0 / 3.0, 0, 2.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0},
 	}
+	tri10.BasicType = "tri3"
+	tri10.BasicNverts = 3
+	tri10.BasicVtkCode = VTK_TRIANGLE
 	tri10.init_scratchpad()
 	factory["tri10"] = &tri10
 	ipsfactory["tri10_0"] = ips_tri_12
@@ -76,7 +82,6 @@ func init() {
 	tri15.Type = "tri15"
 	tri15.Func = Tri15
 	tri15.FaceFunc = Lin5
-	tri15.BasicType = "tri3"
 	tri15.FaceType = "lin5"
 	tri15.Gndim = 2
 	tri15.Nverts = 15
@@ -87,6 +92,9 @@ func init() {
 		{0, 1, 0, 0.5, 0.5, 0, 0.25, 0.75, 0.75, 0.25, 0, 0, 0.25, 0.5, 0.25},
 		{0, 0, 1, 0, 0.5, 0.5, 0, 0, 0.25, 0.75, 0.75, 0.25, 0.25, 0.25, 0.5},
 	}
+	tri15.BasicType = "tri3"
+	tri15.BasicNverts = 3
+	tri15.BasicVtkCode = VTK_TRIANGLE
 	tri15.init_scratchpad()
 	factory["tri15"] = &tri15
 	ipsfactory["tri15_0"] = ips_tri_12

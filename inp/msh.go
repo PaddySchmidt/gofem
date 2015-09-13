@@ -317,6 +317,23 @@ func (o *Cell) String() string {
 	return l
 }
 
+// GetInfo returns information about this cell
+func (o *Cell) GetInfo(lbb bool) (nverts, vtkcode int) {
+	if o.Type == "joint" {
+		nverts = len(o.Verts)
+		vtkcode = shp.VTK_POLY_VERTEX
+		return
+	}
+	if lbb {
+		nverts = o.Shp.BasicNverts
+		vtkcode = o.Shp.BasicVtkCode
+		return
+	}
+	nverts = o.Shp.VtkNverts
+	vtkcode = o.Shp.VtkCode
+	return
+}
+
 // AllocLbb allocates Lbb cell
 func (o *Cell) AllocLbb() {
 	o.LbbCell = new(Cell)

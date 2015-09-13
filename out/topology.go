@@ -7,7 +7,6 @@ package out
 import (
 	"math"
 
-	"github.com/cpmech/gofem/shp"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/gm"
 	"github.com/cpmech/gosl/la"
@@ -102,18 +101,17 @@ func NodesOnPlane(ftag int) *PlaneData {
 	first := true
 	cells := Dom.Msh.FaceTag2cells[ftag]
 	for _, cell := range cells {
-		ctype := cell.C.Type
 		for fidx, cftag := range cell.C.FTags {
 			if cftag == ftag {
 
 				// check face type
-				ftype := shp.GetFaceType(ctype)
+				ftype := cell.C.Shp.FaceType
 				if !(ftype == "qua4" || ftype == "qua8") {
 					chk.Panic("can only handle qua4 or qua8 faces for now. ftype=%q", ftype)
 				}
 
 				// vertices on face
-				flvids := shp.GetFaceLocalVerts(ctype, fidx)
+				flvids := cell.C.Shp.FaceLocalVerts[fidx]
 				nv := len(flvids)
 				if nv == 8 {
 					nv = 4 // avoid middle nodes

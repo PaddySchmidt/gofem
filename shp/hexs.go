@@ -14,11 +14,11 @@ func init() {
 	hex8.Type = "hex8"
 	hex8.Func = Hex8
 	hex8.FaceFunc = Qua4
-	hex8.BasicType = "hex8"
 	hex8.FaceType = "qua4"
 	hex8.Gndim = 3
 	hex8.Nverts = 8
 	hex8.VtkCode = VTK_HEXAHEDRON
+	hex8.VtkNverts = 8
 	hex8.FaceNvertsMax = 4
 	hex8.FaceLocalVerts = [][]int{{0, 4, 7, 3}, {1, 2, 6, 5}, {0, 1, 5, 4}, {2, 3, 7, 6}, {0, 3, 2, 1}, {4, 5, 6, 7}}
 	hex8.NatCoords = [][]float64{
@@ -26,6 +26,9 @@ func init() {
 		{-1, -1, 1, 1, -1, -1, 1, 1},
 		{-1, -1, -1, -1, 1, 1, 1, 1},
 	}
+	hex8.BasicType = "hex8"
+	hex8.BasicNverts = 8
+	hex8.BasicVtkCode = VTK_HEXAHEDRON
 	hex8.init_scratchpad()
 	factory["hex8"] = &hex8
 	ipsfactory["hex8_0"] = ips_hex_8
@@ -37,11 +40,11 @@ func init() {
 	hex20.Type = "hex20"
 	hex20.Func = Hex20
 	hex20.FaceFunc = Qua8
-	hex20.BasicType = "hex8"
 	hex20.FaceType = "qua8"
 	hex20.Gndim = 3
 	hex20.Nverts = 20
 	hex20.VtkCode = VTK_QUADRATIC_HEXAHEDRON
+	hex20.VtkNverts = 20
 	hex20.FaceNvertsMax = 8
 	hex20.FaceLocalVerts = [][]int{{0, 4, 7, 3, 16, 15, 19, 11}, {1, 2, 6, 5, 9, 18, 13, 17}, {0, 1, 5, 4, 8, 17, 12, 16}, {2, 3, 7, 6, 10, 19, 14, 18}, {0, 3, 2, 1, 11, 10, 9, 8}, {4, 5, 6, 7, 12, 13, 14, 15}}
 	hex20.NatCoords = [][]float64{
@@ -49,6 +52,9 @@ func init() {
 		{-1, -1, 1, 1, -1, -1, 1, 1, -1, 0, 1, 0, -1, 0, 1, 0, -1, -1, 1, 1},
 		{-1, -1, -1, -1, 1, 1, 1, 1, -1, -1, -1, -1, 1, 1, 1, 1, 0, 0, 0, 0},
 	}
+	hex20.BasicType = "hex8"
+	hex20.BasicNverts = 8
+	hex20.BasicVtkCode = VTK_HEXAHEDRON
 	hex20.init_scratchpad()
 	factory["hex20"] = &hex20
 	ipsfactory["hex20_0"] = ips_hex_27

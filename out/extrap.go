@@ -34,13 +34,13 @@ func ComputeExtrapolatedValues(extrapKeys []string) {
 		var ips []shp.Ipoint
 		switch e := ele.(type) {
 		case *fem.ElemP:
-			sha = e.Shp
+			sha = e.Cell.Shp
 			ips = e.IpsElem
 		case *fem.ElemU:
-			sha = e.Shp
+			sha = e.Cell.Shp
 			ips = e.IpsElem
 		case *fem.ElemUP:
-			sha = e.U.Shp
+			sha = e.U.Cell.Shp
 			ips = e.U.IpsElem
 		}
 		if sha == nil {

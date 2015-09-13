@@ -10,7 +10,6 @@ import (
 	"bytes"
 
 	"github.com/cpmech/gofem/inp"
-	"github.com/cpmech/gofem/shp"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
 )
@@ -104,10 +103,7 @@ func topology(buf *bytes.Buffer) {
 	// connectivities
 	io.Ff(buf, "<Cells>\n<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n")
 	for _, c := range cells {
-		_, nverts := get_cell_info(c.Type)
-		if c.Type == "joint" {
-			nverts = len(c.Verts)
-		}
+		nverts, _ := c.GetInfo(false)
 		for j := 0; j < nverts; j++ {
 			io.Ff(buf, "%d ", c.Verts[j])
 		}
@@ -117,10 +113,7 @@ func topology(buf *bytes.Buffer) {
 	io.Ff(buf, "\n</DataArray>\n<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n")
 	var offset int
 	for _, c := range cells {
-		_, nverts := get_cell_info(c.Type)
-		if c.Type == "joint" {
-			nverts = len(c.Verts)
-		}
+		nverts, _ := c.GetInfo(false)
 		offset += nverts
 		io.Ff(buf, "%d ", offset)
 	}
@@ -128,15 +121,11 @@ func topology(buf *bytes.Buffer) {
 	// types of active elements
 	io.Ff(buf, "\n</DataArray>\n<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n")
 	for _, c := range cells {
-		ctype, _ := get_cell_info(c.Type)
-		vtk := shp.GetVtkCode(ctype)
-		if ctype == "joint" {
-			vtk = shp.VTK_POLY_VERTEX
+		_, vtkcode := c.GetInfo(false)
+		if vtkcode < 0 {
+			chk.Panic("cannot handle cell type %q", c.Shp.Type)
 		}
-		if vtk < 0 {
-			chk.Panic("cannot handle cell type %q", c.Type)
-		}
-		io.Ff(buf, "%d ", vtk)
+		io.Ff(buf, "%d ", vtkcode)
 	}
 	io.Ff(buf, "\n</DataArray>\n</Cells>\n")
 	return
@@ -192,13 +181,4 @@ func iabs(val int) int {
 		return -val
 	}
 	return val
-}
-
-func get_cell_info(ctype string) (ctypeNew string, nverts int) {
-	ctypeNew = ctype
-	if ctypeNew == "qua9" {
-		ctypeNew = "qua8"
-	}
-	nverts = shp.GetNverts(ctypeNew)
-	return
 }

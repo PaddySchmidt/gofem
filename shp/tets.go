@@ -14,7 +14,6 @@ func init() {
 	tet4.Type = "tet4"
 	tet4.Func = Tet4
 	tet4.FaceFunc = Tri3
-	tet4.BasicType = "tet4"
 	tet4.FaceType = "tri3"
 	tet4.Gndim = 3
 	tet4.Nverts = 4
@@ -26,6 +25,9 @@ func init() {
 		{0, 0, 1, 0},
 		{0, 0, 0, 1},
 	}
+	tet4.BasicType = "tet4"
+	tet4.BasicNverts = 4
+	tet4.BasicVtkCode = VTK_TETRA
 	tet4.init_scratchpad()
 	factory["tet4"] = &tet4
 	ipsfactory["tet4_0"] = ips_tet_1
@@ -37,7 +39,6 @@ func init() {
 	tet10.Type = "tet10"
 	tet10.Func = Tet10
 	tet10.FaceFunc = Tri6
-	tet10.BasicType = "tet4"
 	tet10.FaceType = "tri6"
 	tet10.Gndim = 3
 	tet10.Nverts = 10
@@ -49,6 +50,9 @@ func init() {
 		{0, 0, 1, 0, 0, 0.5, 0.5, 0, 0, 0.5},
 		{0, 0, 0, 1, 0, 0, 0, 0.5, 0.5, 0.5},
 	}
+	tet10.BasicType = "tet4"
+	tet10.BasicNverts = 4
+	tet10.BasicVtkCode = VTK_TETRA
 	tet10.init_scratchpad()
 	factory["tet10"] = &tet10
 	ipsfactory["tet10_0"] = ips_tet_4

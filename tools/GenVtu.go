@@ -297,10 +297,7 @@ func topology(buf *bytes.Buffer, ips, lbb bool) {
 	} else {
 		for _, e := range elems {
 			cell := cells[e.Id()]
-			_, nverts := get_cell_info(cell.Type, lbb)
-			if cell.Type == "joint" {
-				nverts = len(cell.Verts)
-			}
+			nverts, _ := cell.GetInfo(lbb)
 			for j := 0; j < nverts; j++ {
 				io.Ff(buf, "%d ", cell.Verts[j])
 			}
@@ -318,10 +315,7 @@ func topology(buf *bytes.Buffer, ips, lbb bool) {
 	} else {
 		for _, e := range elems {
 			cell := cells[e.Id()]
-			_, nverts := get_cell_info(cell.Type, lbb)
-			if cell.Type == "joint" {
-				nverts = len(cell.Verts)
-			}
+			nverts, _ := cell.GetInfo(lbb)
 			offset += nverts
 			io.Ff(buf, "%d ", offset)
 		}
@@ -336,15 +330,11 @@ func topology(buf *bytes.Buffer, ips, lbb bool) {
 	} else {
 		for _, e := range elems {
 			cell := cells[e.Id()]
-			ctype, _ := get_cell_info(cell.Type, lbb)
-			vtk := shp.GetVtkCode(ctype)
-			if ctype == "joint" {
-				vtk = shp.VTK_POLY_VERTEX
+			_, vtkcode := cell.GetInfo(lbb)
+			if vtkcode < 0 {
+				chk.Panic("cannot handle cell type %q", cell.Shp.Type)
 			}
-			if vtk < 0 {
-				chk.Panic("cannot handle cell type %q", cell.Type)
-			}
-			io.Ff(buf, "%d ", vtk)
+			io.Ff(buf, "%d ", vtkcode)
 		}
 	}
 	io.Ff(buf, "\n</DataArray>\n</Cells>\n")
@@ -492,16 +482,4 @@ func iabs(val int) int {
 		return -val
 	}
 	return val
-}
-
-func get_cell_info(ctype string, lbb bool) (ctypeNew string, nverts int) {
-	ctypeNew = ctype
-	if ctypeNew == "qua9" {
-		ctypeNew = "qua8"
-	}
-	if lbb {
-		ctypeNew = shp.GetBasicType(ctypeNew)
-	}
-	nverts = shp.GetNverts(ctypeNew)
-	return
 }

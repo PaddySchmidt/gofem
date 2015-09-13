@@ -13,7 +13,6 @@ func init() {
 	qua4.Type = "qua4"
 	qua4.Func = Qua4
 	qua4.FaceFunc = Lin2
-	qua4.BasicType = "qua4"
 	qua4.FaceType = "lin2"
 	qua4.Gndim = 2
 	qua4.Nverts = 4
@@ -24,6 +23,9 @@ func init() {
 		{-1, 1, 1, -1},
 		{-1, -1, 1, 1},
 	}
+	qua4.BasicType = "qua4"
+	qua4.BasicNverts = 4
+	qua4.BasicVtkCode = VTK_QUAD
 	qua4.init_scratchpad()
 	factory["qua4"] = &qua4
 	ipsfactory["qua4_0"] = ips_qua_4
@@ -34,7 +36,6 @@ func init() {
 	qua8.Type = "qua8"
 	qua8.Func = Qua8
 	qua8.FaceFunc = Lin3
-	qua8.BasicType = "qua4"
 	qua8.FaceType = "lin3"
 	qua8.Gndim = 2
 	qua8.Nverts = 8
@@ -45,6 +46,9 @@ func init() {
 		{-1, 1, 1, -1, 0, 1, 0, -1},
 		{-1, -1, 1, 1, -1, 0, 1, 0},
 	}
+	qua8.BasicType = "qua4"
+	qua8.BasicNverts = 4
+	qua8.BasicVtkCode = VTK_QUAD
 	qua8.init_scratchpad()
 	factory["qua8"] = &qua8
 	ipsfactory["qua8_0"] = ips_qua_9
@@ -55,7 +59,6 @@ func init() {
 	qua9.Type = "qua9"
 	qua9.Func = Qua9
 	qua9.FaceFunc = Lin3
-	qua9.BasicType = "qua4"
 	qua9.FaceType = "lin3"
 	qua9.Gndim = 2
 	qua9.Nverts = 9
@@ -66,6 +69,9 @@ func init() {
 		{-1, 1, 1, -1, 0, 1, 0, -1, 0},
 		{-1, -1, 1, 1, -1, 0, 1, 0, 0},
 	}
+	qua9.BasicType = "qua4"
+	qua9.BasicNverts = 4
+	qua9.BasicVtkCode = VTK_QUAD
 	qua9.init_scratchpad()
 	factory["qua9"] = &qua9
 	ipsfactory["qua9_0"] = ips_qua_9
@@ -76,7 +82,6 @@ func init() {
 	qua12.Type = "qua12"
 	qua12.Func = Qua12
 	qua12.FaceFunc = Lin4
-	qua12.BasicType = "qua4"
 	qua12.FaceType = "lin4"
 	qua12.Gndim = 2
 	qua12.Nverts = 12
@@ -87,6 +92,9 @@ func init() {
 		{-1, 1, 1, -1, -1.0 / 3.0, 1, 1.0 / 3.0, -1, 1.0 / 3.0, 1, -1.0 / 3.0, -1},
 		{-1, -1, 1, 1, -1, -1.0 / 3.0, 1, 1.0 / 3.0, -1, 1.0 / 3.0, 1, -1.0 / 3.0},
 	}
+	qua12.BasicType = "qua4"
+	qua12.BasicNverts = 4
+	qua12.BasicVtkCode = VTK_QUAD
 	qua12.init_scratchpad()
 	factory["qua12"] = &qua12
 	ipsfactory["qua12_0"] = ips_qua_9
@@ -96,7 +104,6 @@ func init() {
 	qua16.Type = "qua16"
 	qua16.Func = Qua16
 	qua16.FaceFunc = Lin4
-	qua16.BasicType = "qua4"
 	qua16.FaceType = "lin4"
 	qua16.Gndim = 2
 	qua16.Nverts = 16
@@ -107,6 +114,9 @@ func init() {
 		{-1, 1, 1, -1, -1.0 / 3.0, 1, 1.0 / 3.0, -1, 1.0 / 3.0, 1, -1.0 / 3.0, -1, -1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0, -1.0 / 3.0},
 		{-1, -1, 1, 1, -1, -1.0 / 3.0, 1, 1.0 / 3.0, -1, 1.0 / 3.0, 1, -1.0 / 3.0, -1.0 / 3.0, -1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0},
 	}
+	qua16.BasicType = "qua4"
+	qua16.BasicNverts = 4
+	qua16.BasicVtkCode = VTK_QUAD
 	qua16.init_scratchpad()
 	factory["qua16"] = &qua16
 	ipsfactory["qua16_0"] = ips_qua_9
