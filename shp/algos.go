@@ -198,12 +198,12 @@ func (o *Shape) Extrapolator(E [][]float64, ips []Ipoint) (err error) {
 
 // CellBryDist returns the shortest distance between R and the boundary of the cell in natural coordinates
 // TODO: test this
-func CellBryDist(cellType string, R []float64) float64 {
+func (o *Shape) CellBryDist(R []float64) float64 {
 	r, s, t := R[0], R[1], 0.0
 	if len(R) > 2 {
 		t = R[2]
 	}
-	bgeo := GetBasicType(cellType) // fundamental geometry of cell
+	bgeo := o.BasicType // fundamental geometry of cell
 	if bgeo == "tri3" {
 		return utl.Min(r, utl.Min(s, 1.0-r-s))
 	}
@@ -216,16 +216,16 @@ func CellBryDist(cellType string, R []float64) float64 {
 	if bgeo == "tet4" {
 		return utl.Min(r, utl.Min(s, utl.Min(t, 1.0-r-s-t)))
 	}
-	chk.Panic("cannot handle cellType=%q yet", cellType)
+	chk.Panic("cannot handle BasicType=%q yet", bgeo)
 	return 0 // must not reach this point
 }
 
-func CellBryDistDeriv(dfdR []float64, cellType string, R []float64) {
+func (o *Shape) CellBryDistDeriv(dfdR []float64, R []float64) {
 	r, s, t := R[0], R[1], 0.0
 	if len(R) > 2 {
 		t = R[2]
 	}
-	bgeo := GetBasicType(cellType) // fundamental geometry of cell
+	bgeo := o.BasicType // fundamental geometry of cell
 	if bgeo == "tri3" {
 		chk.Panic("deriv for tri3 is not implemented yet")
 	}
@@ -254,5 +254,5 @@ func CellBryDistDeriv(dfdR []float64, cellType string, R []float64) {
 	if bgeo == "tet4" {
 		chk.Panic("deriv for tet4 is not implemented yet")
 	}
-	chk.Panic("cannot handle cellType=%q yet", cellType) // must not reach this point
+	chk.Panic("cannot handle BasicType=%q yet", bgeo) // must not reach this point
 }
