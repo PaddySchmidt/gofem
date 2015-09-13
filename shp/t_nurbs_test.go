@@ -69,6 +69,7 @@ func Test_nurbs01(tst *testing.T) {
 	chk.PrintTitle("nurbs01")
 
 	nurbs := get_nurbs_A()
+	faces := nurbs.ExtractSurfaces()
 	spans := nurbs.Elements()
 	ibasis0 := nurbs.IndBasis(spans[0])
 	ibasis1 := nurbs.IndBasis(spans[1])
@@ -78,8 +79,8 @@ func Test_nurbs01(tst *testing.T) {
 	chk.Ints(tst, "ibasis0", ibasis0, []int{0, 1, 2, 4, 5, 6})
 	chk.Ints(tst, "ibasis1", ibasis1, []int{1, 2, 3, 5, 6, 7})
 
-	shape0 := GetShapeNurbs(nurbs, spans[0])
-	shape1 := GetShapeNurbs(nurbs, spans[1])
+	shape0 := GetShapeNurbs(nurbs, faces, spans[0])
+	shape1 := GetShapeNurbs(nurbs, faces, spans[1])
 
 	dux := 0.5
 	duy := 1.0
@@ -118,9 +119,10 @@ func Test_nurbs02(tst *testing.T) {
 	chk.PrintTitle("nurbs02")
 
 	nurbs := get_nurbs_A()
+	faces := nurbs.ExtractSurfaces()
 	spans := nurbs.Elements()
-	shape0 := GetShapeNurbs(nurbs, spans[0])
-	shape1 := GetShapeNurbs(nurbs, spans[1])
+	shape0 := GetShapeNurbs(nurbs, faces, spans[0])
+	shape1 := GetShapeNurbs(nurbs, faces, spans[1])
 	C0 := [][]float64{{5, 10}, {6.5, 10}, {6.5, 13}, {5, 13}}
 	C1 := [][]float64{{6.5, 10}, {8, 10}, {8, 13}, {6.5, 13}}
 
@@ -138,13 +140,14 @@ func Test_nurbs02(tst *testing.T) {
 	CheckDSdR(tst, shape1, r, tol, verb)
 
 	X0 := get_nurbs_xmat(nurbs, shape0.Ibasis)
-	X1 := get_nurbs_xmat(nurbs, shape0.Ibasis)
+	X1 := get_nurbs_xmat(nurbs, shape1.Ibasis)
 	io.Pforan("X0 = %v\n", X0)
 	io.Pforan("X1 = %v\n", X1)
 
 	tol = 1e-10
 	x := []float64{6, 12.5}
 	CheckDSdx(tst, shape0, X0, x, tol, verb)
+	x = []float64{7, 12.5}
 	CheckDSdx(tst, shape1, X1, x, tol, verb)
 }
 
@@ -154,9 +157,10 @@ func Test_nurbs03(tst *testing.T) {
 	chk.PrintTitle("nurbs03")
 
 	nurbs := get_nurbs_B()
+	faces := nurbs.ExtractSurfaces()
 	spans := nurbs.Elements()
-	shape0 := GetShapeNurbs(nurbs, spans[0])
-	shape1 := GetShapeNurbs(nurbs, spans[1])
+	shape0 := GetShapeNurbs(nurbs, faces, spans[0])
+	shape1 := GetShapeNurbs(nurbs, faces, spans[1])
 	C0 := [][]float64{{5, 10}, {6.5, 11}, {6.5, 12}, {5, 13}}
 	C1 := [][]float64{{6.5, 11}, {8, 10}, {8, 13}, {6.5, 12}}
 
@@ -174,13 +178,14 @@ func Test_nurbs03(tst *testing.T) {
 	CheckDSdR(tst, shape1, r, tol, verb)
 
 	X0 := get_nurbs_xmat(nurbs, shape0.Ibasis)
-	X1 := get_nurbs_xmat(nurbs, shape0.Ibasis)
+	X1 := get_nurbs_xmat(nurbs, shape1.Ibasis)
 	io.Pforan("X0 = %v\n", X0)
 	io.Pforan("X1 = %v\n", X1)
 
 	tol = 1e-9
 	x := []float64{6, 12}
 	CheckDSdx(tst, shape0, X0, x, tol, verb)
+	x = []float64{7, 12}
 	CheckDSdx(tst, shape1, X1, x, tol, verb)
 
 	if false {
