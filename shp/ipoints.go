@@ -9,6 +9,7 @@ import (
 
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
+	"github.com/cpmech/gosl/utl"
 )
 
 // Ipoint implements integration point data: natural coordinates and weight
@@ -20,10 +21,50 @@ var ipsfactory = make(map[string][]Ipoint)
 // GetIps returns a set of integration points
 //  If the number (nips) of integration points is zero, it returns a default set
 func (o *Shape) GetIps(nips, nipf int) (ips, ipf []Ipoint, err error) {
+
+	// NURBS
 	if o.Type == "nurbs" {
-		chk.Panic("not yet")
+		maxord := o.Nurbs.Ord(0)
+		for i := 1; i < o.Gndim; i++ {
+			maxord = utl.Imax(maxord, o.Nurbs.Ord(i))
+		}
+		switch o.Gndim {
+		case 1:
+			switch maxord {
+			case 1:
+				ips = ips_lin_2
+			case 2:
+				ips = ips_lin_3
+			default:
+				err = chk.Err("1D NURBS: cannot get integration points with maxord=%d", maxord)
+			}
+		case 2:
+			switch maxord {
+			case 1:
+				ips = ips_qua_4
+				ipf = ips_lin_2
+			case 2:
+				ips = ips_qua_9
+				ipf = ips_lin_3
+			default:
+				err = chk.Err("2D NURBS: cannot get integration points with maxord=%d", maxord)
+			}
+		case 3:
+			switch maxord {
+			case 1:
+				ips = ips_hex_8
+				ipf = ips_qua_4
+			case 2:
+				ips = ips_hex_27
+				ipf = ips_qua_9
+			default:
+				err = chk.Err("3D NURBS: cannot get integration points with maxord=%d", maxord)
+			}
+		}
 		return
 	}
+
+	// Lagrangean elements
 	var ok bool
 	key := io.Sf("%s_%d", o.Type, nips)
 	ips, ok = ipsfactory[key]
