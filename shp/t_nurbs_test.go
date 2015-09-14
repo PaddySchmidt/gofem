@@ -203,46 +203,11 @@ func Test_nurbs04(tst *testing.T) {
 	faces := nurbs.ExtractSurfaces()
 	spans := nurbs.Elements()
 	shape0 := GetShapeNurbs(nurbs, faces, spans[0])
-	shape5 := GetShapeNurbs(nurbs, faces, spans[5])
-	shape6 := GetShapeNurbs(nurbs, faces, spans[6])
-	shape11 := GetShapeNurbs(nurbs, faces, spans[11])
-	shape12 := GetShapeNurbs(nurbs, faces, spans[12])
-	shape17 := GetShapeNurbs(nurbs, faces, spans[17])
 
 	chk.Ints(tst, "V0_0", shape0.FaceLocalVerts[0], []int{0, 1, 2})
-	chk.Ints(tst, "V0_1", shape0.FaceLocalVerts[1], []int{})
-	chk.Ints(tst, "V0_2", shape0.FaceLocalVerts[2], []int{})
-	chk.Ints(tst, "V0_3", shape0.FaceLocalVerts[3], []int{0, 8})
-
-	chk.Ints(tst, "V5_0", shape5.FaceLocalVerts[0], []int{5, 6, 7})
-	chk.Ints(tst, "V5_1", shape5.FaceLocalVerts[1], []int{7, 15})
-	chk.Ints(tst, "V5_2", shape5.FaceLocalVerts[2], []int{})
-	chk.Ints(tst, "V5_3", shape5.FaceLocalVerts[3], []int{})
-
-	chk.Ints(tst, "V6_0", shape6.FaceLocalVerts[0], []int{})
-	chk.Ints(tst, "V6_1", shape6.FaceLocalVerts[1], []int{})
-	chk.Ints(tst, "V6_2", shape6.FaceLocalVerts[2], []int{})
-	chk.Ints(tst, "V6_3", shape6.FaceLocalVerts[3], []int{8, 16})
-
-	chk.Ints(tst, "V11_0", shape11.FaceLocalVerts[0], []int{})
-	chk.Ints(tst, "V11_1", shape11.FaceLocalVerts[1], []int{15, 23})
-	chk.Ints(tst, "V11_2", shape11.FaceLocalVerts[2], []int{})
-	chk.Ints(tst, "V11_3", shape11.FaceLocalVerts[3], []int{})
-
-	chk.Ints(tst, "V12_0", shape12.FaceLocalVerts[0], []int{})
-	chk.Ints(tst, "V12_1", shape12.FaceLocalVerts[1], []int{})
-	chk.Ints(tst, "V12_2", shape12.FaceLocalVerts[2], []int{24, 25, 26})
-	chk.Ints(tst, "V12_3", shape12.FaceLocalVerts[3], []int{16, 24})
-
-	chk.Ints(tst, "V17_0", shape17.FaceLocalVerts[0], []int{})
-	chk.Ints(tst, "V17_1", shape17.FaceLocalVerts[1], []int{23, 31})
-	chk.Ints(tst, "V17_2", shape17.FaceLocalVerts[2], []int{29, 30, 31})
-	chk.Ints(tst, "V17_3", shape17.FaceLocalVerts[3], []int{})
-
-	//r := []float64{0.75, 0, 0}
-	//idxface := 0
-	//shape7.FaceFunc(shape7.Sf, shape7.DSfdRf, r, true, idxface)
-	//io.Pforan("Sf = %v\n", shape7.Sf)
+	chk.Ints(tst, "V0_1", shape0.FaceLocalVerts[1], []int{2, 5})
+	chk.Ints(tst, "V0_2", shape0.FaceLocalVerts[2], []int{3, 4, 5})
+	chk.Ints(tst, "V0_3", shape0.FaceLocalVerts[3], []int{0, 3})
 }
 
 func get_nurbs_xmat(nurbs *gm.Nurbs, ibasis []int) (xmat [][]float64) {

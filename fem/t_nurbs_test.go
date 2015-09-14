@@ -230,3 +230,26 @@ func Test_nurbs03(tst *testing.T) {
 		sol.CheckDispl(tst, t, u, n.Vert.C, tolu)
 	}
 }
+
+func Test_nurbs04(tst *testing.T) {
+
+	verbose()
+	chk.PrintTitle("nurbs04. perforated disk")
+
+	// fem
+	analysis := NewFEM("data/nurbs04.sim", "", true, false, false, false, chk.Verbose, 0)
+
+	// run simulation
+	err := analysis.Run()
+	if err != nil {
+		tst.Errorf("Run failed\n%v", err)
+		return
+	}
+
+	// draw NURBS
+	if false {
+		dom := analysis.Domains[0]
+		nurbs := dom.Msh.Cells[0].Shp.Nurbs
+		gm.PlotNurbs("/tmp/gofem", "test_nurbs04", nurbs)
+	}
+}

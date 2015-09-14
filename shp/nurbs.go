@@ -39,7 +39,7 @@ func GetShapeNurbs(nurbs *gm.Nurbs, nrbfaces []*gm.Nurbs, span []int) (o *Shape)
 
 	// faces basic data
 	nfaces := 2 * o.Gndim
-	o.FaceLocalVerts = make([][]int, nfaces)
+	o.FaceLocalVerts = nurbs.ElemBryLocalInds()
 	if o.Gndim == 3 {
 		o.NurbsFaces = nrbfaces
 		o.SpanFace = [][]int{
@@ -60,50 +60,6 @@ func GetShapeNurbs(nurbs *gm.Nurbs, nrbfaces []*gm.Nurbs, span []int) (o *Shape)
 			o.FaceNvertsMax = len(o.IbasisFace[idxface])
 		} else {
 			o.FaceNvertsMax = utl.Imax(o.FaceNvertsMax, len(o.IbasisFace[idxface]))
-		}
-	}
-
-	// faces local vertices
-	nbu := nurbs.NumBasis(0)
-	nbv := nurbs.NumBasis(1)
-	ubasis := o.IbasisFace[0]
-	vbasis := o.IbasisFace[1]
-	pu := len(ubasis) - 1
-	pv := len(vbasis) - 1
-	if o.Gndim == 3 {
-		nbw := nurbs.NumBasis(2)
-		wbasis := o.IbasisFace[2]
-		pw := len(wbasis) - 1
-		if ubasis[0] == 0 { // -x
-			o.FaceLocalVerts[0] = o.Nurbs.LocalIndsAlongSurface(1, 2, span[2], span[4], 0)
-		}
-		if ubasis[pu] == nbu-1 { // +x
-			o.FaceLocalVerts[1] = o.Nurbs.LocalIndsAlongSurface(1, 2, span[2], span[4], nbu-1)
-		}
-		if vbasis[0] == 0 { // -y
-			o.FaceLocalVerts[2] = o.Nurbs.LocalIndsAlongSurface(2, 0, span[4], span[0], 0)
-		}
-		if vbasis[pv] == nbv-1 { // +y
-			o.FaceLocalVerts[3] = o.Nurbs.LocalIndsAlongSurface(2, 0, span[4], span[0], nbv-1)
-		}
-		if wbasis[0] == 0 { // -z
-			o.FaceLocalVerts[4] = o.Nurbs.LocalIndsAlongSurface(0, 1, span[0], span[2], 0)
-		}
-		if wbasis[pw] == nbw-1 { // +z
-			o.FaceLocalVerts[5] = o.Nurbs.LocalIndsAlongSurface(0, 1, span[0], span[2], nbw-1)
-		}
-	} else {
-		if ubasis[0] == 0 { // left
-			o.FaceLocalVerts[3] = o.Nurbs.LocalIndsAlongCurve(1, span[2], 0)
-		}
-		if ubasis[pu] == nbu-1 { //right
-			o.FaceLocalVerts[1] = o.Nurbs.LocalIndsAlongCurve(1, span[2], nbu-1)
-		}
-		if vbasis[0] == 0 { // bottom
-			o.FaceLocalVerts[0] = o.Nurbs.LocalIndsAlongCurve(0, span[0], 0)
-		}
-		if vbasis[pv] == nbv-1 { // top
-			o.FaceLocalVerts[2] = o.Nurbs.LocalIndsAlongCurve(0, span[0], nbv-1)
 		}
 	}
 
