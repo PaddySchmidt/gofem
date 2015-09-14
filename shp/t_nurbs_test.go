@@ -86,14 +86,11 @@ func Test_nurbs01(tst *testing.T) {
 	duy := 1.0
 	drx := 2.0
 	dry := 2.0
-	JuCor := (dux / drx) * (duy / dry)
 
 	r := []float64{0.75, 0.75, 0}
 
 	shape0.NurbsFunc(shape0.S, shape0.DSdR, r, true, -1)
-	io.Pforan("0: Ju = %v\n", shape0.Ju)
 	io.Pforan("0: u = %v\n", shape0.U)
-	chk.Scalar(tst, "0: Ju", 1e-17, shape0.Ju, JuCor)
 	chk.Scalar(tst, "0: ux", 1e-17, shape0.U[0], (1.0+r[0])*dux/drx)
 	chk.Scalar(tst, "0: uy", 1e-17, shape0.U[1], (1.0+r[1])*duy/dry)
 	chk.Ints(tst, "0: ibasis", shape0.Ibasis, []int{0, 1, 2, 4, 5, 6})
@@ -101,9 +98,7 @@ func Test_nurbs01(tst *testing.T) {
 	io.Pforan("S(u(r)) = %v\n", shape0.S)
 
 	shape1.NurbsFunc(shape1.S, shape1.DSdR, r, true, -1)
-	io.Pfpink("\n1: Ju = %v\n", shape1.Ju)
-	io.Pfpink("1: u = %v\n", shape1.U)
-	chk.Scalar(tst, "1: Ju", 1e-17, shape1.Ju, JuCor)
+	io.Pfpink("\n1: u = %v\n", shape1.U)
 	chk.Scalar(tst, "1: ux", 1e-17, shape1.U[0], 0.5+(1.0+r[0])*dux/drx)
 	chk.Scalar(tst, "1: uy", 1e-17, shape1.U[1], (1.0+r[1])*duy/dry)
 	chk.Ints(tst, "1: ibasis", shape1.Ibasis, []int{1, 2, 3, 5, 6, 7})

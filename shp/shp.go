@@ -22,23 +22,25 @@ type ShpFunc func(S []float64, dSdR [][]float64, r []float64, derivs bool, idxfa
 type Shape struct {
 
 	// geometry
-	Type           string      // name; e.g. "lin2"
-	Func           ShpFunc     // shape/derivs function callback function
-	FaceFunc       ShpFunc     // face shape/derivs function callback function
-	FaceType       string      // geometry of face; e.g. "qua8" => "lin3"
-	Gndim          int         // geometry of shape; e.g. "lin3" => gnd == 1 (even in 3D simulations)
-	Nverts         int         // number of vertices in cell; e.g. "qua8" => 8
-	VtkCode        int         // VTK code
-	VtkNverts      int         // number of vertices to use in VTK file; e.g. "qua9" => 8 vertices
-	FaceNvertsMax  int         // max number of vertices on face
-	FaceLocalVerts [][]int     // face local vertices [nfaces][...]
-	NatCoords      [][]float64 // natural coordinates [gndim][nverts]
+	Type      string      // name; e.g. "lin2"
+	Func      ShpFunc     // shape/derivs function callback function
+	FaceType  string      // geometry of face; e.g. "qua8" => "lin3"
+	Gndim     int         // geometry of shape; e.g. "lin3" => gnd == 1 (even in 3D simulations)
+	Nverts    int         // number of vertices in cell; e.g. "qua8" => 8
+	VtkCode   int         // VTK code
+	VtkNverts int         // number of vertices to use in VTK file; e.g. "qua9" => 8 vertices
+	NatCoords [][]float64 // natural coordinates [gndim][nverts]
+
+	// face data
+	FaceFunc       ShpFunc // face shape/derivs function callback function
+	FaceNvertsMax  int     // max number of vertices on face
+	FaceLocalVerts [][]int // face local vertices [nfaces][...]
+	FaceFlip       []bool  // [nfaces] flip normal
 
 	// basic type => for plotting or LBB cells
 	BasicType    string // geometry of basic cell; e.g. "qua8" => "qua4"
 	BasicNverts  int    // number of vertices in basic cell; e.g. 8 => 4
 	BasicVtkCode int    // VTK code of basic cell
-	//BasicLocalVerts []int  // local indices of vertices in x matrix corresponding to basic cell
 
 	// geometry: for seams (3D-edges)
 	SeamType       int     // geometry of seam (3D-edge); e.g. "hex8" => "lin2"
@@ -58,7 +60,7 @@ type Shape struct {
 
 	// scratchpad: face
 	Sf     []float64   // [FaceNvertsMax] shape functions values
-	Fnvec  []float64   // [gndim] face normal vector multiplied by Jf (and Ju if NURBS)
+	Fnvec  []float64   // [gndim] face normal vector multiplied by Jf
 	DSfdRf [][]float64 // [FaceNvertsMax][gndim-1] derivatives of Sf w.r.t natural coordinates
 	DxfdRf [][]float64 // [gndim][gndim-1] derivatives of real coordinates w.r.t natural coordinates
 
@@ -70,7 +72,6 @@ type Shape struct {
 	SpanFace   [][]int     // NURBS knots' indices defining cell/element; e.g. [2, 3, 1, 2] for x-quad/y-lin cell
 	IbasisFace [][]int     // indices of basis functions corresponding to Span == local indices of control points
 	U          []float64   // [gndim] NURBS' parametric space coordinates
-	Ju         float64     // parametric-natural mapping Jacobian: determinant of dudr
 }
 
 // GetCopy returns a new copy of this shape structure
@@ -82,15 +83,19 @@ func (o Shape) GetCopy() *Shape {
 	// geometry
 	p.Type = o.Type
 	p.Func = o.Func
-	p.FaceFunc = o.FaceFunc
 	p.BasicType = o.BasicType
 	p.FaceType = o.FaceType
 	p.Gndim = o.Gndim
 	p.Nverts = o.Nverts
 	p.VtkCode = o.VtkCode
+	p.NatCoords = la.MatClone(o.NatCoords)
+
+	// face data
+	p.FaceFunc = o.FaceFunc
 	p.FaceNvertsMax = o.FaceNvertsMax
 	p.FaceLocalVerts = utl.IntsClone(o.FaceLocalVerts)
-	p.NatCoords = la.MatClone(o.NatCoords)
+	p.FaceFlip = make([]bool, len(o.FaceFlip))
+	copy(p.FaceFlip, o.FaceFlip)
 
 	// geometry: for seams (3D-edges)
 	p.SeamType = o.SeamType
@@ -215,11 +220,6 @@ func (o *Shape) CalcAtIp(x [][]float64, ip Ipoint, derivs bool) (err error) {
 		return
 	}
 
-	// fix J if NURBS
-	if o.Nurbs != nil {
-		o.J *= o.Ju
-	}
-
 	// G == dSdx := dSdR * dRdx  =>  dS^m/dR_i := sum_i dS^m/dR_i * dR_i/dx_j
 	la.MatMul(o.G, 1, o.DSdR, o.DRdx)
 	return
@@ -250,7 +250,6 @@ func (o *Shape) CalcAtFaceIp(x [][]float64, ipf Ipoint, idxface int) (err error)
 	}
 
 	// Sf and dSfdR
-	o.Ju = 1.0
 	o.FaceFunc(o.Sf, o.DSfdRf, ipf, true, idxface)
 
 	// dxfdRf := sum_n x * dSfdRf   =>  dxf_i/dRf_j := sum_n xf^n_i * dSf^n/dRf_j
@@ -265,13 +264,22 @@ func (o *Shape) CalcAtFaceIp(x [][]float64, ipf Ipoint, idxface int) (err error)
 
 	// face normal vector
 	if o.Gndim == 2 {
-		o.Fnvec[0] = o.DxfdRf[1][0] * o.Ju
-		o.Fnvec[1] = -o.DxfdRf[0][0] * o.Ju
-		return
+		o.Fnvec[0] = o.DxfdRf[1][0]
+		o.Fnvec[1] = -o.DxfdRf[0][0]
+	} else {
+		o.Fnvec[0] = o.DxfdRf[1][0]*o.DxfdRf[2][1] - o.DxfdRf[2][0]*o.DxfdRf[1][1]
+		o.Fnvec[1] = o.DxfdRf[2][0]*o.DxfdRf[0][1] - o.DxfdRf[0][0]*o.DxfdRf[2][1]
+		o.Fnvec[2] = o.DxfdRf[0][0]*o.DxfdRf[1][1] - o.DxfdRf[1][0]*o.DxfdRf[0][1]
 	}
-	o.Fnvec[0] = (o.DxfdRf[1][0]*o.DxfdRf[2][1] - o.DxfdRf[2][0]*o.DxfdRf[1][1]) * o.Ju
-	o.Fnvec[1] = (o.DxfdRf[2][0]*o.DxfdRf[0][1] - o.DxfdRf[0][0]*o.DxfdRf[2][1]) * o.Ju
-	o.Fnvec[2] = (o.DxfdRf[0][0]*o.DxfdRf[1][1] - o.DxfdRf[1][0]*o.DxfdRf[0][1]) * o.Ju
+
+	// flip normal vector
+	if len(o.FaceFlip) > 0 {
+		if o.FaceFlip[idxface] {
+			for i := 0; i < o.Gndim; i++ {
+				o.Fnvec[i] *= -1.0
+			}
+		}
+	}
 	return
 }
 

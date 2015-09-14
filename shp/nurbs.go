@@ -47,9 +47,11 @@ func GetShapeNurbs(nurbs *gm.Nurbs, nrbfaces []*gm.Nurbs, span []int) (o *Shape)
 			span[2:4], span[2:4],
 			span[4:6], span[4:6],
 		}
+		o.FaceFlip = []bool{false, true, false, true, false, true} // => point to the inside
 	} else {
 		o.NurbsFaces = []*gm.Nurbs{nrbfaces[2], nrbfaces[1], nrbfaces[3], nrbfaces[0]}
 		o.SpanFace = [][]int{span[0:2], span[2:4], span[0:2], span[2:4]}
+		o.FaceFlip = []bool{false, false, true, true} // => point to the inside
 	}
 	o.IbasisFace = make([][]int, nfaces)
 	for idxface, face := range o.NurbsFaces {
@@ -111,17 +113,15 @@ func GetShapeNurbs(nurbs *gm.Nurbs, nrbfaces []*gm.Nurbs, span []int) (o *Shape)
 }
 
 // nurbs_func implements shape/deriv functions for NURBS
-func nurbs_func(u, S []float64, dSdR [][]float64, r []float64, derivs bool, nurbs *gm.Nurbs, ibasis, span []int) (Ju float64) {
+func nurbs_func(u, S []float64, dSdR [][]float64, r []float64, derivs bool, nurbs *gm.Nurbs, ibasis, span []int) {
 
 	// compute mapping to knots space
 	nd := nurbs.Gnd()
-	Ju = 1.0 // det(dudr) => du = Ju * dr
 	var umin, umax float64
 	for i := 0; i < nd; i++ {
 		umin = nurbs.U(i, span[i*2])
 		umax = nurbs.U(i, span[i*2+1])
 		u[i] = ((umax-umin)*r[i] + (umax + umin)) / 2.0
-		Ju *= (umax - umin) / 2.0
 		if u[i] < umin || u[i] > umax {
 			chk.Panic("cannot compute NURBS shape function outide cell range:\nr[%d]=%v, u[%d]=%v, urange=[%v,%v]", i, r[i], i, u[i], umin, umax)
 		}
@@ -153,10 +153,10 @@ func nurbs_func(u, S []float64, dSdR [][]float64, r []float64, derivs bool, nurb
 
 // NurbsFunc implements shape/deriv functions for NURBS
 func (o *Shape) NurbsFunc(S []float64, dSdR [][]float64, r []float64, derivs bool, idxface int) {
-	o.Ju = nurbs_func(o.U, S, dSdR, r, derivs, o.Nurbs, o.Ibasis, o.Span)
+	nurbs_func(o.U, S, dSdR, r, derivs, o.Nurbs, o.Ibasis, o.Span)
 }
 
 // NurbsFaceFunc implements shape/deriv functions for faces of NURBS
 func (o *Shape) NurbsFaceFunc(S []float64, dSdR [][]float64, r []float64, derivs bool, idxface int) {
-	o.Ju = nurbs_func(o.U, S, dSdR, r, derivs, o.NurbsFaces[idxface], o.IbasisFace[idxface], o.SpanFace[idxface])
+	nurbs_func(o.U, S, dSdR, r, derivs, o.NurbsFaces[idxface], o.IbasisFace[idxface], o.SpanFace[idxface])
 }
