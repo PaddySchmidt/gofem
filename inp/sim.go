@@ -117,6 +117,7 @@ type Region struct {
 	Desc      string      `json:"desc"`      // description of region. ex: ground, indenter, etc.
 	Mshfile   string      `json:"mshfile"`   // file path of file with mesh data
 	ElemsData []*ElemData `json:"elemsdata"` // list of elements data
+	AbsPath   bool        `json:"abspath"`   // mesh filename is given in absolute path
 
 	// derived
 	Msh      *Mesh       // the mesh
@@ -325,7 +326,11 @@ func ReadSim(simfilepath, alias string, erasefiles bool, goroutineId int) *Simul
 	for i, reg := range o.Regions {
 
 		// read mesh
-		reg.Msh, err = ReadMsh(dir, reg.Mshfile, goroutineId)
+		ddir := dir
+		if reg.AbsPath {
+			ddir = ""
+		}
+		reg.Msh, err = ReadMsh(ddir, reg.Mshfile, goroutineId)
 		if err != nil {
 			chk.Panic("ReadSim: cannot read mesh file:\n%v", err)
 		}
