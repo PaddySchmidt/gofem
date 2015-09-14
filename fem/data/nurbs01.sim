@@ -1,0 +1,32 @@
+{
+  "data" : {
+    "desc"    : "one qua4 (NURBS)",
+    "matfile" : "simple.mat",
+    "steady"  : true,
+    "showR"   : true
+  },
+  "functions" : [
+    { "name":"qn0H", "type":"cte", "prms":[{"n":"c", "v":-50 }] },
+    { "name":"qn0V", "type":"cte", "prms":[{"n":"c", "v":-100 }] }
+  ],
+  "regions" : [
+    {
+      "mshfile" : "nurbs01.msh",
+      "elemsdata" : [
+        { "tag":-1, "mat":"elast", "type":"u" }
+      ]
+    }
+  ],
+  "stages" : [
+    {
+      "desc" : "apply load",
+      "inistress" : { "hom":true, "psa":true, "sh":-50, "sv":-100, "nu":0.25 },
+      "facebcs" : [
+        { "tag":-10, "keys":["uy"], "funcs":["zero"] },
+        { "tag":-13, "keys":["ux"], "funcs":["zero"] },
+        { "tag":-11, "keys":["qn0"], "funcs":["qn0H"] },
+        { "tag":-12, "keys":["qn0"], "funcs":["qn0V"] }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "data" : {
-    "desc"    : "one qua4",
+    "desc"    : "one qua4 (NURBS)",
     "matfile" : "simple.mat",
     "steady"  : true,
     "showR"   : true
@@ -13,7 +13,7 @@
   ],
   "regions" : [
     {
-      "mshfile" : "onequa4.msh",
+      "mshfile" : "nurbs01.msh",
       "elemsdata" : [
         { "tag":-1, "mat":"elast", "type":"u", "extra":"!debug:1" }
       ]

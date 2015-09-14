@@ -5,22 +5,37 @@
 package fem
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/cpmech/gofem/ana"
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
+	"github.com/cpmech/gosl/gm"
 	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/la"
+	"github.com/cpmech/gosl/utl"
 )
 
-func Test_sigini01(tst *testing.T) {
+func Test_nurbs01(tst *testing.T) {
+
+	/*  4 (1,2)             (2,2) 6
+	    5  2@o--------------o@3   7
+	         |              |
+	         |              |      @     -- control point
+	         |              |      o     -- node
+	         |              |      (a,b) -- span
+	         |              |
+	         |              |
+	    0  0@o--------------o@1   2
+	    1 (1,1)             (2,1) 3
+	*/
 
 	//verbose()
-	chk.PrintTitle("sigini01. zero displacements. initial stresses")
+	chk.PrintTitle("nurb01. square with initial stress")
 
 	// fem
-	analysis := NewFEM("data/sigini01.sim", "", true, false, false, false, chk.Verbose, 0)
+	analysis := NewFEM("data/nurbs01.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// set stage
 	err := analysis.SetStage(0)
@@ -38,6 +53,60 @@ func Test_sigini01(tst *testing.T) {
 
 	// domain
 	dom := analysis.Domains[0]
+
+	// draw NURBS
+	if false {
+		nurbs := dom.Msh.Cells[0].Shp.Nurbs
+		gm.PlotNurbs("/tmp/gofem", "test_nurbs01", nurbs)
+	}
+
+	// nodes and elements
+	chk.IntAssert(len(dom.Nodes), 4)
+	chk.IntAssert(len(dom.Elems), 1)
+
+	// check dofs
+	for _, nod := range dom.Nodes {
+		chk.IntAssert(len(nod.Dofs), 2)
+		chk.StrAssert(nod.Dofs[0].Key, "ux")
+		chk.StrAssert(nod.Dofs[1].Key, "uy")
+	}
+
+	// check equations
+	nids, eqs := get_nids_eqs(dom)
+	chk.Ints(tst, "eqs", eqs, utl.IntRange(4*2))
+	chk.Ints(tst, "nids", nids, []int{0, 1, 2, 3})
+
+	// check Umap
+	Umaps := [][]int{
+		{0, 1, 2, 3, 4, 5, 6, 7},
+	}
+	for i, ele := range dom.Elems {
+		e := ele.(*ElemU)
+		io.Pfpink("%2d : Umap = %v\n", e.Id(), e.Umap)
+		chk.Ints(tst, "Umap", e.Umap, Umaps[i])
+	}
+
+	// constraints
+	chk.IntAssert(len(dom.EssenBcs.Bcs), 4)
+	var ct_ux_eqs []int // equations with ux prescribed [sorted]
+	var ct_uy_eqs []int // equations with uy prescribed [sorted]
+	for _, c := range dom.EssenBcs.Bcs {
+		chk.IntAssert(len(c.Eqs), 1)
+		eq := c.Eqs[0]
+		io.Pfgrey("key=%v eq=%v\n", c.Key, eq)
+		switch c.Key {
+		case "ux":
+			ct_ux_eqs = append(ct_ux_eqs, eq)
+		case "uy":
+			ct_uy_eqs = append(ct_uy_eqs, eq)
+		default:
+			tst.Errorf("key %s is incorrect", c.Key)
+		}
+	}
+	sort.Ints(ct_ux_eqs)
+	sort.Ints(ct_uy_eqs)
+	chk.Ints(tst, "equations with ux prescribed", ct_ux_eqs, []int{0, 4})
+	chk.Ints(tst, "equations with uy prescribed", ct_uy_eqs, []int{1, 3})
 
 	// check displacements
 	tolu := 1e-16
@@ -65,13 +134,13 @@ func Test_sigini01(tst *testing.T) {
 	}
 }
 
-func Test_sigini02(tst *testing.T) {
+func Test_nurbs02(tst *testing.T) {
 
 	//verbose()
-	chk.PrintTitle("sigini02. initial stresses. run simulation")
+	chk.PrintTitle("nurbs02. square with initial stress. run")
 
 	// fem
-	analysis := NewFEM("data/sigini02.sim", "", true, false, false, false, chk.Verbose, 0)
+	analysis := NewFEM("data/nurbs02.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := analysis.Run()
@@ -83,7 +152,6 @@ func Test_sigini02(tst *testing.T) {
 	// domain
 	dom := analysis.Domains[0]
 
-	// external force
 	e := dom.Elems[0].(*ElemU)
 	io.PfYel("fex = %v\n", e.fex)
 	io.PfYel("fey = %v\n", e.fey)
@@ -105,26 +173,29 @@ func Test_sigini02(tst *testing.T) {
 		eqx := n.GetEq("ux")
 		eqy := n.GetEq("uy")
 		u := []float64{dom.Sol.Y[eqx], dom.Sol.Y[eqy]}
+		io.Pfyel("u = %v\n", u)
 		sol.CheckDispl(tst, t, u, n.Vert.C, tolu)
 	}
 
-	// check stresses
-	tols := 1e-13
-	for idx, ip := range e.IpsElem {
-		x := e.Cell.Shp.IpRealCoords(e.X, ip)
-		σ := e.States[idx].Sig
-		io.Pforan("σ = %v\n", σ)
-		sol.CheckStress(tst, t, σ, x, tols)
+	if false {
+		// check stresses
+		tols := 1e-13
+		for idx, ip := range e.IpsElem {
+			x := e.Cell.Shp.IpRealCoords(e.X, ip)
+			σ := e.States[idx].Sig
+			io.Pforan("σ = %v\n", σ)
+			sol.CheckStress(tst, t, σ, x, tols)
+		}
 	}
 }
 
-func Test_square01(tst *testing.T) {
+func Test_nurbs03(tst *testing.T) {
 
 	//verbose()
-	chk.PrintTitle("square01. ini stress free square")
+	chk.PrintTitle("nurbs03. ini stress free square")
 
 	// fem
-	analysis := NewFEM("data/square01.sim", "", true, false, false, false, chk.Verbose, 0)
+	analysis := NewFEM("data/nurbs03.sim", "", true, false, false, false, chk.Verbose, 0)
 
 	// run simulation
 	err := analysis.Run()
@@ -136,7 +207,6 @@ func Test_square01(tst *testing.T) {
 	// domain
 	dom := analysis.Domains[0]
 
-	// external force
 	e := dom.Elems[0].(*ElemU)
 	io.PfYel("fex = %v\n", e.fex)
 	io.PfYel("fey = %v\n", e.fey)
@@ -158,14 +228,5 @@ func Test_square01(tst *testing.T) {
 		u := []float64{dom.Sol.Y[eqx], dom.Sol.Y[eqy]}
 		io.Pfyel("u = %v\n", u)
 		sol.CheckDispl(tst, t, u, n.Vert.C, tolu)
-	}
-
-	// check stresses
-	tols := 1e-13
-	for idx, ip := range e.IpsElem {
-		x := e.Cell.Shp.IpRealCoords(e.X, ip)
-		σ := e.States[idx].Sig
-		io.Pforan("σ = %v\n", σ)
-		sol.CheckStress(tst, t, σ, x, tols)
 	}
 }
