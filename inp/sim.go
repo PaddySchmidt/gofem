@@ -96,6 +96,8 @@ type SolverData struct {
 
 // ElemData holds element data
 type ElemData struct {
+
+	// input data
 	Tag   int    `json:"tag"`   // tag of element
 	Mat   string `json:"mat"`   // material name
 	Type  string `json:"type"`  // type of element. ex: u, p, up, rod, beam, rjoint
@@ -103,6 +105,9 @@ type ElemData struct {
 	Nipf  int    `json:"nipf"`  // number of integration points on face; 0 => use default
 	Extra string `json:"extra"` // extra flags (in keycode format). ex: "!thick:0.2 !nip:4"
 	Inact bool   `json:"inact"` // whether element starts inactive or not
+
+	// derived
+	Lbb bool // LBB element; e.g. if "up", "upp", etc., unless NoLBB is true
 }
 
 // Region holds region data
@@ -357,6 +362,15 @@ func ReadSim(simfilepath, alias string, erasefiles bool, goroutineId int) *Simul
 				}
 				if prm := mat.Prms.Find("BulkL"); prm != nil {
 					o.WaterBulk = prm.V
+				}
+			}
+		}
+
+		// set LBB flag
+		if !o.Data.NoLBB {
+			for _, ed := range reg.ElemsData {
+				if ed.Type == "up" {
+					ed.Lbb = true
 				}
 			}
 		}

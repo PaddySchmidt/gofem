@@ -297,7 +297,7 @@ func topology(buf *bytes.Buffer, ips, lbb bool) {
 	} else {
 		for _, e := range elems {
 			cell := cells[e.Id()]
-			nverts, _ := cell.GetInfo(lbb)
+			nverts, _ := cell.GetVtkInfo(lbb)
 			for j := 0; j < nverts; j++ {
 				io.Ff(buf, "%d ", cell.Verts[j])
 			}
@@ -315,7 +315,7 @@ func topology(buf *bytes.Buffer, ips, lbb bool) {
 	} else {
 		for _, e := range elems {
 			cell := cells[e.Id()]
-			nverts, _ := cell.GetInfo(lbb)
+			nverts, _ := cell.GetVtkInfo(lbb)
 			offset += nverts
 			io.Ff(buf, "%d ", offset)
 		}
@@ -330,7 +330,7 @@ func topology(buf *bytes.Buffer, ips, lbb bool) {
 	} else {
 		for _, e := range elems {
 			cell := cells[e.Id()]
-			_, vtkcode := cell.GetInfo(lbb)
+			_, vtkcode := cell.GetVtkInfo(lbb)
 			if vtkcode < 0 {
 				chk.Panic("cannot handle cell type %q", cell.Shp.Type)
 			}

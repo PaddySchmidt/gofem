@@ -53,7 +53,6 @@ type Cell struct {
 	// specific problems data
 	IsJoint   bool         // cell represents joint element
 	SeepVerts map[int]bool // local vertices ids of vertices on seepage faces
-	LbbCell   *Cell        // copy of this Cell with less vertices if LBB (externally allocated)
 
 	// NURBS
 	Nrb  int   // index of NURBS patch to which this cell belongs to
@@ -317,61 +316,81 @@ func (o *Cell) String() string {
 	return l
 }
 
-// GetInfo returns information about this cell
-func (o *Cell) GetInfo(lbb bool) (nverts, vtkcode int) {
+// GetNverts returns the number of vertices, whether LBB condition is on or not
+func (o *Cell) GetNverts(lbb bool) int {
 	if o.Type == "joint" {
-		nverts = len(o.Verts)
+		return len(o.Verts)
+	}
+	if lbb {
+		return o.Shp.BasicNverts
+	}
+	return o.Shp.Nverts
+}
+
+// GetVtkInfo returns information about this cell for generating VTK files
+func (o *Cell) GetVtkInfo(lbb bool) (nvtkverts, vtkcode int) {
+	if o.Type == "joint" {
+		nvtkverts = len(o.Verts)
 		vtkcode = shp.VTK_POLY_VERTEX
 		return
 	}
 	if lbb {
-		nverts = o.Shp.BasicNverts
+		nvtkverts = o.Shp.BasicNverts
 		vtkcode = o.Shp.BasicVtkCode
 		return
 	}
-	nverts = o.Shp.VtkNverts
+	nvtkverts = o.Shp.VtkNverts
 	vtkcode = o.Shp.VtkCode
 	return
 }
 
-// AllocLbb allocates Lbb cell
-func (o *Cell) AllocLbb() {
-	o.LbbCell = new(Cell)
+// GetSimilar allocates a copy of this cell
+//  Note: the resulting cell with share the same slices as the original one => not a full copy
+func (o *Cell) GetSimilar(lbb bool) (newcell *Cell) {
+
+	// new cell
+	newcell = new(Cell)
 
 	// input data
-	o.LbbCell.Id = o.Id
-	o.LbbCell.Tag = o.Tag
-	o.LbbCell.Geo = o.Geo
-	o.LbbCell.Type = o.Type
-	o.LbbCell.Part = o.Part
-	o.LbbCell.Verts = o.Verts
-	o.LbbCell.FTags = o.FTags
-	o.LbbCell.STags = o.STags
-	o.LbbCell.JlinId = o.JlinId
-	o.LbbCell.JsldId = o.JsldId
+	newcell.Id = o.Id
+	newcell.Tag = o.Tag
+	newcell.Geo = o.Geo
+	newcell.Type = o.Type
+	newcell.Part = o.Part
+	newcell.Verts = o.Verts
+	newcell.FTags = o.FTags
+	newcell.STags = o.STags
+	newcell.JlinId = o.JlinId
+	newcell.JsldId = o.JsldId
 
 	// neighbours
-	o.LbbCell.Neighs = o.Neighs
+	newcell.Neighs = o.Neighs
+
+	// new cell type
+	ctype := o.Shp.Type
+	if lbb {
+		ctype = o.Shp.BasicType
+	}
 
 	// derived
 	if o.Shp.Nurbs == nil {
-		o.LbbCell.Shp = shp.Get(o.Shp.BasicType, o.GoroutineId)
-		if o.LbbCell.Shp == nil {
-			chk.Panic("cannot allocate \"shape\" structure for cell type = %q\n", o.Shp.BasicType)
+		newcell.Shp = shp.Get(ctype, o.GoroutineId)
+		if newcell.Shp == nil {
+			chk.Panic("cannot allocate \"shape\" structure for cell type = %q\n", ctype)
 		}
 	} else {
-		chk.Panic("cannot handle LBB cells with NURBS yet")
+		chk.Panic("cannot handle similar cells with NURBS yet")
 	}
-	o.LbbCell.FaceBcs = o.FaceBcs
-	o.LbbCell.GoroutineId = o.GoroutineId
+	newcell.FaceBcs = o.FaceBcs
+	newcell.GoroutineId = o.GoroutineId
 
 	// specific problems data
-	o.LbbCell.IsJoint = o.IsJoint
-	o.LbbCell.SeepVerts = o.SeepVerts
+	newcell.IsJoint = o.IsJoint
+	newcell.SeepVerts = o.SeepVerts
 
 	// NURBS
-	o.LbbCell.Nrb = o.Nrb
-	o.LbbCell.Span = o.Span
+	newcell.Nrb = o.Nrb
+	newcell.Span = o.Span
 	return
 }
 

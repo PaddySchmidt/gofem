@@ -103,7 +103,7 @@ func topology(buf *bytes.Buffer) {
 	// connectivities
 	io.Ff(buf, "<Cells>\n<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n")
 	for _, c := range cells {
-		nverts, _ := c.GetInfo(false)
+		nverts, _ := c.GetVtkInfo(false)
 		for j := 0; j < nverts; j++ {
 			io.Ff(buf, "%d ", c.Verts[j])
 		}
@@ -113,7 +113,7 @@ func topology(buf *bytes.Buffer) {
 	io.Ff(buf, "\n</DataArray>\n<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n")
 	var offset int
 	for _, c := range cells {
-		nverts, _ := c.GetInfo(false)
+		nverts, _ := c.GetVtkInfo(false)
 		offset += nverts
 		io.Ff(buf, "%d ", offset)
 	}
@@ -121,7 +121,7 @@ func topology(buf *bytes.Buffer) {
 	// types of active elements
 	io.Ff(buf, "\n</DataArray>\n<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n")
 	for _, c := range cells {
-		_, vtkcode := c.GetInfo(false)
+		_, vtkcode := c.GetVtkInfo(false)
 		if vtkcode < 0 {
 			chk.Panic("cannot handle cell type %q", c.Shp.Type)
 		}

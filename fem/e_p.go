@@ -98,7 +98,7 @@ func init() {
 		var info Info
 
 		// number of nodes in element
-		nverts := cell.Shp.Nverts
+		nverts := cell.GetNverts(edat.Lbb)
 
 		// solution variables
 		ykeys := []string{"pl"}

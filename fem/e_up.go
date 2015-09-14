@@ -24,10 +24,11 @@ import (
 type ElemUP struct {
 
 	// auxiliary
-	Sim  *inp.Simulation // simulation
-	Cell *inp.Cell       // cell
-	Edat *inp.ElemData   // element data; stored in allocator to be used in Connect
-	Ndim int             // space dimension
+	Sim     *inp.Simulation // simulation
+	Cell    *inp.Cell       // cell
+	LbbCell *inp.Cell       // if LBB==false, same as Cell; otherwise LbbCell is a new cell with less vertices
+	Edat    *inp.ElemData   // element data; stored in allocator to be used in Connect
+	Ndim    int             // space dimension
 
 	// underlying elements
 	U *ElemU // u-element
@@ -58,13 +59,8 @@ func init() {
 		// u-element info
 		u_info := infogetters["u"](sim, cell, edat)
 
-		// allocate lbb cell
-		if cell.LbbCell == nil {
-			cell.AllocLbb()
-		}
-
 		// p-element info
-		p_info := infogetters["p"](sim, cell.LbbCell, edat)
+		p_info := infogetters["p"](sim, cell, edat)
 
 		// solution variables
 		nverts := cell.Shp.Nverts
@@ -95,8 +91,14 @@ func init() {
 		var o ElemUP
 		o.Sim = sim
 		o.Cell = cell
+		o.LbbCell = o.Cell
 		o.Edat = edat
 		o.Ndim = sim.Ndim
+
+		// new LBB cell
+		if !sim.Data.NoLBB {
+			o.LbbCell = o.Cell.GetSimilar(true)
+		}
 
 		// allocate u element
 		u_elem := eallocators["u"](sim, cell, edat, x)
@@ -110,7 +112,7 @@ func init() {
 		//edat.Nipf = len(o.U.IpsFace) // TODO: check if this is necessary
 
 		// allocate p-element
-		p_elem := eallocators["p"](sim, cell.LbbCell, edat, x)
+		p_elem := eallocators["p"](sim, o.LbbCell, edat, x)
 		if p_elem == nil {
 			chk.Panic("cannot allocate underlying p-element")
 		}
@@ -155,7 +157,7 @@ func (o *ElemUP) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
 	}
 
 	// p: equations
-	p_info := infogetters["p"](o.Sim, o.Cell.LbbCell, o.Edat)
+	p_info := infogetters["p"](o.Sim, o.LbbCell, o.Edat)
 	p_nverts := len(p_info.Dofs)
 	p_eqs := make([][]int, p_nverts)
 	for i := 0; i < p_nverts; i++ {
