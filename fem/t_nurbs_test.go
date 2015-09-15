@@ -177,15 +177,13 @@ func Test_nurbs02(tst *testing.T) {
 		sol.CheckDispl(tst, t, u, n.Vert.C, tolu)
 	}
 
-	if false {
-		// check stresses
-		tols := 1e-13
-		for idx, ip := range e.IpsElem {
-			x := e.Cell.Shp.IpRealCoords(e.X, ip)
-			σ := e.States[idx].Sig
-			io.Pforan("σ = %v\n", σ)
-			sol.CheckStress(tst, t, σ, x, tols)
-		}
+	// check stresses
+	tols := 1e-13
+	for idx, ip := range e.IpsElem {
+		x := e.Cell.Shp.IpRealCoords(e.X, ip)
+		σ := e.States[idx].Sig
+		io.Pforan("σ = %v\n", σ)
+		sol.CheckStress(tst, t, σ, x, tols)
 	}
 }
 
@@ -207,6 +205,7 @@ func Test_nurbs03(tst *testing.T) {
 	// domain
 	dom := analysis.Domains[0]
 
+	// element
 	e := dom.Elems[0].(*ElemU)
 	io.PfYel("fex = %v\n", e.fex)
 	io.PfYel("fey = %v\n", e.fey)
@@ -228,28 +227,5 @@ func Test_nurbs03(tst *testing.T) {
 		u := []float64{dom.Sol.Y[eqx], dom.Sol.Y[eqy]}
 		io.Pfyel("u = %v\n", u)
 		sol.CheckDispl(tst, t, u, n.Vert.C, tolu)
-	}
-}
-
-func Test_nurbs04(tst *testing.T) {
-
-	verbose()
-	chk.PrintTitle("nurbs04. perforated disk")
-
-	// fem
-	analysis := NewFEM("data/nurbs04.sim", "", true, false, false, false, chk.Verbose, 0)
-
-	// run simulation
-	err := analysis.Run()
-	if err != nil {
-		tst.Errorf("Run failed\n%v", err)
-		return
-	}
-
-	// draw NURBS
-	if false {
-		dom := analysis.Domains[0]
-		nurbs := dom.Msh.Cells[0].Shp.Nurbs
-		gm.PlotNurbs("/tmp/gofem", "test_nurbs04", nurbs)
 	}
 }
