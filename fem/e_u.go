@@ -88,6 +88,18 @@ type ElemU struct {
 	Kuq           [][]float64 // [nu][nq] Kuq := dRu/dq consistent tangent matrix
 	Kqu           [][]float64 // [nq][nu] Kqu := dRq/du consistent tangent matrix
 	Kqq           [][]float64 // [nq][nq] Kqq := dRq/dq consistent tangent matrix
+
+	// XFEM (material interface or not)
+	Xmat bool        // material interface
+	Xcrk bool        // crack
+	Xfem bool        // Xmat || Xcrk
+	Na   int         // number of additional degrees of freedom (XFEM)
+	Amap []int       // additional DOFs map
+	Kua  [][]float64 // TODO: [nu][na] Kua := dRu/da consistent tangent matrix
+	Kau  [][]float64 // TODO: [na][nu] Kau := dRa/du consistent tangent matrix
+	Kaa  [][]float64 // TODO: [na][na] Kaa := dRa/da consistent tangent matrix
+	//ProxyMesh *inp.Mesh      // TODO: auxiliary mesh
+	//EnrichShp *shp.EnrichShp // TODO: enriched shape functions
 }
 
 // initialisation ///////////////////////////////////////////////////////////////////////////////////
@@ -98,16 +110,14 @@ func init() {
 	// information allocator
 	infogetters["u"] = func(sim *inp.Simulation, cell *inp.Cell, edat *inp.ElemData) *Info {
 
-		// new info
-		var info Info
-
 		// number of nodes in element
 		nverts := cell.Shp.Nverts
 		if nverts < 0 {
-			return nil
+			return nil // fail
 		}
 
-		// solution variables
+		// set DOFS and other information
+		var info Info
 		ykeys := []string{"ux", "uy"}
 		if sim.Ndim == 3 {
 			ykeys = []string{"ux", "uy", "uz"}
@@ -116,24 +126,16 @@ func init() {
 		for m := 0; m < nverts; m++ {
 			info.Dofs[m] = ykeys
 		}
-
-		// maps
 		info.Y2F = map[string]string{"ux": "fx", "uy": "fy", "uz": "fz"}
-
-		// contact: vertices on faces with contact
-		if len(cell.FaceBcs) > 0 {
-			lverts := cell.FaceBcs.GetVerts("contact")
-			for _, m := range lverts {
-				info.Dofs[m] = append(info.Dofs[m], "qb")
-			}
-			if len(lverts) > 0 {
-				ykeys = append(ykeys, "qb")
-				info.Y2F["qb"] = "nil"
-			}
-		}
-
-		// t1 and t2 variables
 		info.T2vars = ykeys
+
+		// contact: extra information
+		contact_set_info(&info, cell, edat)
+
+		// xfem: extra information
+		xfem_set_info(&info, cell, edat)
+
+		// results
 		return &info
 	}
 
@@ -222,6 +224,9 @@ func init() {
 		// contact: init
 		o.contact_init(edat)
 
+		// xfem: init
+		o.xfem_init(edat)
+
 		// return new element
 		return &o
 	}
@@ -234,6 +239,8 @@ func (o *ElemU) Id() int { return o.Cell.Id }
 
 // SetEqs set equations
 func (o *ElemU) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
+
+	// standard DOFs
 	o.Umap = make([]int, o.Nu)
 	for m := 0; m < o.Cell.Shp.Nverts; m++ {
 		for i := 0; i < o.Ndim; i++ {
@@ -241,9 +248,23 @@ func (o *ElemU) SetEqs(eqs [][]int, mixedform_eqs []int) (err error) {
 			o.Umap[r] = eqs[m][i]
 		}
 	}
+
+	// contact DOFs
+	ndn := o.Ndim // number of degrees of freedom per node set already
 	if o.HasContact {
 		for i, m := range o.ContactId2vid {
 			o.Qmap[i] = eqs[m][o.Ndim]
+		}
+		ndn += 1 // TODO: check this
+	}
+
+	// xfem DOFs
+	if o.Xfem {
+		for m := 0; m < o.Cell.Shp.Nverts; m++ {
+			for i := 0; i < o.Na; i++ {
+				r := i + m*o.Na
+				o.Amap[r] = eqs[m][ndn+i]
+			}
 		}
 	}
 	return
@@ -357,7 +378,10 @@ func (o *ElemU) AddToRhs(fb []float64, sol *Solution) (err error) {
 	}
 
 	// contact: additional term to fb
-	err = o.contact_add_surfloads_to_rhs(fb, sol)
+	err = o.contact_add_to_rhs(fb, sol)
+
+	// xfem: additional term to fb
+	err = o.xfem_add_to_rhs(fb, sol)
 	return
 }
 
@@ -424,8 +448,13 @@ func (o *ElemU) AddToKb(Kb *la.Triplet, sol *Solution, firstIt bool) (err error)
 
 	// add Ks to sparse matrix Kb
 	switch {
+
 	case o.HasContact:
 		err = o.contact_add_to_jac(Kb, sol)
+
+	case o.Xfem:
+		err = o.xfem_add_to_jac(Kb, sol)
+
 	default:
 		for i, I := range o.Umap {
 			for j, J := range o.Umap {

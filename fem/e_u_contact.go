@@ -13,6 +13,22 @@ import (
 	"github.com/cpmech/gosl/utl"
 )
 
+// contact_set_info sets extra information for elements with contact
+func contact_set_info(info *Info, cell *inp.Cell, edat *inp.ElemData) {
+	if len(cell.FaceBcs) > 0 { // vertices on faces with contact
+		lverts := cell.FaceBcs.GetVerts("contact")
+		for _, m := range lverts {
+			info.Dofs[m] = append(info.Dofs[m], "qb")
+		}
+		if len(lverts) > 0 {
+			info.Y2F["qb"] = "nil"
+			info.T2vars = append(info.T2vars, "qb")
+		}
+	}
+	return
+}
+
+// contact_init initialises variables need by contact model
 func (o *ElemU) contact_init(edat *inp.ElemData) {
 
 	// vertices on faces with contact
@@ -48,8 +64,8 @@ func (o *ElemU) contact_init(edat *inp.ElemData) {
 	o.Kqq = la.MatAlloc(o.Nq, o.Nq)
 }
 
-// contact_add_surfloads_to_rhs adds surfaces loads to rhs due to contact modelling
-func (o *ElemU) contact_add_surfloads_to_rhs(fb []float64, sol *Solution) (err error) {
+// contact_add_to_rhs adds contribution to rhs due to contact modelling
+func (o *ElemU) contact_add_to_rhs(fb []float64, sol *Solution) (err error) {
 
 	// compute surface integral
 	var qb, db, rmp, rx, rq float64
