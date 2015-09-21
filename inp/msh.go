@@ -487,3 +487,23 @@ func (o *Mesh) Draw2d() {
 	plt.AxisRange(o.Xmin, o.Xmax, o.Ymin, o.Ymax)
 	plt.AxisOff()
 }
+
+// CalcScaleFactor computes scale factor based on mesh dimensions
+//  Input:
+//   Y    -- results; e.g. bending moments
+//   coef -- coefficient to scale max(dimension) divided by max(Y); e.g. 0.1
+//  Output:
+//   sf -- scaling factor
+func (o *Mesh) CalcScaleFactor(Y []float64, coef float64) (sf float64) {
+	if len(Y) < 2 {
+		chk.Panic("at least two values are required in Y in order to compute scaling factor")
+	}
+	dx := o.Xmax - o.Xmin
+	dy := o.Ymax - o.Ymin
+	d := utl.Max(dx, dy)
+	Ymax := math.Abs(Y[0])
+	for i := 1; i < len(Y); i++ {
+		Ymax = utl.Max(Ymax, Y[i])
+	}
+	return coef * d / Ymax
+}
