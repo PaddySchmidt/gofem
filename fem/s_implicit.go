@@ -98,6 +98,7 @@ func (o *SolverImplicit) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose bool,
 
 			// run iterations
 			d.Sol.T = t
+			d.Sol.Dt = Δt
 			diverging, err := run_iterations(t, Δt, d, o.dc, o.sum, dbgKb)
 			if err != nil {
 				return chk.Err("run_iterations failed:\n%v", err)

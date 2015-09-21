@@ -138,6 +138,7 @@ func (o *RichardsonExtrap) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose boo
 
 		// single step with Δt
 		d.Sol.T = t + o.Δt
+		d.Sol.Dt = o.Δt
 		o.diverging, err = run_iterations(t+o.Δt, o.Δt, d, o.dc, o.sum, dbgKb)
 		if err != nil {
 			return chk.Err("single step with Δt: run_iterations failed:\n%v", err)
@@ -158,6 +159,7 @@ func (o *RichardsonExtrap) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose boo
 
 		// 1st halved step
 		d.Sol.T = t + o.Δt/2.0
+		d.Sol.Dt = o.Δt / 2.0
 		o.diverging, err = run_iterations(t+o.Δt/2.0, o.Δt/2.0, d, o.dc, o.sum, dbgKb)
 		if err != nil {
 			return chk.Err("1st halved step: run_iterations failed:\n%v", err)
@@ -170,6 +172,7 @@ func (o *RichardsonExtrap) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose boo
 
 		// 2nd halved step
 		d.Sol.T = t + o.Δt
+		d.Sol.Dt = o.Δt
 		o.diverging, err = run_iterations(t+o.Δt, o.Δt/2.0, d, o.dc, o.sum, dbgKb)
 		if err != nil {
 			return chk.Err("2nd halved step: run_iterations failed:\n%v", err)

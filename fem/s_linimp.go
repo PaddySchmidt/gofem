@@ -72,6 +72,7 @@ func (o *SolverLinearImplicit) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose
 
 		// update time variable in solution array
 		o.dom.Sol.T = t
+		o.dom.Sol.Dt = Δt
 
 		// dynamic coefficients
 		if !steady {
