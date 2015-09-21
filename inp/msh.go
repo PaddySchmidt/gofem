@@ -14,6 +14,7 @@ import (
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/gm"
 	"github.com/cpmech/gosl/io"
+	"github.com/cpmech/gosl/plt"
 	"github.com/cpmech/gosl/utl"
 )
 
@@ -412,4 +413,64 @@ func (o Mesh) String() string {
 	}
 	l += "\n  ]\n}"
 	return l
+}
+
+// Draw2d draws 2D mesh
+func (o *Mesh) Draw2d() {
+
+	// auxiliary
+	type triple struct{ a, b, c int }   // points on edge
+	edgesdrawn := make(map[triple]bool) // edges drawn already
+	var tri triple
+
+	// loop over cells
+	for _, cell := range o.Cells {
+
+		// loop edges of cells
+		for _, lvids := range cell.Shp.FaceLocalVerts {
+
+			// set triple of nodes
+			tri.a = cell.Verts[lvids[0]]
+			tri.b = cell.Verts[lvids[1]]
+			nv := len(lvids)
+			if nv > 2 {
+				tri.c = cell.Verts[lvids[2]]
+			} else {
+				tri.c = len(o.Verts) + 1 // indicator of not-available
+			}
+			utl.IntSort3(&tri.a, &tri.b, &tri.c)
+
+			// draw edge if not drawn yet
+			if _, drawn := edgesdrawn[tri]; !drawn {
+				x := make([]float64, nv)
+				y := make([]float64, nv)
+				x[0] = o.Verts[tri.a].C[0]
+				y[0] = o.Verts[tri.a].C[1]
+				if nv == 3 {
+					x[1] = o.Verts[tri.c].C[0]
+					y[1] = o.Verts[tri.c].C[1]
+					x[2] = o.Verts[tri.b].C[0]
+					y[2] = o.Verts[tri.b].C[1]
+				} else {
+					x[1] = o.Verts[tri.b].C[0]
+					y[1] = o.Verts[tri.b].C[1]
+				}
+				plt.Plot(x, y, "'k-o', ms=3, clip_on=0")
+				edgesdrawn[tri] = true
+			}
+		}
+
+		// add middle node
+		if cell.Type == "qua9" {
+			vid := cell.Verts[8]
+			x := o.Verts[vid].C[0]
+			y := o.Verts[vid].C[1]
+			plt.PlotOne(x, y, "'ko', ms=3, clip_on=0")
+		}
+	}
+
+	// set up
+	plt.Equal()
+	plt.AxisRange(o.Xmin, o.Xmax, o.Ymin, o.Ymax)
+	plt.AxisOff()
 }

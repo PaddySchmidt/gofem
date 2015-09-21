@@ -10,10 +10,12 @@ import (
 
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
+	"github.com/cpmech/gosl/plt"
 )
 
 func Test_msh01(tst *testing.T) {
 
+	//verbose()
 	chk.PrintTitle("msh01")
 
 	msh, err := ReadMsh("data", "bh16.msh", 0)
@@ -27,6 +29,11 @@ func Test_msh01(tst *testing.T) {
 	chk.Scalar(tst, "xmax", 1e-17, msh.Xmax, 14)
 	chk.Scalar(tst, "ymin", 1e-17, msh.Ymin, -1)
 	chk.Scalar(tst, "ymax", 1e-17, msh.Ymax, 1)
+
+	if chk.Verbose {
+		msh.Draw2d()
+		plt.SaveD("/tmp/gofem", "test_msh01.png")
+	}
 }
 
 func Test_sim01(tst *testing.T) {
