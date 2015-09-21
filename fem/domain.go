@@ -28,7 +28,7 @@ type Solution struct {
 	D2ydt2 []float64 // d²y/dt²
 
 	// auxiliary
-	Δt  float64   // current time step
+	Δt  float64   // current time increment
 	ΔY  []float64 // total increment (for nonlinear solver)
 	Psi []float64 // t1 star vars; e.g. ψ* = β1.p + β2.dpdt
 	Zet []float64 // t2 star vars; e.g. ζ* = α1.u + α2.v + α3.a
