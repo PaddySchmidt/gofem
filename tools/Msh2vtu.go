@@ -114,6 +114,7 @@ func topology(buf *bytes.Buffer) {
 	var offset int
 	for _, c := range cells {
 		nverts, _ := c.GetVtkInfo(false)
+		io.Pforan("nverts = %v\n", nverts)
 		offset += nverts
 		io.Ff(buf, "%d ", offset)
 	}

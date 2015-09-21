@@ -17,6 +17,7 @@ func init() {
 	tet4.FaceType = "tri3"
 	tet4.Gndim = 3
 	tet4.Nverts = 4
+	tet4.VtkNverts = 4
 	tet4.VtkCode = VTK_TETRA
 	tet4.FaceNvertsMax = 3
 	tet4.FaceLocalVerts = [][]int{{0, 3, 2}, {0, 1, 3}, {0, 2, 1}, {1, 2, 3}}
@@ -42,6 +43,7 @@ func init() {
 	tet10.FaceType = "tri6"
 	tet10.Gndim = 3
 	tet10.Nverts = 10
+	tet10.VtkNverts = 10
 	tet10.VtkCode = VTK_QUADRATIC_TETRA
 	tet10.FaceNvertsMax = 6
 	tet10.FaceLocalVerts = [][]int{{0, 3, 2, 7, 9, 6}, {0, 1, 3, 4, 8, 7}, {0, 2, 1, 6, 5, 4}, {1, 2, 3, 5, 9, 8}}

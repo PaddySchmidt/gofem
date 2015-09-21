@@ -17,6 +17,7 @@ func init() {
 	tri3.FaceType = "lin2"
 	tri3.Gndim = 2
 	tri3.Nverts = 3
+	tri3.VtkNverts = 3
 	tri3.VtkCode = VTK_TRIANGLE
 	tri3.FaceNvertsMax = 2
 	tri3.FaceLocalVerts = [][]int{{0, 1}, {1, 2}, {2, 0}}
@@ -40,6 +41,7 @@ func init() {
 	tri6.FaceType = "lin3"
 	tri6.Gndim = 2
 	tri6.Nverts = 6
+	tri6.VtkNverts = 6
 	tri6.VtkCode = VTK_QUADRATIC_TRIANGLE
 	tri6.FaceNvertsMax = 3
 	tri6.FaceLocalVerts = [][]int{{0, 1, 3}, {1, 2, 4}, {2, 0, 5}}
@@ -62,7 +64,8 @@ func init() {
 	tri10.FaceType = "lin4"
 	tri10.Gndim = 2
 	tri10.Nverts = 10
-	tri10.VtkCode = VTK_POLY_VERTEX
+	tri10.VtkNverts = 6
+	tri10.VtkCode = VTK_QUADRATIC_TRIANGLE
 	tri10.FaceNvertsMax = 4
 	tri10.FaceLocalVerts = [][]int{{0, 1, 3, 6}, {1, 2, 4, 7}, {2, 0, 5, 8}}
 	tri10.NatCoords = [][]float64{
@@ -85,7 +88,8 @@ func init() {
 	tri15.FaceType = "lin5"
 	tri15.Gndim = 2
 	tri15.Nverts = 15
-	tri15.VtkCode = VTK_POLY_VERTEX
+	tri15.VtkNverts = 6
+	tri15.VtkCode = VTK_QUADRATIC_TRIANGLE
 	tri15.FaceNvertsMax = 5
 	tri15.FaceLocalVerts = [][]int{{0, 1, 3, 6, 7}, {1, 2, 4, 8, 9}, {2, 0, 5, 10, 11}}
 	tri15.NatCoords = [][]float64{

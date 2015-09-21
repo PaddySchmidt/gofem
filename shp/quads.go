@@ -16,6 +16,7 @@ func init() {
 	qua4.FaceType = "lin2"
 	qua4.Gndim = 2
 	qua4.Nverts = 4
+	qua4.VtkNverts = 4
 	qua4.VtkCode = VTK_QUAD
 	qua4.FaceNvertsMax = 2
 	qua4.FaceLocalVerts = [][]int{{0, 1}, {1, 2}, {2, 3}, {3, 0}}
@@ -39,6 +40,7 @@ func init() {
 	qua8.FaceType = "lin3"
 	qua8.Gndim = 2
 	qua8.Nverts = 8
+	qua8.VtkNverts = 8
 	qua8.VtkCode = VTK_QUADRATIC_QUAD
 	qua8.FaceNvertsMax = 3
 	qua8.FaceLocalVerts = [][]int{{0, 1, 4}, {1, 2, 5}, {2, 3, 6}, {3, 0, 7}}
@@ -62,7 +64,8 @@ func init() {
 	qua9.FaceType = "lin3"
 	qua9.Gndim = 2
 	qua9.Nverts = 9
-	qua9.VtkCode = VTK_POLY_VERTEX
+	qua9.VtkNverts = 8
+	qua9.VtkCode = VTK_QUADRATIC_QUAD
 	qua9.FaceNvertsMax = 3
 	qua9.FaceLocalVerts = [][]int{{0, 1, 4}, {1, 2, 5}, {2, 3, 6}, {3, 0, 7}}
 	qua9.NatCoords = [][]float64{
@@ -85,7 +88,8 @@ func init() {
 	qua12.FaceType = "lin4"
 	qua12.Gndim = 2
 	qua12.Nverts = 12
-	qua12.VtkCode = VTK_POLY_VERTEX
+	qua12.VtkNverts = 8
+	qua12.VtkCode = VTK_QUADRATIC_QUAD
 	qua12.FaceNvertsMax = 4
 	qua12.FaceLocalVerts = [][]int{{0, 1, 4, 8}, {1, 2, 5, 9}, {2, 3, 6, 10}, {3, 0, 7, 11}}
 	qua12.NatCoords = [][]float64{
@@ -107,7 +111,8 @@ func init() {
 	qua16.FaceType = "lin4"
 	qua16.Gndim = 2
 	qua16.Nverts = 16
-	qua16.VtkCode = VTK_POLY_VERTEX
+	qua16.VtkNverts = 8
+	qua16.VtkCode = VTK_QUADRATIC_QUAD
 	qua16.FaceNvertsMax = 4
 	qua16.FaceLocalVerts = [][]int{{0, 1, 4, 8}, {1, 2, 5, 9}, {2, 3, 6, 10}, {3, 0, 7, 11}}
 	qua16.NatCoords = [][]float64{
