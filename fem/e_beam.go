@@ -29,6 +29,9 @@ type Beam struct {
 	Izz float64 // Inertia zz
 	L   float64 // length of beam
 
+	// for output
+	Nstations int // number of points along beam to generate bending moment / shear force diagrams
+
 	// variables for dynamics
 	Rho  float64  // density of solids
 	Gfcn fun.Func // gravity function
@@ -122,6 +125,9 @@ func init() {
 		if o.E < ϵp || o.A < ϵp || o.Izz < ϵp || o.Rho < ϵp {
 			chk.Panic("E, A, Izz and rho parameters must be all positive")
 		}
+
+		// for output
+		o.Nstations = 11
 
 		// vectors and matrices
 		o.T = la.MatAlloc(o.Nu, o.Nu)
@@ -275,6 +281,23 @@ func (o *Beam) Decode(dec Decoder) (err error) {
 
 // OutIpsData returns data from all integration points for output
 func (o *Beam) OutIpsData() (data []*OutIpData) {
+	unused := 0
+	ds := 1.0 / float64(o.Nstations-1)
+	x := make([]float64, o.Ndim)
+	for i := 0; i < o.Nstations; i++ {
+		s := float64(i) * ds
+		for j := 0; j < o.Ndim; j++ {
+			x[j] = (1.0-s)*o.X[j][0] + s*o.X[j][1]
+		}
+		calc := func(sol *Solution) (vals map[string]float64) {
+			vals = make(map[string]float64)
+			V, M := o.CalcVandM(sol, s, unused)
+			vals["V"] = V[0]
+			vals["M"] = M[0]
+			return
+		}
+		data = append(data, &OutIpData{o.Id(), x, calc})
+	}
 	return
 }
 
@@ -381,9 +404,9 @@ func (o *Beam) CalcVandM(sol *Solution, s float64, nstations int) (V, M []float6
 	}
 	V = make([]float64, nstations)
 	M = make([]float64, nstations)
-	dr := o.L / float64(nstations-1)
+	ds := 1.0 / float64(nstations-1)
 	for i := 0; i < nstations; i++ {
-		V[i], M[i] = o.calc_V_and_M_after_ua(sol.T, float64(i)*dr)
+		V[i], M[i] = o.calc_V_and_M_after_ua(sol.T, float64(i)*ds)
 	}
 	return
 }
