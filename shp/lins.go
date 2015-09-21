@@ -15,6 +15,7 @@ func init() {
 	lin2.Func = Lin2
 	lin2.Gndim = 1
 	lin2.Nverts = 2
+	lin2.VtkNverts = 2
 	lin2.VtkCode = VTK_LINE
 	lin2.NatCoords = [][]float64{
 		{-1, 1},
@@ -32,6 +33,7 @@ func init() {
 	lin3.Func = Lin3
 	lin3.Gndim = 1
 	lin3.Nverts = 3
+	lin3.VtkNverts = 3
 	lin3.VtkCode = VTK_QUADRATIC_EDGE
 	lin3.NatCoords = [][]float64{
 		{-1, 1, 0},
@@ -50,6 +52,7 @@ func init() {
 	lin4.Func = Lin4
 	lin4.Gndim = 1
 	lin4.Nverts = 4
+	lin4.VtkNverts = 4
 	lin4.VtkCode = VTK_POLY_LINE
 	lin4.NatCoords = [][]float64{
 		{-1, 1, -1.0 / 3.0, 1.0 / 3.0},
@@ -66,9 +69,10 @@ func init() {
 
 	// lin5
 	lin5.Type = "lin5"
-	lin5.Func = Lin2
+	lin5.Func = Lin5
 	lin5.Gndim = 1
-	lin5.Nverts = 2
+	lin5.Nverts = 5
+	lin5.VtkNverts = 5
 	lin5.VtkCode = VTK_POLY_LINE
 	lin5.NatCoords = [][]float64{
 		{-1, 1, 0, -0.5, 0.5},
