@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"math"
 	"path/filepath"
+	"strings"
 
 	"github.com/cpmech/gofem/shp"
 
@@ -466,6 +467,18 @@ func (o *Mesh) Draw2d() {
 			x := o.Verts[vid].C[0]
 			y := o.Verts[vid].C[1]
 			plt.PlotOne(x, y, "'ko', ms=3, clip_on=0")
+		}
+
+		// linear cells
+		if strings.HasPrefix(cell.Type, "lin") {
+			nv := len(cell.Verts)
+			x := make([]float64, nv)
+			y := make([]float64, nv)
+			for i, vid := range cell.Verts {
+				x[i] = o.Verts[vid].C[0]
+				y[i] = o.Verts[vid].C[1]
+			}
+			plt.Plot(x, y, "'-o', ms=3, clip_on=0, color='#41045a', lw=2")
 		}
 	}
 
