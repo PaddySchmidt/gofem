@@ -11,6 +11,7 @@ import (
 
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/io"
+	"github.com/cpmech/gosl/plt"
 )
 
 func Test_beam01a(tst *testing.T) {
@@ -204,6 +205,13 @@ func Test_beam03(tst *testing.T) {
 	check_M(2, 0, 0, 1e-13)
 	check_M(2, 1, -54.4, 1e-13)
 
+	nstations, withtext, numfmt, tol, coef := 11, true, "", 1e-10, 0.2
+	if chk.Verbose {
+		plt.SetForPng(1, 600, 150)
+		PlotAllBendingMoments(dom, nstations, withtext, numfmt, tol, coef)
+		plt.SaveD("/tmp/gofem", "test_beam03_prob1.png")
+	}
+
 	// problem # 2
 	set_and_run(1)
 	check_M(0, 0, 0, 1e-13)
@@ -213,6 +221,12 @@ func Test_beam03(tst *testing.T) {
 	check_M(2, 0, 0, 1e-13)
 	check_M(2, 1, 0, 1e-13)
 
+	if chk.Verbose {
+		plt.SetForPng(1, 600, 150)
+		PlotAllBendingMoments(dom, nstations, withtext, numfmt, tol, coef)
+		plt.SaveD("/tmp/gofem", "test_beam03_prob2.png")
+	}
+
 	// problem # 3
 	set_and_run(2)
 	check_M(0, 0, 0, 1e-13)
@@ -221,6 +235,12 @@ func Test_beam03(tst *testing.T) {
 	check_M(1, 1, 0, 1e-13)
 	check_M(2, 0, 0, 1e-13)
 	check_M(2, 1, 0, 1e-13)
+
+	if chk.Verbose {
+		plt.SetForPng(1, 600, 150)
+		PlotAllBendingMoments(dom, nstations, withtext, numfmt, tol, coef)
+		plt.SaveD("/tmp/gofem", "test_beam03_prob3.png")
+	}
 
 	// problem # 4
 	set_and_run(3)
@@ -234,4 +254,10 @@ func Test_beam03(tst *testing.T) {
 	check_M(1, 1, e1M(10), 1e-13)
 	check_M(2, 0, 0, 1e-13)
 	check_M(2, 1, 0, 1e-13)
+
+	if chk.Verbose {
+		plt.SetForPng(1, 600, 150)
+		PlotAllBendingMoments(dom, nstations, withtext, numfmt, tol, coef)
+		plt.SaveD("/tmp/gofem", "test_beam03_prob4.png")
+	}
 }

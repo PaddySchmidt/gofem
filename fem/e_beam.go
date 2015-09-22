@@ -11,7 +11,10 @@ import (
 
 	"github.com/cpmech/gosl/chk"
 	"github.com/cpmech/gosl/fun"
+	"github.com/cpmech/gosl/io"
 	"github.com/cpmech/gosl/la"
+	"github.com/cpmech/gosl/plt"
+	"github.com/cpmech/gosl/utl"
 )
 
 // Beam represents a structural beam element (Euler-Bernoulli, linear elastic)
@@ -283,9 +286,9 @@ func (o *Beam) Decode(dec Decoder) (err error) {
 func (o *Beam) OutIpsData() (data []*OutIpData) {
 	unused := 0
 	ds := 1.0 / float64(o.Nstations-1)
-	x := make([]float64, o.Ndim)
 	for i := 0; i < o.Nstations; i++ {
 		s := float64(i) * ds
+		x := make([]float64, o.Ndim)
 		for j := 0; j < o.Ndim; j++ {
 			x[j] = (1.0-s)*o.X[j][0] + s*o.X[j][1]
 		}
@@ -450,4 +453,117 @@ func (o *Beam) calc_loads(time float64) (qnL, qnR, qt float64) {
 		qt = o.Qt.F(time, nil)
 	}
 	return
+}
+
+// plot diagrams ////////////////////////////////////////////////////////////////////////////////////
+
+// PlotDiagMoment plots bending moment diagram
+//  Input:
+//   M        -- moment along stations
+//   withtext -- show bending moment values
+//   numfmt   -- number format for values. use "" to chose default one
+//   tolM     -- tolerance to clip absolute values of M
+//   sf       -- scaling factor
+func (o *Beam) PlotDiagMoment(M []float64, withtext bool, numfmt string, tolM, sf float64) {
+
+	// number of stations
+	nstations := len(M)
+	ds := 1.0 / float64(nstations-1)
+
+	// nodes
+	var xa, xb []float64
+	var u []float64 // out-of-pane vector
+	if o.Ndim == 2 {
+		xa = []float64{o.X[0][0], o.X[1][0], 0}
+		xb = []float64{o.X[0][1], o.X[1][1], 0}
+		u = []float64{0, 0, 1}
+	} else {
+		chk.Panic("TODO: 3D beam diagram")
+	}
+
+	// unit vector along beam
+	v := make([]float64, 3)
+	sum := 0.0
+	for j := 0; j < o.Ndim; j++ {
+		v[j] = xb[j] - xa[j]
+		sum += v[j] * v[j]
+	}
+	sum = math.Sqrt(sum)
+	for j := 0; j < o.Ndim; j++ {
+		v[j] /= sum
+	}
+
+	// unit normal
+	n := make([]float64, 3)     // normal
+	utl.CrossProduct3d(n, u, v) // n := u cross v
+
+	// auxiliary vectors
+	x := make([]float64, o.Ndim) // station
+	m := make([]float64, o.Ndim) // vector pointing to other side
+	c := make([]float64, o.Ndim) // centre
+	imin, imax := utl.DblArgMinMax(M)
+
+	// draw text function
+	draw_text := func(mom float64) {
+		if math.Abs(mom) > tolM {
+			α := math.Atan2(-n[1], -n[0]) * 180.0 / math.Pi
+			str := io.Sf("%g", mom)
+			if numfmt != "" {
+				str = io.Sf(numfmt, mom)
+			} else {
+				if len(str) > 10 {
+					str = io.Sf("%.10f", mom) // truncate number
+					str = io.Sf("%g", io.Atof(str))
+				}
+			}
+			plt.Text(c[0], c[1], str, io.Sf("ha='center', size=7, rotation=%g, clip_on=0", α))
+		}
+	}
+
+	// draw
+	pts := utl.DblsAlloc(nstations, 2)
+	xx, yy := make([]float64, 2), make([]float64, 2)
+	for i := 0; i < nstations; i++ {
+
+		// station
+		s := float64(i) * ds
+		for j := 0; j < o.Ndim; j++ {
+			x[j] = (1.0-s)*o.X[j][0] + s*o.X[j][1]
+		}
+
+		// auxiliary vectors
+		for j := 0; j < o.Ndim; j++ {
+			m[j] = x[j] - sf*M[i]*n[j]
+			c[j] = (x[j] + m[j]) / 2.0
+		}
+
+		// points on diagram
+		pts[i][0], pts[i][1] = m[0], m[1]
+		xx[0], xx[1] = x[0], m[0]
+		yy[0], yy[1] = x[1], m[1]
+
+		// draw
+		clr, lw := "#919191", 1.0
+		if i == imin || i == imax {
+			lw = 2
+			if M[i] < 0 {
+				clr = "#9f0000"
+			} else {
+				clr = "#109f24"
+			}
+		}
+		plt.Plot(xx, yy, io.Sf("'-', color='%s', lw=%g, clip_on=0", clr, lw))
+		if withtext {
+			if i == imin || i == imax { // draw text @ min/max
+				draw_text(M[i])
+			} else {
+				if i == 0 || i == nstations-1 { // draw text @ extremities
+					draw_text(M[i])
+				}
+			}
+		}
+	}
+
+	// draw polyline
+	plt.DrawPolyline(pts, &plt.Sty{Ec: "k", Fc: "none", Lw: 1}, "")
 }
