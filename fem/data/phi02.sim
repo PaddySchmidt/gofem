@@ -6,26 +6,29 @@
   "functions" : [
     { "name":"circle", "type":"cdist", "prms":[
         {"n":"r",  "v":1.0},
-        {"n":"xc", "v":2.5}, 
-        {"n":"yc", "v":2.5} 
+        {"n":"xc", "v":0.0}, 
+        {"n":"yc", "v":0.025} 
     ] }
   ],
   "regions" : [
     {
-      "mshfile" : "rectangle.msh",
+      "mshfile" : "rectangle_1.msh",
       "elemsdata" : [
         { "tag":-1, "mat":"mat", "type":"phi" }
       ]
     }
   ],
+  "solver" : {
+    "type" : "lin-imp"
+  },
   "stages" : [
     {
-      "desc" : "do nothing",
+      "desc" : "Moves circle with unit speed [1.0, 0.0]",
       "initial" : { "fcns":["circle"], "dofs":["h"] },
       "control" : {
         "tf"    : 1,
-        "dt"    : 0.1,
-        "dtout" : 0.1
+        "dt"    : 0.001,
+        "dtout" : 0.01
       }
     }
   ]

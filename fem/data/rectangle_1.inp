@@ -2,7 +2,7 @@
   "quad" : false,
   "Sregs" : {
     "tags" : [-1],
-    "nxs"  : [27],
+    "nxs"  : [100],
     "nys"  : [1],
     "nzs"  : [1],
     "points" : [

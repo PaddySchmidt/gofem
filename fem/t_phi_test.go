@@ -86,7 +86,7 @@ func Test_phi01(tst *testing.T) {
 func Test_phi02(tst *testing.T) {
 
 	//verbose()
-	chk.PrintTitle("phi02")
+	chk.PrintTitle("phi02 - Transport constant Speed")
 
 	// run simulation
 	analysis := NewFEM("data/phi02.sim", "", true, false, false, false, chk.Verbose, 0)
@@ -98,5 +98,54 @@ func Test_phi02(tst *testing.T) {
 		return
 	}
 
-	// TODO: add check here
+	// domain
+	dom := analysis.Domains[0]
+
+	eq := []int{
+		30, 50, 70, 80, 90,
+	}
+	node := []int{
+		15, 25, 35, 40, 45,
+	}
+	// check results
+	for i, v := range eq {
+		x := []float64{dom.Msh.Verts[node[i]].C[0], dom.Msh.Verts[node[i]].C[1]}
+		xc := []float64{0.0, 0.025}
+		r := 1.0
+		d := (x[0]-xc[0])*(x[0]-xc[0]) + (x[1]-xc[1])*(x[1]-xc[1])
+		d = math.Sqrt(d) - r
+
+		// chk.PrintTitle(io.Sf("%25.10e%25.10e", dom.Sol.Y[v], d+1.0))
+		chk.Scalar(tst, "h @ nod "+string(i), 2e-2, dom.Sol.Y[v], d+1.0)
+	}
+}
+
+func Test_phi03(tst *testing.T) {
+
+	// verbose()
+	chk.PrintTitle("phi03 - Reinitialisation")
+
+	// run simulation
+	analysis := NewFEM("data/phi03.sim", "", true, false, false, false, chk.Verbose, 0)
+
+	// run simulation
+	err := analysis.Run()
+	if err != nil {
+		tst.Errorf("Run failed:\n%v", err)
+		return
+	}
+	// domain
+	dom := analysis.Domains[0]
+
+	eq := []int{
+		0, 20, 54,
+	}
+	node := []int{
+		0, 10, 27,
+	}
+	// check results
+	for i, v := range eq {
+		// chk.PrintTitle(io.Sf("%25.10e%25.10e", dom.Sol.Y[v], dom.Msh.Verts[node[i]].C[0]))
+		chk.Scalar(tst, "h @ nod "+string(i), 5e-2, dom.Sol.Y[v], dom.Msh.Verts[node[i]].C[0])
+	}
 }

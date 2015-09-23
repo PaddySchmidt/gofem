@@ -92,11 +92,12 @@ func (o *SolverLinearImplicit) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose
 
 			// compute starred vectors
 			for _, I := range o.dom.T1eqs {
-				ψ[I] = o.dc.β1*Y[I] + o.dc.β2*dydt[I]
+				ψ[I] = Y[I] - o.dom.Sol.ΔY[I]
 			}
+
 			for _, I := range o.dom.T2eqs {
-				ζ[I] = o.dc.α1*Y[I] + o.dc.α2*dydt[I] + o.dc.α3*d2ydt2[I]
-				χ[I] = o.dc.α4*Y[I] + o.dc.α5*dydt[I] + o.dc.α6*d2ydt2[I]
+				ζ[I] = Y[I]
+				χ[I] = Y[I]
 			}
 
 			// set internal starred variables
@@ -119,7 +120,7 @@ func (o *SolverLinearImplicit) Run(tf float64, dtFunc, dtoFunc fun.Func, verbose
 		// update velocity and acceleration
 		if !steady {
 			for _, I := range o.dom.T1eqs {
-				dydt[I] = o.dc.β1*Y[I] - ψ[I]
+				dydt[I] = Y[I] - ψ[I]
 			}
 			for _, I := range o.dom.T2eqs {
 				dydt[I] = o.dc.α4*Y[I] - χ[I]
@@ -208,8 +209,8 @@ func solve_linear_problem(t float64, d *Domain, dc *DynCoefs, sum *Summary, firs
 
 	// update primary variables (y)
 	for i := 0; i < d.Ny; i++ {
-		d.Sol.Y[i] += d.Wb[i]  // y += δy
-		d.Sol.ΔY[i] += d.Wb[i] // ΔY += δy
+		d.Sol.Y[i] += d.Wb[i] // y += δy
+		d.Sol.ΔY[i] = d.Wb[i] // ΔY = δy
 	}
 
 	// update Lagrange multipliers (λ)
